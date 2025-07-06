@@ -9,6 +9,115 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      academic_stages: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_stages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          academic_stage_id: string
+          created_at: string | null
+          created_by: string
+          days_of_week: string[]
+          end_date: string | null
+          hall_id: string
+          id: string
+          number_of_students: number
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["booking_status"] | null
+          teacher_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          academic_stage_id: string
+          created_at?: string | null
+          created_by: string
+          days_of_week: string[]
+          end_date?: string | null
+          hall_id: string
+          id?: string
+          number_of_students: number
+          start_date: string
+          start_time: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          teacher_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          academic_stage_id?: string
+          created_at?: string | null
+          created_by?: string
+          days_of_week?: string[]
+          end_date?: string | null
+          hall_id?: string
+          id?: string
+          number_of_students?: number
+          start_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          teacher_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_academic_stage_id_fkey"
+            columns: ["academic_stage_id"]
+            isOneToOne: false
+            referencedRelation: "academic_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -84,6 +193,30 @@ export type Database = {
         }
         Relationships: []
       }
+      halls: {
+        Row: {
+          capacity: number
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          capacity: number
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -92,6 +225,7 @@ export type Database = {
           id: string
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
+          user_role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
           created_at?: string
@@ -100,6 +234,7 @@ export type Database = {
           id: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          user_role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
           created_at?: string
@@ -108,8 +243,41 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          user_role?: Database["public"]["Enums"]["user_role"] | null
         }
         Relationships: []
+      }
+      teachers: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teachers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -166,6 +334,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_booking_conflict: {
+        Args: {
+          p_hall_id: string
+          p_start_time: string
+          p_days_of_week: string[]
+          p_start_date: string
+          p_end_date?: string
+          p_booking_id?: string
+        }
+        Returns: boolean
+      }
       copy_default_categories_for_user: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -185,6 +364,8 @@ export type Database = {
     }
     Enums: {
       app_role: "USER" | "ADMIN"
+      booking_status: "active" | "cancelled" | "completed"
+      user_role: "owner" | "manager" | "space_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -301,6 +482,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["USER", "ADMIN"],
+      booking_status: ["active", "cancelled", "completed"],
+      user_role: ["owner", "manager", "space_manager"],
     },
   },
 } as const
