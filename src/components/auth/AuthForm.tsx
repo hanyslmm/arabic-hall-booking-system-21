@@ -62,6 +62,7 @@ export const AuthForm = () => {
       <Card className="w-full max-w-md card-elevated">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">نادي العلوم</CardTitle>
+          <div className="mb-2 text-lg font-semibold text-green-700">welcome to Science Scool</div>
           <CardDescription>
             {isLogin ? "تسجيل الدخول إلى نظام حجز القاعات" : "إنشاء حساب جديد"}
           </CardDescription>
