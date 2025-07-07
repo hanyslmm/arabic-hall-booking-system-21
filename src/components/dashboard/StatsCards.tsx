@@ -1,10 +1,14 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, GraduationCap, Building } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 export const StatsCards = () => {
+  const navigate = useNavigate();
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
@@ -34,32 +38,40 @@ export const StatsCards = () => {
       title: "إجمالي القاعات",
       value: stats?.halls || 0,
       icon: Building,
-      color: "text-primary"
+      color: "text-primary",
+      onClick: () => navigate('/halls')
     },
     {
       title: "المعلمين",
       value: stats?.teachers || 0,
       icon: GraduationCap,
-      color: "text-success"
+      color: "text-success",
+      onClick: () => navigate('/teachers')
     },
     {
       title: "المراحل الدراسية",
       value: stats?.stages || 0,
       icon: Users,
-      color: "text-warning"
+      color: "text-warning",
+      onClick: () => navigate('/stages')
     },
     {
       title: "الحجوزات النشطة",
       value: stats?.activeBookings || 0,
       icon: Calendar,
-      color: "text-destructive"
+      color: "text-destructive",
+      onClick: () => navigate('/bookings')
     }
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statsData.map((stat, index) => (
-        <Card key={index} className="card-elevated">
+        <Card 
+          key={index} 
+          className="card-elevated cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={stat.onClick}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {stat.title}
@@ -72,6 +84,9 @@ export const StatsCards = () => {
             ) : (
               <div className="text-2xl font-bold">{stat.value}</div>
             )}
+            <p className="text-xs text-muted-foreground mt-1">
+              انقر للعرض التفصيلي
+            </p>
           </CardContent>
         </Card>
       ))}

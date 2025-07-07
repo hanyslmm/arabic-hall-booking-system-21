@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Calendar, Home } from "lucide-react";
+import { LogOut, User, Calendar, Home, Users, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavbarProps {
@@ -47,6 +47,7 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
   };
 
   const canManageBookings = userRole === 'owner' || userRole === 'manager';
+  const isOwner = userRole === 'owner';
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -72,6 +73,17 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
               >
                 <Calendar className="h-4 w-4" />
                 حجز جديد
+              </Button>
+            )}
+            {isOwner && (
+              <Button
+                variant={location.pathname === "/users" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => navigate("/users")}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                إدارة المستخدمين
               </Button>
             )}
           </div>
@@ -112,6 +124,12 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
                 <DropdownMenuItem onClick={() => navigate("/booking")} className="cursor-pointer">
                   <Calendar className="mr-2 h-4 w-4" />
                   <span>حجز جديد</span>
+                </DropdownMenuItem>
+              )}
+              {isOwner && (
+                <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>إدارة المستخدمين</span>
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
