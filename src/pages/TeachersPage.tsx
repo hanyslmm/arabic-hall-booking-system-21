@@ -66,7 +66,7 @@ const TeachersPage = () => {
     },
   });
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager';
+  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || profile?.user_role === 'space_manager';
 
   return (
     <div className="min-h-screen bg-background">

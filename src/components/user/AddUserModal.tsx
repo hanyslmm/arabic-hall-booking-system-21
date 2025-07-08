@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const userSchema = z.object({
   email: z.string().email("يرجى إدخال بريد إلكتروني صحيح"),
   full_name: z.string().min(1, "يرجى إدخال اسم المستخدم"),
-  user_role: z.enum(["manager", "space_manager"], {
+  user_role: z.enum(["manager", "space_manager", "user"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),
 });
@@ -95,7 +95,8 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="manager">مدير</SelectItem>
-                <SelectItem value="space_manager">مستخدم</SelectItem>
+                <SelectItem value="space_manager">مستخدم (مدير قاعات)</SelectItem>
+                <SelectItem value="user">مستخدم عادي</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.user_role && (
