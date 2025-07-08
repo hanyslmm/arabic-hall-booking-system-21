@@ -111,13 +111,15 @@ const UsersPage = () => {
     );
   }
 
+  const [isAddUserOpen, setAddUserOpen] = useState(false);
+  const { AddUserModal } = require("@/components/user/AddUserModal");
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
         userRole={profile?.user_role} 
         userName={profile?.full_name || profile?.email || undefined}
       />
-      
       <main className="container mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -129,9 +131,12 @@ const UsersPage = () => {
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             <span className="font-semibold">{users?.length || 0} مستخدم</span>
+            <Button onClick={() => setAddUserOpen(true)} variant="default" size="sm">
+              إضافة مستخدم
+            </Button>
           </div>
         </div>
-
+        <AddUserModal isOpen={isAddUserOpen} onClose={() => setAddUserOpen(false)} />
         <Card>
           <CardHeader>
             <CardTitle>قائمة المستخدمين</CardTitle>
