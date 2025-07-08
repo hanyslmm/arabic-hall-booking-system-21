@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, GraduationCap } from "lucide-react";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
+import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
 import { Badge } from "@/components/ui/badge";
 
 interface Teacher {
@@ -20,6 +21,8 @@ interface Teacher {
 
 const TeachersPage = () => {
   const [showAddTeacher, setShowAddTeacher] = useState(false);
+  const [showEditTeacher, setShowEditTeacher] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -150,6 +153,16 @@ const TeachersPage = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => {
+                                setSelectedTeacher(teacher);
+                                setShowEditTeacher(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => deleteTeacherMutation.mutate(teacher.id)}
                               disabled={deleteTeacherMutation.isPending}
                             >
@@ -167,10 +180,17 @@ const TeachersPage = () => {
         </Card>
 
         {canManage && (
-          <AddTeacherModal 
-            isOpen={showAddTeacher}
-            onClose={() => setShowAddTeacher(false)}
-          />
+          <>
+            <AddTeacherModal 
+              isOpen={showAddTeacher}
+              onClose={() => setShowAddTeacher(false)}
+            />
+            <EditTeacherModal
+              isOpen={showEditTeacher}
+              onClose={() => setShowEditTeacher(false)}
+              teacher={selectedTeacher}
+            />
+          </>
         )}
       </main>
     </div>
