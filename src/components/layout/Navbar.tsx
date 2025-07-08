@@ -1,5 +1,7 @@
 
 import { useState } from "react";
+import { useTheme, Theme } from "@/hooks/useTheme";
+  const { theme, setTheme } = useTheme();
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -91,7 +93,18 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
 
         <div className="flex items-center space-x-4 space-x-reverse">
           {getRoleBadge(userRole)}
-          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 px-2">
+                {theme === "dark" ? "🌙" : theme === "light" ? "☀️" : "🖥️"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTheme("light")}>☀️ وضع النهار</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>🌙 وضع الليل</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("auto")}>🖥️ تلقائي</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
