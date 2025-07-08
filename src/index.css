@@ -67,58 +67,56 @@
   }
 
   .dark {
-    /* Dark theme for Science Club */
-    --background: 220 15% 8%;
-    --foreground: 218 25% 95%;
+    /* Orange/Gray Dark Theme */
+    --background: 24 10% 10%; /* dark gray */
+    --foreground: 30 20% 98%; /* light text */
 
-    --card: 220 15% 10%;
-    --card-foreground: 218 25% 95%;
+    --card: 24 10% 14%;
+    --card-foreground: 30 20% 98%;
 
-    --popover: 220 15% 10%;
-    --popover-foreground: 218 25% 95%;
+    --popover: 24 10% 14%;
+    --popover-foreground: 30 20% 98%;
 
-    --primary: 186 85% 45%;
+    --primary: 28 90% 55%; /* orange */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 186 85% 65%;
+    --primary-glow: 28 90% 65%;
 
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 218 25% 85%;
+    --secondary: 24 10% 18%; /* dark gray */
+    --secondary-foreground: 30 20% 98%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 218 15% 55%;
+    --muted: 24 10% 18%;
+    --muted-foreground: 30 20% 80%;
 
-    --accent: 220 15% 18%;
-    --accent-foreground: 186 85% 75%;
+    --accent: 28 90% 35%;
+    --accent-foreground: 30 20% 98%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
-    --ring: 186 85% 45%;
+    --border: 24 10% 25%;
+    --input: 24 10% 25%;
+    --ring: 28 90% 55%;
 
-    --success: 142 76% 46%;
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 60%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(186 85% 35%), hsl(186 85% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(220 15% 12%), hsl(220 15% 18%));
-    --gradient-hero: linear-gradient(135deg, hsl(186 85% 45%) 0%, hsl(200 85% 55%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(28 90% 55%), hsl(28 90% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(24 10% 18%), hsl(24 10% 10%));
+    --gradient-hero: linear-gradient(135deg, hsl(28 90% 55%) 0%, hsl(28 90% 65%) 100%);
 
-    /* Dark mode shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(186 85% 25% / 0.4);
-    --shadow-card: 0 4px 20px -4px hsl(186 85% 25% / 0.2);
+    --shadow-elegant: 0 10px 30px -10px hsl(28 90% 55% / 0.2);
+    --shadow-card: 0 4px 20px -4px hsl(28 90% 55% / 0.10);
 
-    --sidebar-background: 220 15% 10%;
-    --sidebar-foreground: 218 25% 85%;
-    --sidebar-primary: 186 85% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 15%;
-    --sidebar-accent-foreground: 218 25% 85%;
-    --sidebar-border: 220 15% 20%;
-    --sidebar-ring: 186 85% 45%;
+    --sidebar-background: 24 10% 14%;
+    --sidebar-foreground: 30 20% 98%;
+    --sidebar-primary: 28 90% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 24 10% 18%;
+    --sidebar-accent-foreground: 30 20% 98%;
+    --sidebar-border: 24 10% 25%;
+    --sidebar-ring: 28 90% 55%;
   }
 }
 
