@@ -1,7 +1,5 @@
-
 import { useState } from "react";
-import { useTheme, Theme } from "@/hooks/useTheme";
-  const { theme, setTheme } = useTheme();
+import { useTheme } from "@/hooks/useTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +21,7 @@ interface NavbarProps {
 
 export const Navbar = ({ userRole, userName }: NavbarProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
