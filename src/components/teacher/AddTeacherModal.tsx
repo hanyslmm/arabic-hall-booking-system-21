@@ -63,7 +63,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
     onError: (error) => {
       toast({
         title: "خطأ في إضافة المعلم",
-        description: error.message,
+        description: error.message || "حدث خطأ غير متوقع",
         variant: "destructive",
       });
     },

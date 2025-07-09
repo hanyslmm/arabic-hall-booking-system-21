@@ -62,7 +62,7 @@ export const AddStageModal = ({ isOpen, onClose }: AddStageModalProps) => {
     onError: (error) => {
       toast({
         title: "خطأ في إضافة المرحلة",
-        description: error.message,
+        description: error.message || "حدث خطأ غير متوقع",
         variant: "destructive",
       });
     },

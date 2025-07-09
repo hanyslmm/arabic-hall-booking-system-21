@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Users, UserCog } from "lucide-react";
+import { AddUserModal } from "@/components/user/AddUserModal";
 
 interface UserProfile {
   id: string;
@@ -112,7 +113,6 @@ const UsersPage = () => {
   }
 
   const [isAddUserOpen, setAddUserOpen] = useState(false);
-  const { AddUserModal } = require("@/components/user/AddUserModal");
 
   return (
     <div className="min-h-screen bg-background">

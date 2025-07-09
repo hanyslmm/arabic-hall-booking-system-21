@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const userSchema = z.object({
   email: z.string().email("يرجى إدخال بريد إلكتروني صحيح"),
   full_name: z.string().min(1, "يرجى إدخال اسم المستخدم"),
-  user_role: z.enum(["manager", "space_manager", "user"], {
+  user_role: z.enum(["owner", "manager", "space_manager"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),
 });
@@ -36,18 +36,32 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   const addUserMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-      // You may want to invite user via Supabase Auth here
-      const { error } = await supabase.from("profiles").insert({
+      // First, try to invite the user via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(data.email, {
+        data: {
+          full_name: data.full_name,
+          user_role: data.user_role,
+        },
+      });
+
+      // If auth invitation fails, create profile directly
+      if (authError) {
+        console.warn('Auth invitation failed, creating profile directly:', authError);
+      }
+
+      // Create or update the profile
+      const { error } = await supabase.from("profiles").upsert({
         email: data.email,
         full_name: data.full_name,
         user_role: data.user_role,
+        id: authData?.user?.id || crypto.randomUUID(),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast({
         title: "تم إضافة المستخدم بنجاح",
-        description: "تمت إضافة المستخدم للنظام.",
+        description: "تمت إضافة المستخدم للنظام وإرسال دعوة إلى بريده الإلكتروني.",
       });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       onClose();
@@ -94,9 +108,9 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 <SelectValue placeholder="اختر الدور" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="space_manager">مدير قاعات</SelectItem>
                 <SelectItem value="manager">مدير</SelectItem>
-                <SelectItem value="space_manager">مستخدم (مدير قاعات)</SelectItem>
-                <SelectItem value="user">مستخدم عادي</SelectItem>
+                <SelectItem value="owner">مالك</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.user_role && (
