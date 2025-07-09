@@ -8,11 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export const AuthForm = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,35 +18,18 @@ export const AuthForm = () => {
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast({
-          title: "تم تسجيل الدخول بنجاح",
-          description: "مرحباً بك في نادي العلوم"
-        });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
-        if (error) throw error;
-        toast({
-          title: "تم إنشاء الحساب بنجاح",
-          description: "تم إرسال رابط التأكيد إلى بريدك الإلكتروني"
-        });
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      toast({
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحباً بك في نادي العلوم"
+      });
     } catch (error: any) {
       toast({
-        title: "خطأ",
+        title: "خطأ في تسجيل الدخول",
         description: error.message,
         variant: "destructive"
       });
@@ -62,26 +43,13 @@ export const AuthForm = () => {
       <Card className="w-full max-w-md card-elevated">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary">نادي العلوم</CardTitle>
-          <div className="mb-2 text-lg font-semibold text-green-700">welcome to Science Scool</div>
+          <div className="mb-2 text-lg font-semibold text-green-700">welcome to Science School</div>
           <CardDescription>
-            {isLogin ? "تسجيل الدخول إلى نظام حجز القاعات" : "إنشاء حساب جديد"}
+            تسجيل الدخول إلى نظام حجز القاعات
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">الاسم الكامل</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="أدخل اسمك الكامل"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
               <Input
@@ -111,18 +79,9 @@ export const AuthForm = () => {
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              {isLogin ? "تسجيل الدخول" : "إنشاء حساب"}
+              تسجيل الدخول
             </Button>
           </form>
-          <div className="mt-6 text-center">
-            <Button
-              variant="link"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary"
-            >
-              {isLogin ? "ليس لديك حساب؟ أنشئ حساباً جديداً" : "لديك حساب؟ سجل دخولك"}
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
