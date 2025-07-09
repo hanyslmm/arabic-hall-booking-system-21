@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import LoginPage from "@/pages/LoginPage";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Navbar } from "@/components/layout/Navbar";
 import { StatsCards } from "@/components/dashboard/StatsCards";
@@ -29,7 +30,7 @@ const Index = () => {
   }
 
   if (!user) {
-    return <AuthForm />;
+    return <LoginPage />;
   }
 
   return (
