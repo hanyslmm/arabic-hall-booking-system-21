@@ -5,9 +5,39 @@ import { Navbar } from "@/components/layout/Navbar";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 
 const Index = () => {
   const { user, profile, loading } = useAuth();
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    // Add error boundary logic
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error:', event.error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">حدث خطأ غير متوقع</h1>
+          <p className="text-muted-foreground mb-4">يرجى تحديث الصفحة والمحاولة مرة أخرى</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            تحديث الصفحة
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
