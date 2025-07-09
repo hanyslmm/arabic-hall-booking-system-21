@@ -1,7 +1,5 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +10,7 @@ import { Plus, Edit, Trash2, GraduationCap } from "lucide-react";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
 import { Badge } from "@/components/ui/badge";
+import { getTeachers, deleteTeacher } from "@/api/teachers";
 
 interface Teacher {
   id: string;
@@ -29,25 +28,12 @@ const TeachersPage = () => {
 
   const { data: teachers, isLoading } = useQuery({
     queryKey: ['teachers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('teachers')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      return data as Teacher[];
-    }
+    queryFn: getTeachers
   });
 
   const deleteTeacherMutation = useMutation({
     mutationFn: async (teacherId: string) => {
-      const { error } = await supabase
-        .from('teachers')
-        .delete()
-        .eq('id', teacherId);
-      
-      if (error) throw error;
+      await deleteTeacher(teacherId);
     },
     onSuccess: () => {
       toast({

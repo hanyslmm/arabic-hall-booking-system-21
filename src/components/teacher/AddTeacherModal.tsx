@@ -1,15 +1,11 @@
-
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+  import { FormModal } from "@/components/ui/FormModal";
+import { addTeacher } from "@/api/teachers";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 
 const teacherSchema = z.object({
   name: z.string().min(1, "يرجى إدخال اسم المعلم"),
@@ -26,29 +22,9 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<TeacherFormData>({
-    resolver: zodResolver(teacherSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
-
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('غير مصرح');
-
-      const { data: result, error } = await supabase
-        .from('teachers')
-        .insert([{
-          name: data.name,
-          created_by: user.user.id,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result;
+      return await addTeacher({ name: data.name });
     },
     onSuccess: () => {
       toast({
@@ -57,7 +33,6 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       });
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      form.reset();
       onClose();
     },
     onError: (error) => {
@@ -69,49 +44,28 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
     },
   });
 
-  const onSubmit = (data: TeacherFormData) => {
-    createTeacherMutation.mutate(data);
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl text-center">إضافة معلم جديد</DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">اسم المعلم</Label>
-            <Input
-              id="name"
-              placeholder="أدخل اسم المعلم"
-              {...form.register('name')}
-            />
-            {form.formState.errors.name && (
-              <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={createTeacherMutation.isPending}
-            >
-              {createTeacherMutation.isPending ? "جاري الحفظ..." : "حفظ"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
-              إلغاء
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="إضافة معلم جديد"
+      schema={teacherSchema}
+      onSubmit={(data) => createTeacherMutation.mutate(data)}
+      isSubmitting={createTeacherMutation.isPending}
+      submitLabel={createTeacherMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+      fields={({ register, errors }) => (
+        <div className="space-y-2">
+          <Label htmlFor="name">اسم المعلم</Label>
+          <Input
+            id="name"
+            placeholder="أدخل اسم المعلم"
+            {...register('name')}
+          />
+          {errors.name && (
+            <p className="text-sm text-destructive">{errors.name.message}</p>
+          )}
+        </div>
+      )}
+    />
   );
 };
