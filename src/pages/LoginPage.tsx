@@ -7,14 +7,15 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { error } = await supabase.auth.signInWithPassword({ email: username, password });
     setLoading(false);
     if (error) {
       toast({
@@ -42,10 +43,10 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <Input
-                type="email"
-                placeholder="البريد الإلكتروني"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text"
+                placeholder="اسم المستخدم"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
                 required
                 autoFocus
               />

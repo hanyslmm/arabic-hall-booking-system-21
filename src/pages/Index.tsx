@@ -6,6 +6,7 @@ import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { AdminSetup } from "@/components/AdminSetup";
 
 const Index = () => {
   const { user, profile, loading } = useAuth();
@@ -60,7 +61,12 @@ const Index = () => {
   }
 
   if (!user) {
-    return <LoginPage />;
+    return (
+      <div>
+        <LoginPage />
+        <AdminSetup />
+      </div>
+    );
   }
 
   return (
