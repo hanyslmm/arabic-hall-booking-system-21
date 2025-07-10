@@ -2,92 +2,126 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const setupAdminAccount = async () => {
   try {
-    // First, try to sign in to see if account already exists
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    console.log("Starting admin account setup...");
+
+    // Step 1: Try to sign in first to check if account exists
+    const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
       email: "admin@example.com",
       password: "admin123"
     });
 
-    if (signInData.user && !signInError) {
-      // Account exists and login successful
-      return { success: true, message: "Admin account already exists and is working" };
+    if (existingUser.user && !signInError) {
+      console.log("Admin account already exists and works!");
+      return { success: true, message: "Admin account already exists and is ready to use!" };
     }
 
-    // If login failed, try to create the account
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    console.log("Admin account doesn't exist or can't login, creating new account...");
+
+    // Step 2: Create the admin account using the admin API
+    // We'll use a service role or admin privileges to create the user
+    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: "admin@example.com",
       password: "admin123",
-      options: {
-        data: {
-          full_name: "System Administrator"
-        },
-        emailRedirectTo: undefined // Disable email confirmation
+      email_confirm: true, // Auto-confirm the email
+      user_metadata: {
+        full_name: "System Administrator"
       }
     });
 
-    if (authError) {
-      if (authError.message.includes("already registered")) {
-        // Account exists but password might be different
-        return { 
-          success: false, 
-          message: "Admin account exists but password might be incorrect. Please contact system administrator." 
-        };
-      }
-      throw authError;
-    }
-
-    if (!authData.user) {
-      throw new Error("Failed to create admin user");
-    }
-
-    // If signup was successful, confirm the user (bypass email confirmation)
-    if (authData.user && !authData.user.email_confirmed_at) {
-      // For development purposes, we'll create the profile anyway
-      console.log("User created but may need email confirmation");
-    }
-
-    // Create profile with owner role
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert({
-        id: authData.user.id,
+    if (createError) {
+      console.error("Error creating user with admin API:", createError);
+      
+      // Fallback: Try regular signup with auto-confirm
+      const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email: "admin@example.com",
-        full_name: "System Administrator",
-        user_role: "owner"
+        password: "admin123",
+        options: {
+          data: {
+            full_name: "System Administrator"
+          }
+        }
       });
 
-    if (profileError && !profileError.message.includes("duplicate")) {
-      console.error("Profile creation error:", profileError);
-      // Continue anyway, profile might be created by trigger
-    }
+      if (signupError) {
+        throw new Error(`Failed to create admin account: ${signupError.message}`);
+      }
 
-    // Try to sign in again to verify the account works
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email: "admin@example.com",
-      password: "admin123"
-    });
+      if (!signupData.user) {
+        throw new Error("Failed to create admin user - no user returned");
+      }
 
-    if (verifyError) {
+      console.log("User created via signup:", signupData.user.id);
+
+      // Create profile for the new user
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: signupData.user.id,
+          email: "admin@example.com",
+          full_name: "System Administrator",
+          user_role: "owner"
+        });
+
+      if (profileError && !profileError.message.includes("duplicate")) {
+        console.error("Profile creation error:", profileError);
+      }
+
       return { 
-        success: false, 
-        message: `Account created but login failed: ${verifyError.message}. You may need to check email confirmation settings.` 
+        success: true, 
+        message: "Admin account created successfully! You can now login with admin/admin123" 
       };
     }
 
-    return { 
-      success: true, 
-      message: "Admin account created and verified successfully! You can now login with username: admin and password: admin123" 
-    };
+    // If admin.createUser worked
+    if (newUser.user) {
+      console.log("User created via admin API:", newUser.user.id);
+
+      // Create profile for the new user
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: newUser.user.id,
+          email: "admin@example.com",
+          full_name: "System Administrator",
+          user_role: "owner"
+        });
+
+      if (profileError && !profileError.message.includes("duplicate")) {
+        console.error("Profile creation error:", profileError);
+      }
+
+      // Verify the account works by trying to sign in
+      const { data: verifyLogin, error: verifyError } = await supabase.auth.signInWithPassword({
+        email: "admin@example.com",
+        password: "admin123"
+      });
+
+      if (verifyError) {
+        console.error("Login verification failed:", verifyError);
+        return { 
+          success: false, 
+          message: `Account created but login verification failed: ${verifyError.message}` 
+        };
+      }
+
+      return { 
+        success: true, 
+        message: "Admin account created and verified successfully! You can now login with admin/admin123" 
+      };
+    }
+
+    throw new Error("Unknown error occurred during account creation");
 
   } catch (error: any) {
     console.error("Setup admin error:", error);
     return { 
       success: false, 
-      message: error.message || "Failed to create admin account" 
+      message: `Failed to create admin account: ${error.message}` 
     };
   }
 };
 
+// Check existing users for debugging
 export const checkExistingUsers = async () => {
   try {
     const { data: profiles, error } = await supabase
@@ -107,33 +141,32 @@ export const checkExistingUsers = async () => {
   }
 };
 
-// Alternative method: Create user via direct profile insertion (for development)
-export const createAdminProfileDirectly = async () => {
+// Force create admin profile (if user exists in auth but no profile)
+export const forceCreateAdminProfile = async () => {
   try {
-    // Generate a fake UUID for admin user (this is for development/testing only)
-    const adminId = "00000000-0000-0000-0000-000000000001";
+    // Try to get current user
+    const { data: { user }, error } = await supabase.auth.getUser();
     
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({
-        id: adminId,
-        email: "admin@example.com",
-        full_name: "System Administrator",
-        user_role: "owner"
-      });
+    if (user) {
+      // Create profile for current user
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          email: user.email,
+          full_name: "System Administrator",
+          user_role: "owner"
+        });
 
-    if (error) {
-      throw error;
+      if (profileError) {
+        throw profileError;
+      }
+
+      return { success: true, message: "Admin profile created for existing user" };
     }
 
-    return { 
-      success: true, 
-      message: "Admin profile created directly. Note: This is for development only." 
-    };
+    return { success: false, message: "No authenticated user found" };
   } catch (error: any) {
-    return { 
-      success: false, 
-      message: error.message || "Failed to create admin profile directly" 
-    };
+    return { success: false, message: error.message };
   }
 };

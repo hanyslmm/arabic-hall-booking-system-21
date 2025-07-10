@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { setupAdminAccount, checkExistingUsers } from "@/utils/setupAdmin";
+import { setupAdminAccount, checkExistingUsers, forceCreateAdminProfile } from "@/utils/setupAdmin";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const AdminSetup = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [existingUsers, setExistingUsers] = useState<any[]>([]);
+  const [debugInfo, setDebugInfo] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for existing users on component mount
     checkExistingUsers().then(setExistingUsers);
+    
+    // Add debug info about Supabase connection
+    setDebugInfo(`Supabase URL: ${import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not Set'}`);
   }, []);
 
   const handleSetupAdmin = async () => {
@@ -25,7 +29,6 @@ export const AdminSetup = () => {
         description: "يمكنك الآن تسجيل الدخول باستخدام: admin / admin123",
       });
       setIsCompleted(true);
-      // Refresh existing users list
       checkExistingUsers().then(setExistingUsers);
     } else {
       toast({
@@ -35,6 +38,51 @@ export const AdminSetup = () => {
       });
     }
     setIsCreating(false);
+  };
+
+  const handleForceCreateProfile = async () => {
+    setIsCreating(true);
+    const result = await forceCreateAdminProfile();
+    
+    toast({
+      title: result.success ? "تم إنشاء الملف الشخصي" : "خطأ",
+      description: result.message,
+      variant: result.success ? "default" : "destructive",
+    });
+    
+    if (result.success) {
+      checkExistingUsers().then(setExistingUsers);
+    }
+    setIsCreating(false);
+  };
+
+  const handleTestLogin = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: "admin@example.com",
+        password: "admin123"
+      });
+
+      if (error) {
+        toast({
+          title: "فشل تسجيل الدخول التجريبي",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "نجح تسجيل الدخول التجريبي",
+          description: "حساب المدير يعمل بشكل صحيح!",
+        });
+        setIsCompleted(true);
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الاختبار",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (isCompleted) {
@@ -62,20 +110,48 @@ export const AdminSetup = () => {
       <CardHeader>
         <CardTitle className="text-center">إعداد حساب المدير</CardTitle>
       </CardHeader>
-      <CardContent className="text-center">
+      <CardContent className="text-center space-y-4">
         <p className="mb-4">إنشاء حساب المدير الأول للنظام</p>
+        
         {existingUsers.length > 0 && (
-          <div className="mb-4 text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground">
             <p>يوجد {existingUsers.length} مستخدم في النظام</p>
           </div>
         )}
-        <Button 
-          onClick={handleSetupAdmin} 
-          disabled={isCreating}
-          className="w-full"
-        >
-          {isCreating ? "جاري الإنشاء..." : "إنشاء حساب المدير"}
-        </Button>
+
+        <div className="space-y-2">
+          <Button 
+            onClick={handleSetupAdmin} 
+            disabled={isCreating}
+            className="w-full"
+          >
+            {isCreating ? "جاري الإنشاء..." : "إنشاء حساب المدير"}
+          </Button>
+
+          <Button 
+            onClick={handleTestLogin} 
+            disabled={isCreating}
+            variant="outline"
+            className="w-full"
+          >
+            اختبار تسجيل الدخول
+          </Button>
+
+          <Button 
+            onClick={handleForceCreateProfile} 
+            disabled={isCreating}
+            variant="secondary"
+            className="w-full text-xs"
+          >
+            إنشاء ملف شخصي فقط
+          </Button>
+        </div>
+
+        {debugInfo && (
+          <div className="text-xs text-muted-foreground mt-4">
+            <p>{debugInfo}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
