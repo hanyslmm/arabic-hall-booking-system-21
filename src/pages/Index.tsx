@@ -7,6 +7,7 @@ import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { AdminSetup } from "@/components/AdminSetup";
+import { UserUpgrade } from "@/components/UserUpgrade";
 
 const Index = () => {
   const { user, profile, loading } = useAuth();
@@ -65,6 +66,7 @@ const Index = () => {
       <div>
         <LoginPage />
         <AdminSetup />
+        <UserUpgrade />
       </div>
     );
   }
