@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import LoginPage from "@/pages/LoginPage";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Navbar } from "@/components/layout/Navbar";
+import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,25 +74,45 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-        isAdmin={isAdmin}
-      />
-      
-      <main className="container mx-auto p-4 space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-primary">
-            مرحباً بك في نادي العلوم
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            نظام إدارة وحجز القاعات التعليمية
-          </p>
-        </div>
-        
-        <StatsCards />
-        <HallsGrid />
-      </main>
+      {isAdmin ? (
+        <AdminSidebar>
+          <div className="space-y-8">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-primary">
+                مرحباً بك في نادي العلوم
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                نظام إدارة وحجز القاعات التعليمية
+              </p>
+            </div>
+            
+            <StatsCards />
+            <HallsGrid />
+          </div>
+        </AdminSidebar>
+      ) : (
+        <>
+          <Navbar 
+            userRole={profile?.user_role} 
+            userName={profile?.full_name || profile?.email || undefined}
+            isAdmin={isAdmin}
+          />
+          
+          <main className="container mx-auto p-4 space-y-8">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-primary">
+                مرحباً بك في نادي العلوم
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                نظام إدارة وحجز القاعات التعليمية
+              </p>
+            </div>
+            
+            <StatsCards />
+            <HallsGrid />
+          </main>
+        </>
+      )}
     </div>
   );
 };
