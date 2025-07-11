@@ -40,7 +40,7 @@ export const upgradeUserToAdmin = async (email: string) => {
         user_role: 'owner',
         role: 'ADMIN',
         full_name: email === 'admin@admin.com' ? 'System Administrator' : 
-                   email === 'anyslmm@gmail.com' ? 'Hany Salem' : 
+                   email === 'hanyslmm@gmail.com' ? 'Hany Salem' : 
                    'Administrator'
       })
       .eq('id', userData.id);

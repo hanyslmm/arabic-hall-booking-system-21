@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDrag } from "@use-gesture/react";
 import {
   Home,
   Calendar,
@@ -106,21 +105,6 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
   const location = useLocation();
   const { profile } = useAuth();
 
-  // Swipe gesture to open/close sidebar
-  const bind = useDrag(({ direction: [dx], distance, cancel }) => {
-    if (distance > 50) {
-      if (dx > 0 && !sidebarOpen) {
-        // Swipe right from left edge to open
-        setSidebarOpen(true);
-        cancel();
-      } else if (dx < 0 && sidebarOpen) {
-        // Swipe left to close
-        setSidebarOpen(false);
-        cancel();
-      }
-    }
-  });
-
   // Detect swipe from left edge
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
@@ -165,7 +149,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
   };
 
   return (
-    <div className="flex h-screen bg-background" {...bind()}>
+    <div className="flex h-screen bg-background">
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div

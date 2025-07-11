@@ -158,7 +158,7 @@ export const UserPrivilegeDebugger = () => {
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-800 mb-2">Instructions</h3>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>1. If you're admin@admin.com or anyslmm@gmail.com, click "Upgrade Current User to Admin"</li>
+            <li>1. If you're admin@admin.com or hanyslmm@gmail.com, click "Upgrade Current User to Admin"</li>
             <li>2. Use "Check & Upgrade All Admin Users" to fix both admin emails at once</li>
             <li>3. The page will refresh automatically after successful upgrade</li>
             <li>4. After upgrade, you should see the admin sidebar with full CRUD access</li>

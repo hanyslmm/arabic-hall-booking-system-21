@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const ADMIN_EMAILS = [
   "admin@admin.com",
-  "anyslmm@gmail.com"
+  "hanyslmm@gmail.com"
 ];
 
 export const checkAndUpgradeUserPrivileges = async () => {

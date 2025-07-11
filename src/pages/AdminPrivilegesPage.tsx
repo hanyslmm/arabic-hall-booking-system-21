@@ -38,7 +38,7 @@ const AdminPrivilegesPage = () => {
                 <h3 className="font-semibold mb-2">المستخدمون المطلوب ترقيتهم:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li>admin@admin.com - مدير النظام الرئيسي</li>
-                  <li>anyslmm@gmail.com - هاني سالم</li>
+                  <li>hanyslmm@gmail.com - هاني سالم</li>
                 </ul>
               </div>
               

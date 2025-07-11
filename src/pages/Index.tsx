@@ -11,6 +11,8 @@ import { AdminSetup } from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
 import { UserPrivilegeDebugger } from "@/components/UserPrivilegeDebugger";
 import { UserPrivilegeManager } from "@/components/admin/UserPrivilegeManager";
+import { debugCurrentUser } from "@/scripts/debugCurrentUser";
+import { SimpleDebugger } from "@/components/SimpleDebugger";
 
 const Index = () => {
   const { user, profile, loading, isAdmin, isOwner, canManageUsers } = useAuth();
@@ -24,8 +26,14 @@ const Index = () => {
     };
 
     window.addEventListener('error', handleError);
+    
+    // Run debug script when user is logged in
+    if (user && !loading) {
+      debugCurrentUser();
+    }
+    
     return () => window.removeEventListener('error', handleError);
-  }, []);
+  }, [user, loading]);
 
   if (hasError) {
     return (
@@ -80,6 +88,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Always show debugger for troubleshooting */}
+      <SimpleDebugger />
+      
       {showDebugger && (
         <div className="p-4 space-y-4">
           <UserPrivilegeDebugger />

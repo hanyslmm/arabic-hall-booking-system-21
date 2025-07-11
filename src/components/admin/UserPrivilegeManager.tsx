@@ -91,7 +91,7 @@ export const UserPrivilegeManager = () => {
   const handleUpgradeKnownUsers = async () => {
     setUpgradeAllLoading(true);
     try {
-      const emails = ["admin@admin.com", "anyslmm@gmail.com"];
+      const emails = ["admin@admin.com", "hanyslmm@gmail.com"];
       const results = await upgradeMultipleUsers(emails);
       
       const successCount = results.filter(r => r.success).length;
@@ -166,7 +166,7 @@ export const UserPrivilegeManager = () => {
             className="w-full"
           >
             <Shield className="h-4 w-4 mr-2" />
-            {upgradeAllLoading ? "جاري التحديث..." : "ترقية admin و anyslmm@gmail.com"}
+            {upgradeAllLoading ? "جاري التحديث..." : "ترقية admin و hanyslmm@gmail.com"}
           </Button>
         </div>
       </CardContent>
