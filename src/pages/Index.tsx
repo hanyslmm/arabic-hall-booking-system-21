@@ -12,8 +12,6 @@ import { UserUpgrade } from "@/components/UserUpgrade";
 const Index = () => {
   const { user, profile, loading, isAdmin, isOwner, canManageUsers } = useAuth();
   const [hasError, setHasError] = useState(false);
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-
   useEffect(() => {
     // Add error boundary logic
     const handleError = (event: ErrorEvent) => {
@@ -23,13 +21,6 @@ const Index = () => {
 
     window.addEventListener('error', handleError);
     
-    // Only show debug panel in development mode and for specific conditions
-    const isDevelopment = import.meta.env.DEV;
-    const isDebugUser = user?.email === 'admin@admin.com' || user?.email === 'hanyslmm@gmail.com';
-    
-    if (isDevelopment && isDebugUser && !isAdmin && !isOwner) {
-      setShowDebugPanel(true);
-    }
     return () => window.removeEventListener('error', handleError);
   }, [user, loading]);
 
@@ -86,21 +77,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Only show debug panel in development for specific users who need privilege upgrade */}
-      {showDebugPanel && import.meta.env.DEV && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-            <p className="text-sm">Debug mode detected. Need admin access?</p>
-            <button 
-              onClick={() => window.location.href = '/admin-privileges'}
-              className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-            >
-              Fix Privileges
-            </button>
-          </div>
-        </div>
-      )}
-      
       {(isAdmin || isOwner || canManageUsers) ? (
         <AdminSidebar>
           <div className="space-y-8">

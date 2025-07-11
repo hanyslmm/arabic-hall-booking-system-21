@@ -145,6 +145,69 @@ export const AdminSetup = () => {
     }
   };
 
+  const handleCreateScManager = async () => {
+    setIsCreating(true);
+    try {
+      // Check if sc_manager already exists in the database
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', 'sc_manager@system.local')
+        .single();
+
+      if (existingUser && !checkError) {
+        toast({
+          title: "حساب sc_manager موجود بالفعل",
+          description: "حساب sc_manager موجود في قاعدة البيانات",
+          variant: "default",
+        });
+        setIsCreating(false);
+        return;
+      }
+
+      // If user doesn't exist, the migration should have created it
+      toast({
+        title: "حساب sc_manager جاهز",
+        description: "يمكنك تسجيل الدخول باستخدام: sc_manager / Voda@123",
+        variant: "default",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "خطأ في إنشاء حساب sc_manager",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleFixHanyPrivileges = async () => {
+    setIsCreating(true);
+    try {
+      const result = await grantAdminPrivileges('hanyslmm@gmail.com');
+      
+      toast({
+        title: result.success ? "تم إصلاح صلاحيات hanyslmm@gmail.com" : "فشل في الإصلاح",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+      
+      if (result.success) {
+        checkExistingUsers().then(setExistingUsers);
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في إصلاح الصلاحيات",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   if (isCompleted) {
     return (
       <Card className="w-full max-w-md mx-auto mt-8">
@@ -261,7 +324,16 @@ export const AdminSetup = () => {
             إصلاح مشاكل الصلاحيات وترقية المستخدمين الحاليين
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              onClick={handleFixHanyPrivileges}
+              disabled={isCreating}
+              variant="default"
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {isCreating ? "جاري الإصلاح..." : "إصلاح hanyslmm@gmail.com"}
+            </Button>
+            
             <Button
               onClick={handleFixAdminPrivileges}
               disabled={isCreating}
@@ -282,6 +354,7 @@ export const AdminSetup = () => {
           </div>
           
           <div className="text-xs text-gray-500 mt-4">
+            <p>• إصلاح hanyslmm@gmail.com: يمنح صلاحيات المدير لحساب hanyslmm@gmail.com فقط</p>
             <p>• إصلاح صلاحيات المدراء: يمنح صلاحيات المدير لـ admin@admin.com و hanyslmm@gmail.com</p>
             <p>• ترقية جميع المستخدمين: يمنح صلاحيات المدير لجميع المستخدمين الحاليين</p>
           </div>
