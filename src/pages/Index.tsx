@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { AdminSetup } from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
 import { UserPrivilegeDebugger } from "@/components/UserPrivilegeDebugger";
+import { UserPrivilegeManager } from "@/components/admin/UserPrivilegeManager";
 
 const Index = () => {
   const { user, profile, loading, isAdmin, isOwner, canManageUsers } = useAuth();
@@ -80,8 +81,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {showDebugger && (
-        <div className="p-4">
+        <div className="p-4 space-y-4">
           <UserPrivilegeDebugger />
+          <UserPrivilegeManager />
         </div>
       )}
       
@@ -95,6 +97,11 @@ const Index = () => {
               <p className="text-muted-foreground text-lg">
                 نظام إدارة وحجز القاعات التعليمية
               </p>
+            </div>
+            
+            {/* Add privilege manager for admins */}
+            <div className="mb-8">
+              <UserPrivilegeManager />
             </div>
             
             <StatsCards />
