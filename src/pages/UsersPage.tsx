@@ -18,11 +18,12 @@ interface UserProfile {
   email: string | null;
   full_name: string | null;
   user_role: 'owner' | 'manager' | 'space_manager';
+  role: 'USER' | 'ADMIN';
   created_at: string;
 }
 
 const UsersPage = () => {
-  const { profile } = useAuth();
+  const { profile, canManageUsers } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -31,7 +32,7 @@ const UsersPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, user_role, role, created_at')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -40,10 +41,15 @@ const UsersPage = () => {
   });
 
   const updateUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: 'owner' | 'manager' | 'space_manager' }) => {
+    mutationFn: async ({ userId, newRole, appRole }: { userId: string; newRole: 'owner' | 'manager' | 'space_manager'; appRole?: 'USER' | 'ADMIN' }) => {
+      const updateData: any = { user_role: newRole };
+      if (appRole !== undefined) {
+        updateData.role = appRole;
+      }
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ user_role: newRole })
+        .update(updateData)
         .eq('id', userId);
       
       if (error) throw error;
@@ -90,7 +96,7 @@ const UsersPage = () => {
     }
   };
 
-  if (profile?.user_role !== 'owner') {
+  if (!canManageUsers) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar 
@@ -153,6 +159,7 @@ const UsersPage = () => {
                     <TableHead className="text-right">الاسم</TableHead>
                     <TableHead className="text-right">البريد الإلكتروني</TableHead>
                     <TableHead className="text-right">الدور</TableHead>
+                    <TableHead className="text-right">الصلاحيات</TableHead>
                     <TableHead className="text-right">تاريخ التسجيل</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
@@ -170,28 +177,51 @@ const UsersPage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        <Badge variant={user.role === 'ADMIN' ? 'destructive' : 'outline'}>
+                          {user.role === 'ADMIN' ? 'مدير' : 'مستخدم'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {new Date(user.created_at).toLocaleDateString('ar-SA')}
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={user.user_role}
-                          onValueChange={(value) => 
-                            updateUserRoleMutation.mutate({ 
-                              userId: user.id, 
-                              newRole: value as 'owner' | 'manager' | 'space_manager' 
-                            })
-                          }
-                          disabled={user.id === profile?.id}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="space_manager">مدير قاعات</SelectItem>
-                            <SelectItem value="manager">مدير</SelectItem>
-                            <SelectItem value="owner">مالك</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          <Select
+                            value={user.user_role}
+                            onValueChange={(value) => 
+                              updateUserRoleMutation.mutate({ 
+                                userId: user.id, 
+                                newRole: value as 'owner' | 'manager' | 'space_manager' 
+                              })
+                            }
+                            disabled={user.id === profile?.id}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="space_manager">مدير قاعات</SelectItem>
+                              <SelectItem value="manager">مدير</SelectItem>
+                              <SelectItem value="owner">مالك</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {profile?.role === 'ADMIN' && (
+                            <Button
+                              size="sm"
+                              variant={user.role === 'ADMIN' ? "destructive" : "outline"}
+                              onClick={() => 
+                                updateUserRoleMutation.mutate({ 
+                                  userId: user.id, 
+                                  newRole: user.user_role,
+                                  appRole: user.role === 'ADMIN' ? 'USER' : 'ADMIN'
+                                })
+                              }
+                              disabled={user.id === profile?.id}
+                            >
+                              {user.role === 'ADMIN' ? 'إزالة صلاحية' : 'إضافة صلاحية'}
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -339,6 +339,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_admin: {
+        Args: { p_username: string; p_password: string }
+        Returns: {
+          user_id: string
+          email: string
+          full_name: string
+          role: string
+          user_role: string
+        }[]
+      }
       check_booking_conflict: {
         Args: {
           p_hall_id: string

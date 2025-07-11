@@ -15,6 +15,40 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
+    // Try admin authentication first
+    if (username === 'admin') {
+      try {
+        const { data: adminData, error: adminError } = await supabase
+          .rpc('authenticate_admin', {
+            p_username: username,
+            p_password: password
+          });
+
+        if (adminError) throw adminError;
+
+        if (adminData && adminData.length > 0) {
+          // Create a session for admin user
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: 'admin@system.local',
+            password: 'Voda@123'
+          });
+
+          if (!signInError) {
+            toast({
+              title: "تم تسجيل الدخول",
+              description: "مرحبًا بك أيها المدير!",
+            });
+            window.location.href = "/";
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Admin auth error:', error);
+      }
+    }
+
+    // Regular user authentication
     const { error } = await supabase.auth.signInWithPassword({ email: username, password });
     setLoading(false);
     if (error) {

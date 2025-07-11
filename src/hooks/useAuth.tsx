@@ -7,6 +7,7 @@ interface UserProfile {
   email: string | null;
   full_name: string | null;
   user_role: 'owner' | 'manager' | 'space_manager';
+  role: 'USER' | 'ADMIN';
 }
 
 export const useAuth = () => {
@@ -59,7 +60,7 @@ export const useAuth = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, user_role')
+        .select('id, email, full_name, user_role, role')
         .eq('id', userId)
         .single();
 
@@ -73,17 +74,21 @@ export const useAuth = () => {
   };
 
   const isOwner = profile?.user_role === 'owner';
-  const isManager = profile?.user_role === 'manager' || isOwner;
+  const isAdmin = profile?.role === 'ADMIN';
+  const isManager = profile?.user_role === 'manager' || isOwner || isAdmin;
   const canManageBookings = isManager;
   const canManageData = isManager;
+  const canManageUsers = isOwner || isAdmin;
 
   return {
     user,
     profile,
     loading,
     isOwner,
+    isAdmin,
     isManager,
     canManageBookings,
-    canManageData
+    canManageData,
+    canManageUsers
   };
 };

@@ -1,19 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
-export type Booking = {
-  id: string;
-  hall_id: string;
-  teacher_id: string;
-  academic_stage_id: string;
-  subject: string;
-  start_time: string;
-  end_time: string;
-  date: string;
-  status: "confirmed" | "pending" | "cancelled";
-  created_at: string | null;
-  updated_at: string | null;
-  created_by: string | null;
-  // Add other fields as needed
+export type Booking = Tables<"bookings"> & {
+  halls?: { name: string };
+  teachers?: { name: string };
+  academic_stages?: { name: string };
 };
 
 export const getBookings = async (): Promise<Booking[]> => {
@@ -25,12 +16,12 @@ export const getBookings = async (): Promise<Booking[]> => {
       teachers(name),
       academic_stages(name)
     `)
-    .order("date", { ascending: false });
+    .order("start_date", { ascending: false });
   if (error) throw error;
   return data as Booking[];
 };
 
-export const addBooking = async (booking: Omit<Booking, "id" | "created_at" | "updated_at" | "created_by">) => {
+export const addBooking = async (booking: Omit<Tables<"bookings">, "id" | "created_at" | "updated_at" | "created_by">) => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error("غير مصرح");
   const { data, error } = await supabase
@@ -42,7 +33,7 @@ export const addBooking = async (booking: Omit<Booking, "id" | "created_at" | "u
   return data as Booking;
 };
 
-export const updateBooking = async (id: string, updates: Partial<Booking>) => {
+export const updateBooking = async (id: string, updates: Partial<Tables<"bookings">>) => {
   const { data, error } = await supabase
     .from("bookings")
     .update(updates)
@@ -59,7 +50,7 @@ export const deleteBooking = async (id: string) => {
   return id;
 };
 
-export const getBookingsByDate = async (date: string): Promise<Booking[]> => {
+export const getBookingsByDate = async (startDate: string): Promise<Booking[]> => {
   const { data, error } = await supabase
     .from("bookings")
     .select(`
@@ -68,7 +59,7 @@ export const getBookingsByDate = async (date: string): Promise<Booking[]> => {
       teachers(name),
       academic_stages(name)
     `)
-    .eq("date", date)
+    .eq("start_date", startDate)
     .order("start_time");
   if (error) throw error;
   return data as Booking[];

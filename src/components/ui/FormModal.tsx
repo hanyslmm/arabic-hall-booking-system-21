@@ -1,11 +1,11 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { z, ZodSchema } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 
-interface FormModalProps<T> {
+interface FormModalProps<T extends FieldValues> {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -17,7 +17,7 @@ interface FormModalProps<T> {
   isSubmitting?: boolean;
 }
 
-export function FormModal<T>({
+export function FormModal<T extends FieldValues>({
   isOpen,
   onClose,
   title,
@@ -36,12 +36,12 @@ export function FormModal<T>({
     ...form
   } = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: defaultValues as any,
   });
 
   React.useEffect(() => {
-    if (isOpen) {
-      reset(defaultValues);
+    if (isOpen && defaultValues) {
+      reset(defaultValues as any);
     }
   }, [isOpen, defaultValues, reset]);
 
@@ -57,7 +57,6 @@ export function FormModal<T>({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Render fields, pass register and errors as needed */}
           {typeof fields === "function"
             ? fields({ register, errors, form })
             : fields}
