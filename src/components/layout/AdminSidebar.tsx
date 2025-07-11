@@ -90,6 +90,12 @@ const navigation = [
         description: "إدارة المستخدمين والأذونات",
       },
       {
+        title: "صلاحيات المدراء",
+        url: "/admin-privileges",
+        icon: Settings,
+        description: "إدارة صلاحيات المدراء",
+      },
+      {
         title: "الإعدادات",
         url: "/settings",
         icon: Settings,

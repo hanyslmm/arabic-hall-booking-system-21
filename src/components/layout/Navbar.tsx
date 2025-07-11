@@ -49,7 +49,7 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
   };
 
   const canManageBookings = userRole === 'owner' || userRole === 'manager' || isAdmin;
-  const isOwnerOrAdmin = userRole === 'owner' || isAdmin;
+  const isOwnerOrAdmin = userRole === 'owner' || userRole === 'manager' || isAdmin;
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
