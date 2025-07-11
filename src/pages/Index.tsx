@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { AdminSetup } from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
+import { UserPrivilegeDebugger } from "@/components/UserPrivilegeDebugger";
 
 const Index = () => {
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user, profile, loading, isAdmin, isOwner, canManageUsers } = useAuth();
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -72,9 +73,19 @@ const Index = () => {
     );
   }
 
+  // Show privilege debugger for users who might need admin access
+  const showDebugger = user && (!isAdmin && !isOwner && !canManageUsers) && 
+    (user.email === 'admin@admin.com' || user.email === 'anyslmm@gmail.com');
+
   return (
     <div className="min-h-screen bg-background">
-      {isAdmin ? (
+      {showDebugger && (
+        <div className="p-4">
+          <UserPrivilegeDebugger />
+        </div>
+      )}
+      
+      {(isAdmin || isOwner || canManageUsers) ? (
         <AdminSidebar>
           <div className="space-y-8">
             <div className="space-y-2">
