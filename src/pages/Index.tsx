@@ -1,6 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
 import LoginPage from "@/pages/LoginPage";
-import { AuthForm } from "@/components/auth/AuthForm";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { StatsCards } from "@/components/dashboard/StatsCards";
@@ -9,14 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import AdminSetup from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
-import { UserPrivilegeDebugger } from "@/components/UserPrivilegeDebugger";
-import { UserPrivilegeManager } from "@/components/admin/UserPrivilegeManager";
-import { debugCurrentUser } from "@/scripts/debugCurrentUser";
-import { SimpleDebugger } from "@/components/SimpleDebugger";
 
 const Index = () => {
   const { user, profile, loading, isAdmin, isOwner, canManageUsers } = useAuth();
   const [hasError, setHasError] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   useEffect(() => {
     // Add error boundary logic
@@ -27,11 +23,13 @@ const Index = () => {
 
     window.addEventListener('error', handleError);
     
-    // Run debug script when user is logged in
-    if (user && !loading) {
-      debugCurrentUser();
-    }
+    // Only show debug panel in development mode and for specific conditions
+    const isDevelopment = import.meta.env.DEV;
+    const isDebugUser = user?.email === 'admin@admin.com' || user?.email === 'hanyslmm@gmail.com';
     
+    if (isDevelopment && isDebugUser && !isAdmin && !isOwner) {
+      setShowDebugPanel(true);
+    }
     return () => window.removeEventListener('error', handleError);
   }, [user, loading]);
 
@@ -76,25 +74,30 @@ const Index = () => {
     return (
       <div>
         <LoginPage />
-        <AdminSetup />
-        <UserUpgrade />
+        {import.meta.env.DEV && (
+          <>
+            <AdminSetup />
+            <UserUpgrade />
+          </>
+        )}
       </div>
     );
   }
 
-  // Show privilege debugger for users who might need admin access
-  const showDebugger = user && (!isAdmin && !isOwner && !canManageUsers) && 
-    (user.email === 'admin@admin.com' || user.email === 'hanyslmm@gmail.com');
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Always show debugger for troubleshooting */}
-      <SimpleDebugger />
-      
-      {showDebugger && (
-        <div className="p-4 space-y-4">
-          <UserPrivilegeDebugger />
-          <UserPrivilegeManager />
+      {/* Only show debug panel in development for specific users who need privilege upgrade */}
+      {showDebugPanel && import.meta.env.DEV && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+            <p className="text-sm">Debug mode detected. Need admin access?</p>
+            <button 
+              onClick={() => window.location.href = '/admin-privileges'}
+              className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded text-sm"
+            >
+              Fix Privileges
+            </button>
+          </div>
         </div>
       )}
       
@@ -109,12 +112,6 @@ const Index = () => {
                 نظام إدارة وحجز القاعات التعليمية
               </p>
             </div>
-            
-            {/* Add privilege manager for admins */}
-            <div className="mb-8">
-              <UserPrivilegeManager />
-            </div>
-            
             <StatsCards />
             <HallsGrid />
           </div>

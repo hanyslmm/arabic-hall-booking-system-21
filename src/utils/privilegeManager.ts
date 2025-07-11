@@ -257,6 +257,69 @@ export const createAdminUser = async (email: string, fullName?: string): Promise
 };
 
 /**
+ * Create a new admin user account with full privileges
+ */
+export const createNewAdminUser = async (email: string, password: string, fullName: string): Promise<PrivilegeResult> => {
+  try {
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: email,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName
+      }
+    });
+
+    if (authError) {
+      console.error('Error creating auth user:', authError);
+      return {
+        success: false,
+        message: `Failed to create auth user: ${authError.message}`
+      };
+    }
+
+    if (!authData.user) {
+      return {
+        success: false,
+        message: 'Failed to create user - no user returned'
+      };
+    }
+
+    // Create profile with admin privileges
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        email: email,
+        full_name: fullName,
+        user_role: 'owner',
+        role: 'ADMIN'
+      });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      return {
+        success: false,
+        message: `Failed to create profile: ${profileError.message}`
+      };
+    }
+
+    return {
+      success: true,
+      message: `Admin user ${email} created successfully`,
+      user_id: authData.user.id
+    };
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+};
+
+/**
  * Upgrade all existing users to admin privileges (migration helper)
  */
 export const upgradeAllExistingUsers = async (): Promise<Array<{email: string} & PrivilegeResult>> => {
