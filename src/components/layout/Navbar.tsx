@@ -17,9 +17,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 interface NavbarProps {
   userRole?: 'owner' | 'manager' | 'space_manager';
   userName?: string;
+  isAdmin?: boolean;
 }
 
-export const Navbar = ({ userRole, userName }: NavbarProps) => {
+export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -47,8 +48,8 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
     }
   };
 
-  const canManageBookings = userRole === 'owner' || userRole === 'manager';
-  const isOwner = userRole === 'owner';
+  const canManageBookings = userRole === 'owner' || userRole === 'manager' || isAdmin;
+  const isOwnerOrAdmin = userRole === 'owner' || isAdmin;
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -66,17 +67,46 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
               الرئيسية
             </Button>
             {canManageBookings && (
-              <Button
-                variant={location.pathname === "/booking" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => navigate("/booking")}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                حجز جديد
-              </Button>
+              <>
+                <Button
+                  variant={location.pathname === "/bookings" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate("/bookings")}
+                  className="flex items-center gap-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  الحجوزات
+                </Button>
+                <Button
+                  variant={location.pathname === "/halls" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate("/halls")}
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  القاعات
+                </Button>
+                <Button
+                  variant={location.pathname === "/teachers" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate("/teachers")}
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  المعلمين
+                </Button>
+                <Button
+                  variant={location.pathname === "/stages" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate("/stages")}
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  المراحل
+                </Button>
+              </>
             )}
-            {isOwner && (
+            {isOwnerOrAdmin && (
               <Button
                 variant={location.pathname === "/users" ? "default" : "ghost"}
                 size="sm"
@@ -133,12 +163,26 @@ export const Navbar = ({ userRole, userName }: NavbarProps) => {
                 <span>الرئيسية</span>
               </DropdownMenuItem>
               {canManageBookings && (
-                <DropdownMenuItem onClick={() => navigate("/booking")} className="cursor-pointer">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <span>حجز جديد</span>
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onClick={() => navigate("/bookings")} className="cursor-pointer">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>الحجوزات</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/halls")} className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>القاعات</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/teachers")} className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>المعلمين</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/stages")} className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>المراحل</span>
+                  </DropdownMenuItem>
+                </>
               )}
-              {isOwner && (
+              {isOwnerOrAdmin && (
                 <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
                   <Users className="mr-2 h-4 w-4" />
                   <span>إدارة المستخدمين</span>

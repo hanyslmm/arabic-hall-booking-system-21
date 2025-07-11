@@ -22,7 +22,7 @@ const TeachersPage = () => {
   const [showAddTeacher, setShowAddTeacher] = useState(false);
   const [showEditTeacher, setShowEditTeacher] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -52,13 +52,14 @@ const TeachersPage = () => {
     },
   });
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || profile?.user_role === 'space_manager';
+  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || profile?.user_role === 'space_manager' || isAdmin;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
         userRole={profile?.user_role} 
         userName={profile?.full_name || profile?.email || undefined}
+        isAdmin={isAdmin}
       />
       
       <main className="container mx-auto p-4 space-y-6">

@@ -32,7 +32,7 @@ interface Booking {
 }
 
 const BookingsPage = () => {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const { data: bookings, isLoading } = useQuery({
@@ -79,13 +79,14 @@ const BookingsPage = () => {
     return days.map(day => dayMap[day] || day).join(', ');
   };
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager';
+  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
         userRole={profile?.user_role} 
         userName={profile?.full_name || profile?.email || undefined}
+        isAdmin={isAdmin}
       />
       
       <main className="container mx-auto p-4 space-y-6">

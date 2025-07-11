@@ -18,7 +18,7 @@ interface Hall {
 
 const HallsPage = () => {
   const [selectedHall, setSelectedHall] = useState<{ id: string; name: string } | null>(null);
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
 
   const { data: halls, isLoading } = useQuery({
     queryKey: ['halls'],
@@ -54,6 +54,7 @@ const HallsPage = () => {
       <Navbar 
         userRole={profile?.user_role} 
         userName={profile?.full_name || profile?.email || undefined}
+        isAdmin={isAdmin}
       />
       
       <main className="container mx-auto p-4 space-y-6">

@@ -20,7 +20,7 @@ interface AcademicStage {
 
 const StagesPage = () => {
   const [showAddStage, setShowAddStage] = useState(false);
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,13 +63,14 @@ const StagesPage = () => {
     },
   });
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager';
+  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
         userRole={profile?.user_role} 
         userName={profile?.full_name || profile?.email || undefined}
+        isAdmin={isAdmin}
       />
       
       <main className="container mx-auto p-4 space-y-6">

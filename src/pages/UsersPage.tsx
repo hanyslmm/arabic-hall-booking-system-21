@@ -23,7 +23,7 @@ interface UserProfile {
 }
 
 const UsersPage = () => {
-  const { profile, canManageUsers } = useAuth();
+  const { profile, canManageUsers, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -102,6 +102,7 @@ const UsersPage = () => {
         <Navbar 
           userRole={profile?.user_role} 
           userName={profile?.full_name || profile?.email || undefined}
+          isAdmin={isAdmin}
         />
         <main className="container mx-auto p-4">
           <Card>
@@ -122,10 +123,11 @@ const UsersPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-      />
+        <Navbar 
+          userRole={profile?.user_role} 
+          userName={profile?.full_name || profile?.email || undefined}
+          isAdmin={isAdmin}
+        />
       <main className="container mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
           <div>

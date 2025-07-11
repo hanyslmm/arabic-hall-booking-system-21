@@ -10,7 +10,7 @@ import { AdminSetup } from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
 
 const Index = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isAdmin } = useAuth();
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -76,6 +76,7 @@ const Index = () => {
       <Navbar 
         userRole={profile?.user_role} 
         userName={profile?.full_name || profile?.email || undefined}
+        isAdmin={isAdmin}
       />
       
       <main className="container mx-auto p-4 space-y-8">
