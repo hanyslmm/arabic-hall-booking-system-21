@@ -15,7 +15,7 @@ import { LogOut, User, Calendar, Home, Users, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavbarProps {
-  userRole?: 'owner' | 'manager' | 'space_manager';
+  userRole?: 'owner' | 'manager' | 'space_manager' | 'read_only';
   userName?: string;
   isAdmin?: boolean;
 }

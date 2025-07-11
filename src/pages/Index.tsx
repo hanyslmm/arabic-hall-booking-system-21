@@ -7,7 +7,7 @@ import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
-import { AdminSetup } from "@/components/AdminSetup";
+import AdminSetup from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
 import { UserPrivilegeDebugger } from "@/components/UserPrivilegeDebugger";
 import { UserPrivilegeManager } from "@/components/admin/UserPrivilegeManager";

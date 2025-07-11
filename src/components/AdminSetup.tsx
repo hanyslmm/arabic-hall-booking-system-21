@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { setupAdminAccount, checkExistingUsers, forceCreateAdminProfile } from "@/utils/setupAdmin";
+import { upgradeAllExistingUsers, grantAdminPrivileges } from "@/utils/privilegeManager";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Shield, UserPlus, Users, Settings } from "lucide-react";
 
 export const AdminSetup = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -56,6 +58,64 @@ export const AdminSetup = () => {
     setIsCreating(false);
   };
 
+  const handleUpgradeAllUsers = async () => {
+    setIsCreating(true);
+    try {
+      const results = await upgradeAllExistingUsers();
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+      
+      toast({
+        title: successCount > 0 ? "نجح التحديث" : "فشل التحديث",
+        description: `تم ترقية ${successCount} مستخدم${failCount > 0 ? ` وفشل في ${failCount}` : ''}`,
+        variant: successCount > 0 ? "default" : "destructive",
+      });
+      
+      if (successCount > 0) {
+        checkExistingUsers().then(setExistingUsers);
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الترقية",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleFixAdminPrivileges = async () => {
+    setIsCreating(true);
+    try {
+      const adminEmails = ['admin@admin.com', 'hanyslmm@gmail.com'];
+      let successCount = 0;
+      
+      for (const email of adminEmails) {
+        const result = await grantAdminPrivileges(email);
+        if (result.success) successCount++;
+      }
+      
+      toast({
+        title: successCount > 0 ? "تم إصلاح الصلاحيات" : "فشل في الإصلاح",
+        description: `تم إصلاح صلاحيات ${successCount} من ${adminEmails.length} مدير`,
+        variant: successCount > 0 ? "default" : "destructive",
+      });
+      
+      if (successCount > 0) {
+        checkExistingUsers().then(setExistingUsers);
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الإصلاح",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const handleTestLogin = async () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -96,8 +156,15 @@ export const AdminSetup = () => {
           <p className="font-bold">اسم المستخدم: admin</p>
           <p className="font-bold">كلمة المرور: admin123</p>
           {existingUsers.length > 0 && (
-            <div className="mt-4 text-sm">
-              <p>المستخدمون الموجودون: {existingUsers.length}</p>
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">المستخدمون المتاحون:</p>
+              <ul className="text-sm">
+                {existingUsers.map((user, index) => (
+                  <li key={index} className="border-b py-1">
+                    {user.email} - {user.user_role}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </CardContent>
@@ -106,53 +173,149 @@ export const AdminSetup = () => {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-8">
-      <CardHeader>
-        <CardTitle className="text-center">إعداد حساب المدير</CardTitle>
-      </CardHeader>
-      <CardContent className="text-center space-y-4">
-        <p className="mb-4">إنشاء حساب المدير الأول للنظام</p>
-        
-        {existingUsers.length > 0 && (
-          <div className="text-sm text-muted-foreground">
-            <p>يوجد {existingUsers.length} مستخدم في النظام</p>
+    <div className="space-y-6 p-6 max-w-4xl mx-auto">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">إعداد النظام وإصلاح الصلاحيات</h2>
+        <p className="text-gray-600">إنشاء حساب المدير وإصلاح مشاكل الصلاحيات</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Admin Account Setup */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-600" />
+              إنشاء حساب المدير
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              إنشاء حساب مدير جديد مع كامل الصلاحيات
+            </p>
+            <Button
+              onClick={handleSetupAdmin}
+              disabled={isCreating}
+              className="w-full"
+            >
+              {isCreating ? "جاري الإنشاء..." : "إنشاء حساب المدير"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Force Create Profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-green-600" />
+              إنشاء ملف شخصي قسري
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              إنشاء ملف شخصي للمستخدم الحالي بصلاحيات المدير
+            </p>
+            <Button
+              onClick={handleForceCreateProfile}
+              disabled={isCreating}
+              variant="outline"
+              className="w-full"
+            >
+              {isCreating ? "جاري الإنشاء..." : "إنشاء ملف شخصي"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Privilege Repair Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-purple-600" />
+            إصلاح الصلاحيات
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            إصلاح مشاكل الصلاحيات وترقية المستخدمين الحاليين
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button
+              onClick={handleFixAdminPrivileges}
+              disabled={isCreating}
+              variant="outline"
+              className="w-full"
+            >
+              {isCreating ? "جاري الإصلاح..." : "إصلاح صلاحيات المدراء"}
+            </Button>
+            
+            <Button
+              onClick={handleUpgradeAllUsers}
+              disabled={isCreating}
+              variant="outline"
+              className="w-full"
+            >
+              {isCreating ? "جاري الترقية..." : "ترقية جميع المستخدمين"}
+            </Button>
           </div>
-        )}
+          
+          <div className="text-xs text-gray-500 mt-4">
+            <p>• إصلاح صلاحيات المدراء: يمنح صلاحيات المدير لـ admin@admin.com و hanyslmm@gmail.com</p>
+            <p>• ترقية جميع المستخدمين: يمنح صلاحيات المدير لجميع المستخدمين الحاليين</p>
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="space-y-2">
-          <Button 
-            onClick={handleSetupAdmin} 
-            disabled={isCreating}
-            className="w-full"
-          >
-            {isCreating ? "جاري الإنشاء..." : "إنشاء حساب المدير"}
-          </Button>
+      {/* Existing Users Display */}
+      {existingUsers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-gray-600" />
+              المستخدمون الحاليون ({existingUsers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {existingUsers.map((user, index) => (
+                <div key={index} className="flex justify-between items-center p-2 border rounded">
+                  <span className="font-medium">{user.email}</span>
+                  <div className="text-sm">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      user.user_role === 'owner' || user.role === 'ADMIN' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.user_role} / {user.role}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          <Button 
-            onClick={handleTestLogin} 
+      {/* Debug Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">معلومات التشخيص</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-gray-500">{debugInfo}</p>
+          <Button
+            onClick={handleTestLogin}
             disabled={isCreating}
             variant="outline"
-            className="w-full"
+            size="sm"
+            className="mt-2"
           >
             اختبار تسجيل الدخول
           </Button>
-
-          <Button 
-            onClick={handleForceCreateProfile} 
-            disabled={isCreating}
-            variant="secondary"
-            className="w-full text-xs"
-          >
-            إنشاء ملف شخصي فقط
-          </Button>
-        </div>
-
-        {debugInfo && (
-          <div className="text-xs text-muted-foreground mt-4">
-            <p>{debugInfo}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
+
+export default AdminSetup;

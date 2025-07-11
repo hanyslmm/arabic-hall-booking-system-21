@@ -6,7 +6,7 @@ interface UserProfile {
   id: string;
   email: string | null;
   full_name: string | null;
-  user_role: 'owner' | 'manager' | 'space_manager';
+  user_role: 'owner' | 'manager' | 'space_manager' | 'read_only';
   role: 'USER' | 'ADMIN';
 }
 
