@@ -76,7 +76,7 @@ const Index = () => {
 
   // Show privilege debugger for users who might need admin access
   const showDebugger = user && (!isAdmin && !isOwner && !canManageUsers) && 
-    (user.email === 'admin@admin.com' || user.email === 'anyslmm@gmail.com');
+    (user.email === 'admin@admin.com' || user.email === 'hanyslmm@gmail.com');
 
   return (
     <div className="min-h-screen bg-background">

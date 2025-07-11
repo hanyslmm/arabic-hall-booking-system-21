@@ -74,7 +74,7 @@ export const useAuth = () => {
   };
 
   const isOwner = profile?.user_role === 'owner';
-  const isAdmin = profile?.role === 'ADMIN';
+  const isAdmin = profile?.role === 'ADMIN' || profile?.user_role === 'owner';
   const isManager = profile?.user_role === 'manager' || isOwner || isAdmin;
   const canManageBookings = isManager;
   const canManageData = isManager;

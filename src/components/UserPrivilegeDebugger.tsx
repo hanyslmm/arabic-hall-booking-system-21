@@ -48,23 +48,31 @@ export const UserPrivilegeDebugger = () => {
           email: user.email,
           full_name: profile?.full_name || 'Administrator',
           user_role: 'owner',
-          role: 'ADMIN'
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
         })
         .select()
         .single();
 
-      if (error) throw error;
-      
-      setResults({
-        success: true,
-        message: "Current user upgraded to admin successfully!",
-        data
-      });
-      
-      // Refresh the page to reload auth state
-      setTimeout(() => window.location.reload(), 2000);
-      
-    } catch (error) {
+      if (error) {
+        setResults({ 
+          success: false, 
+          error: `Failed to upgrade user: ${error.message}` 
+        });
+      } else {
+        setResults({ 
+          success: true, 
+          message: 'User upgraded to owner successfully! Please refresh the page.',
+          data 
+        });
+        
+        // Auto-refresh after 2 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } catch (error: any) {
       setResults({ success: false, error: error.message });
     } finally {
       setLoading(false);
