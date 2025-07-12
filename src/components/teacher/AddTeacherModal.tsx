@@ -57,20 +57,12 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
     },
   });
 
-  // Fetch subjects - for now we'll use a mock until database is updated
+  // Fetch subjects
   const { data: subjects = [] } = useQuery({
     queryKey: ['subjects'],
     queryFn: async (): Promise<Subject[]> => {
-      // Mock data for now
-      return [
-        { id: "1", name: "الرياضيات" },
-        { id: "2", name: "العلوم" },
-        { id: "3", name: "الفيزياء" },
-        { id: "4", name: "الكيمياء" },
-        { id: "5", name: "الأحياء" },
-        { id: "6", name: "اللغة العربية" },
-        { id: "7", name: "اللغة الإنجليزية" },
-      ];
+      const { getSubjects } = await import('@/api/subjects');
+      return await getSubjects();
     },
   });
 
@@ -87,11 +79,29 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
       try {
-        return await addTeacher({ 
+        const teacher = await addTeacher({ 
           name: data.name,
           mobile_phone: data.mobile_phone || null,
           subject_id: data.subject_id || null,
         });
+
+        // If academic stages are selected and teacher was created successfully, try to save them
+        if (data.academic_stage_ids && data.academic_stage_ids.length > 0 && teacher) {
+          try {
+            // Try to save academic stages - this will only work if the database migration is applied
+            const academicStagePromises = data.academic_stage_ids.map(async (stageId) => {
+              return (supabase as any)
+                .from('teacher_academic_stages')
+                .insert({ teacher_id: teacher.id, academic_stage_id: stageId });
+            });
+            await Promise.all(academicStagePromises);
+          } catch (error: any) {
+            console.warn("Could not save academic stages - migration may not be applied yet:", error);
+            // Don't throw error here - teacher was already created successfully
+          }
+        }
+
+        return teacher;
       } catch (error: any) {
         // If the error is about missing columns, try with just the name
         if (error.message?.includes('mobile_phone') || error.message?.includes('subject_id')) {
@@ -121,6 +131,35 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       });
     },
   });
+
+  const addSubjectMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const { addSubject } = await import('@/api/subjects');
+      return await addSubject({ name });
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إضافة المادة بنجاح",
+        description: "تم حفظ المادة الدراسية في النظام",
+      });
+      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      setShowAddSubject(false);
+      setNewSubjectName("");
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ في إضافة المادة",
+        description: error.message || "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddSubject = () => {
+    if (newSubjectName.trim()) {
+      addSubjectMutation.mutate(newSubjectName.trim());
+    }
+  };
 
   const handleStageToggle = (stageId: string) => {
     const updatedStages = selectedStages.includes(stageId)
@@ -260,19 +299,10 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
                 إلغاء
               </Button>
               <Button 
-                onClick={() => {
-                  // For now, just close the modal
-                  // Will implement actual subject creation after database update
-                  toast({
-                    title: "ملاحظة",
-                    description: "سيتم تنفيذ إضافة المواد الدراسية بعد تحديث قاعدة البيانات",
-                  });
-                  setShowAddSubject(false);
-                  setNewSubjectName("");
-                }}
-                disabled={!newSubjectName.trim()}
+                onClick={handleAddSubject}
+                disabled={!newSubjectName.trim() || addSubjectMutation.isPending}
               >
-                حفظ
+                {addSubjectMutation.isPending ? "جاري الحفظ..." : "حفظ"}
               </Button>
             </div>
           </div>
