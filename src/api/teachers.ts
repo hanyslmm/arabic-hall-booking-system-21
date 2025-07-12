@@ -16,7 +16,28 @@ export type Teacher = {
 };
 
 export const getTeachers = async (): Promise<Teacher[]> => {
-  // For now, just get basic teacher data since the migration hasn't been applied yet
+  try {
+    // Try to get teachers with related data first
+    const { data: teachersWithRelations, error: relationsError } = await supabase
+      .from("teachers")
+      .select(`
+        *,
+        subjects:subject_id(name),
+        teacher_academic_stages(
+          academic_stages(name)
+        )
+      `)
+      .order("name");
+    
+    if (!relationsError && teachersWithRelations) {
+      return teachersWithRelations as any[];
+    }
+  } catch (e) {
+    // If the above fails (missing tables/columns), fall back to basic query
+    console.warn("Failed to fetch teachers with relations, falling back to basic query:", e);
+  }
+  
+  // Fallback: just get basic teacher data
   const { data, error } = await supabase
     .from("teachers")
     .select("*")
