@@ -1,345 +1,182 @@
+# Supabase CLI (v1)
 
-# Science Club Hall Booking System
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main)
 
-A comprehensive hall booking management system built with React, TypeScript, and Supabase for the Science Club.
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-## Features
+This repository contains all the functionality for Supabase CLI.
 
-- 🏢 Hall Management & Booking System
-- 👥 User Authentication & Role-based Access Control
-- 📅 Schedule Management with Weekly View (Gregorian Calendar)
-- 👨‍🏫 Teacher Management
-- 📊 Dashboard with Statistics
-- 🌍 Arabic RTL Support with Gregorian Calendar (ميلادي)
-- 📱 Responsive Design
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-## Tech Stack
+## Getting started
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Backend**: Supabase (PostgreSQL, Auth, RLS)
-- **UI**: Tailwind CSS, Shadcn/UI
-- **State Management**: TanStack Query
-- **Routing**: React Router DOM
-- **Forms**: React Hook Form with Zod validation
+### Install the CLI
 
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── auth/           # Authentication components
-│   ├── booking/        # Booking form and related components
-│   ├── dashboard/      # Dashboard stats and hall grid
-│   ├── hall/          # Hall schedule modal
-│   ├── layout/        # Navigation and layout components
-│   ├── teacher/       # Teacher management components
-│   └── ui/            # Reusable UI components (shadcn/ui)
-├── hooks/             # Custom React hooks
-├── integrations/      # Supabase client and types
-├── pages/            # Main page components
-└── lib/              # Utility functions
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Supabase account
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd science-club-booking
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables:
-```bash
-# The Supabase configuration is already included in the client
-# No additional environment variables needed
-```
-
-4. Start the development server:
-```bash
-npm run dev
-```
-
-The application will be available at `http://localhost:5173`
-
-## Database Setup
-
-The application uses Supabase with the following main tables:
-- `profiles` - User profiles with role management
-- `halls` - Hall information
-- `teachers` - Teacher records
-- `academic_stages` - Academic stage definitions
-- `bookings` - Booking records with conflict detection
-
-Row Level Security (RLS) is enabled for data protection.
-
-## User Roles
-
-- **Owner**: Full system access
-- **Manager**: Can manage bookings, teachers, and stages
-- **Space Manager**: Basic access (default for new users)
-
-## Deployment
-
-### Deploying to Render
-
-1. **Create a Render Account**: Sign up at [render.com](https://render.com)
-
-2. **Connect Repository**: 
-   - Go to your Render dashboard
-   - Click "New +" and select "Static Site"
-   - Connect your GitHub repository
-
-3. **Configure Build Settings**:
-   ```
-   Build Command: npm run build
-   Publish Directory: dist
-   ```
-
-4. **Environment Variables**:
-   - No additional environment variables needed (Supabase config is included)
-
-5. **Deploy**:
-   - Click "Create Static Site"
-   - Render will automatically build and deploy your application
-   - You'll get a URL like `https://your-app-name.onrender.com`
-
-6. **Custom Domain** (Optional):
-   - In your Render dashboard, go to Settings
-   - Add your custom domain under "Custom Domains"
-   - Update your DNS settings as instructed
-
-### Deploying to Amazon EC2
-
-#### Prerequisites
-- AWS Account
-- Basic knowledge of Linux/Ubuntu
-- Domain name (optional)
-
-#### Step 1: Launch EC2 Instance
-
-1. **Login to AWS Console** and navigate to EC2
-2. **Launch Instance**:
-   - Choose Ubuntu Server 22.04 LTS
-   - Instance type: t2.micro (free tier eligible)
-   - Create new key pair or use existing
-   - Security Group: Allow HTTP (80), HTTPS (443), and SSH (22)
-3. **Launch the instance**
-
-#### Step 2: Connect to Your Instance
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
 ```bash
-ssh -i your-key.pem ubuntu@your-ec2-public-ip
+npm i supabase --save-dev
 ```
 
-#### Step 3: Install Dependencies
+To install the beta release channel:
 
 ```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install Node.js 18
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install Nginx
-sudo apt install nginx -y
-
-# Install PM2 (Process Manager)
-sudo npm install -g pm2
-
-# Install Git
-sudo apt install git -y
+npm i supabase@beta --save-dev
 ```
 
-#### Step 4: Clone and Build Your Application
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
+```
+
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+
+<details>
+  <summary><b>macOS</b></summary>
+
+  Available via [Homebrew](https://brew.sh). To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Windows</b></summary>
+
+  Available via [Scoop](https://scoop.sh). To install:
+
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
+
+  To upgrade:
+
+  ```powershell
+  scoop update supabase
+  ```
+</details>
+
+<details>
+  <summary><b>Linux</b></summary>
+
+  Available via [Homebrew](https://brew.sh) and Linux packages.
+
+  #### via Homebrew
+
+  To install:
+
+  ```sh
+  brew install supabase/tap/supabase
+  ```
+
+  To upgrade:
+
+  ```sh
+  brew upgrade supabase
+  ```
+
+  #### via Linux packages
+
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
+
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
+
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
+
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
+
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
 
 ```bash
-# Clone your repository
-git clone <your-repository-url>
-cd science-club-booking
-
-# Install dependencies
-npm install
-
-# Build the application
-npm run build
+supabase bootstrap
 ```
 
-#### Step 5: Set Up Nginx
+Or using npx:
 
 ```bash
-# Create Nginx configuration
-sudo nano /etc/nginx/sites-available/science-club
+npx supabase bootstrap
 ```
 
-Add the following configuration:
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com www.your-domain.com;  # Replace with your domain
-    
-    root /home/ubuntu/science-club-booking/dist;
-    index index.html;
-    
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-    
-    # Gzip compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
+## Docs
+
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+
+## Breaking changes
+
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+
+## Developing
+
+To run from source:
+
+```sh
+# Go >= 1.22
+go run . help
 ```
-
-Enable the site:
-
-```bash
-# Enable the site
-sudo ln -s /etc/nginx/sites-available/science-club /etc/nginx/sites-enabled/
-
-# Remove default site
-sudo rm /etc/nginx/sites-enabled/default
-
-# Test Nginx configuration
-sudo nginx -t
-
-# Restart Nginx
-sudo systemctl restart nginx
-```
-
-#### Step 6: Set Up SSL with Let's Encrypt (Optional)
-
-```bash
-# Install Certbot
-sudo apt install certbot python3-certbot-nginx -y
-
-# Obtain SSL certificate
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
-
-# Auto-renewal (certbot sets this up automatically)
-sudo systemctl status certbot.timer
-```
-
-#### Step 7: Set Up Automatic Deployment (Optional)
-
-Create a deployment script:
-
-```bash
-nano deploy.sh
-```
-
-Add:
-
-```bash
-#!/bin/bash
-cd /home/ubuntu/science-club-booking
-git pull origin main
-npm install
-npm run build
-sudo systemctl reload nginx
-echo "Deployment completed at $(date)"
-```
-
-Make it executable:
-
-```bash
-chmod +x deploy.sh
-```
-
-#### Step 8: Configure Firewall
-
-```bash
-# Enable UFW
-sudo ufw enable
-
-# Allow SSH, HTTP, and HTTPS
-sudo ufw allow ssh
-sudo ufw allow 'Nginx Full'
-
-# Check status
-sudo ufw status
-```
-
-#### Step 9: Final Steps
-
-1. **Point your domain** to your EC2 instance's public IP
-2. **Test your application** by visiting your domain
-3. **Set up monitoring** (optional):
-
-```bash
-# Monitor Nginx logs
-sudo tail -f /var/log/nginx/access.log
-
-# Monitor system resources
-htop
-```
-
-#### Troubleshooting
-
-**Common Issues:**
-
-1. **Permission Issues:**
-   ```bash
-   sudo chown -R ubuntu:ubuntu /home/ubuntu/science-club-booking
-   ```
-
-2. **Nginx Not Starting:**
-   ```bash
-   sudo systemctl status nginx
-   sudo journalctl -u nginx
-   ```
-
-3. **Build Failures:**
-   ```bash
-   # Check Node.js version
-   node --version
-   # Should be 18+
-   ```
-
-4. **Domain Not Resolving:**
-   - Check DNS settings
-   - Wait for DNS propagation (up to 48 hours)
-
-## Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## Support
-
-For support and questions, please contact the development team.
-
-## License
-
-This project is licensed under the MIT License.

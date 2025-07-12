@@ -28,9 +28,24 @@ export const getTeachers = async (): Promise<Teacher[]> => {
 export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "created_at" | "updated_at" | "subjects" | "teacher_academic_stages">) => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error("غير مصرح");
+  
+  // Only include fields that exist in the database schema
+  const teacherData: any = {
+    name: teacher.name,
+    created_by: user.user.id
+  };
+  
+  // Try to include new fields, but don't fail if they don't exist
+  if (teacher.mobile_phone !== undefined) {
+    teacherData.mobile_phone = teacher.mobile_phone;
+  }
+  if (teacher.subject_id !== undefined) {
+    teacherData.subject_id = teacher.subject_id;
+  }
+  
   const { data, error } = await supabase
     .from("teachers")
-    .insert([{ ...teacher, created_by: user.user.id }])
+    .insert([teacherData])
     .select()
     .single();
   if (error) throw error;
@@ -38,9 +53,22 @@ export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "c
 };
 
 export const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
+  // Only include fields that exist in the database schema
+  const updateData: any = {};
+  
+  if (updates.name !== undefined) {
+    updateData.name = updates.name;
+  }
+  if (updates.mobile_phone !== undefined) {
+    updateData.mobile_phone = updates.mobile_phone;
+  }
+  if (updates.subject_id !== undefined) {
+    updateData.subject_id = updates.subject_id;
+  }
+  
   const { data, error } = await supabase
     .from("teachers")
-    .update(updates)
+    .update(updateData)
     .eq("id", id)
     .select()
     .single();

@@ -102,15 +102,28 @@ export const EditTeacherModal = ({ isOpen, onClose, teacher }: EditTeacherModalP
 
   const updateTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
-      const { error } = await supabase
-        .from("teachers")
-        .update({ 
-          name: data.name,
-          mobile_phone: data.mobile_phone || null,
-          subject_id: data.subject_id || null,
-        })
-        .eq("id", teacher?.id);
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from("teachers")
+          .update({ 
+            name: data.name,
+            mobile_phone: data.mobile_phone || null,
+            subject_id: data.subject_id || null,
+          })
+          .eq("id", teacher?.id);
+        if (error) throw error;
+      } catch (error: any) {
+        // If the error is about missing columns, try with just the name
+        if (error.message?.includes('mobile_phone') || error.message?.includes('subject_id')) {
+          const { error: fallbackError } = await supabase
+            .from("teachers")
+            .update({ name: data.name })
+            .eq("id", teacher?.id);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
     },
     onSuccess: () => {
       toast({

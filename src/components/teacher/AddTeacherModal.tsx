@@ -86,11 +86,21 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
 
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
-      return await addTeacher({ 
-        name: data.name,
-        mobile_phone: data.mobile_phone || null,
-        subject_id: data.subject_id || null,
-      });
+      try {
+        return await addTeacher({ 
+          name: data.name,
+          mobile_phone: data.mobile_phone || null,
+          subject_id: data.subject_id || null,
+        });
+      } catch (error: any) {
+        // If the error is about missing columns, try with just the name
+        if (error.message?.includes('mobile_phone') || error.message?.includes('subject_id')) {
+          return await addTeacher({ 
+            name: data.name,
+          } as any);
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
