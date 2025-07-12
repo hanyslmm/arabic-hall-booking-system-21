@@ -96,45 +96,33 @@ export const EditTeacherModal = ({ isOpen, onClose, teacher }: EditTeacherModalP
     mutationFn: async (data: TeacherFormData) => {
       if (!teacher?.id) throw new Error("معرف المعلم مفقود");
       
-      try {
-        const { updateTeacher } = await import('@/api/teachers');
-        const updatedTeacher = await updateTeacher(teacher.id, {
-          name: data.name,
-          mobile_phone: data.mobile_phone || null,
-          subject_id: data.subject_id || null,
-        });
+      const { updateTeacher } = await import('@/api/teachers');
+      const updatedTeacher = await updateTeacher(teacher.id, {
+        name: data.name,
+        mobile_phone: data.mobile_phone || null,
+        subject_id: data.subject_id || null,
+      });
 
-        // Try to update academic stages if selected
-        if (data.academic_stage_ids && data.academic_stage_ids.length > 0) {
-          try {
-            // First, remove existing academic stages
-            await (supabase as any)
+      // Update academic stages if selected
+      if (data.academic_stage_ids) {
+        // First, remove existing academic stages
+        await (supabase as any)
+          .from('teacher_academic_stages')
+          .delete()
+          .eq('teacher_id', teacher.id);
+
+        // Then add new ones
+        if (data.academic_stage_ids.length > 0) {
+          const academicStagePromises = data.academic_stage_ids.map(async (stageId) => {
+            return (supabase as any)
               .from('teacher_academic_stages')
-              .delete()
-              .eq('teacher_id', teacher.id);
-
-            // Then add new ones
-            const academicStagePromises = data.academic_stage_ids.map(async (stageId) => {
-              return (supabase as any)
-                .from('teacher_academic_stages')
-                .insert({ teacher_id: teacher.id, academic_stage_id: stageId });
-            });
-            await Promise.all(academicStagePromises);
-          } catch (error: any) {
-            console.warn("Could not update academic stages - migration may not be applied yet:", error);
-            // Don't throw error here - teacher was already updated successfully
-          }
+              .insert({ teacher_id: teacher.id, academic_stage_id: stageId });
+          });
+          await Promise.all(academicStagePromises);
         }
-
-        return updatedTeacher;
-      } catch (error: any) {
-        // If the error is about missing columns, try with just the name
-        if (error.message?.includes('mobile_phone') || error.message?.includes('subject_id')) {
-          const { updateTeacher } = await import('@/api/teachers');
-          return await updateTeacher(teacher.id, { name: data.name });
-        }
-        throw error;
       }
+
+      return updatedTeacher;
     },
     onSuccess: () => {
       toast({

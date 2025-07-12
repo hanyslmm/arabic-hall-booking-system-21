@@ -78,39 +78,24 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
 
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
-      try {
-        const teacher = await addTeacher({ 
-          name: data.name,
-          mobile_phone: data.mobile_phone || null,
-          subject_id: data.subject_id || null,
+      const { addTeacher } = await import('@/api/teachers');
+      const teacher = await addTeacher({ 
+        name: data.name,
+        mobile_phone: data.mobile_phone || null,
+        subject_id: data.subject_id || null,
+      });
+
+      // If academic stages are selected and teacher was created successfully, save them
+      if (data.academic_stage_ids && data.academic_stage_ids.length > 0 && teacher) {
+        const academicStagePromises = data.academic_stage_ids.map(async (stageId) => {
+          return (supabase as any)
+            .from('teacher_academic_stages')
+            .insert({ teacher_id: teacher.id, academic_stage_id: stageId });
         });
-
-        // If academic stages are selected and teacher was created successfully, try to save them
-        if (data.academic_stage_ids && data.academic_stage_ids.length > 0 && teacher) {
-          try {
-            // Try to save academic stages - this will only work if the database migration is applied
-            const academicStagePromises = data.academic_stage_ids.map(async (stageId) => {
-              return (supabase as any)
-                .from('teacher_academic_stages')
-                .insert({ teacher_id: teacher.id, academic_stage_id: stageId });
-            });
-            await Promise.all(academicStagePromises);
-          } catch (error: any) {
-            console.warn("Could not save academic stages - migration may not be applied yet:", error);
-            // Don't throw error here - teacher was already created successfully
-          }
-        }
-
-        return teacher;
-      } catch (error: any) {
-        // If the error is about missing columns, try with just the name
-        if (error.message?.includes('mobile_phone') || error.message?.includes('subject_id')) {
-          return await addTeacher({ 
-            name: data.name,
-          } as any);
-        }
-        throw error;
+        await Promise.all(academicStagePromises);
       }
+
+      return teacher;
     },
     onSuccess: () => {
       toast({

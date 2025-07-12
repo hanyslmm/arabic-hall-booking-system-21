@@ -38,7 +38,7 @@ export const getTeachers = async (): Promise<Teacher[]> => {
   }
   
   // Fallback: just get basic teacher data
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("teachers")
     .select("*")
     .order("name");
@@ -64,7 +64,7 @@ export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "c
     teacherData.subject_id = teacher.subject_id;
   }
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("teachers")
     .insert([teacherData])
     .select()
@@ -87,7 +87,7 @@ export const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
     updateData.subject_id = updates.subject_id;
   }
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("teachers")
     .update(updateData)
     .eq("id", id)
@@ -98,7 +98,7 @@ export const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
 };
 
 export const deleteTeacher = async (id: string) => {
-  const { error } = await supabase.from("teachers").delete().eq("id", id);
+  const { error } = await (supabase as any).from("teachers").delete().eq("id", id);
   if (error) throw error;
   return id;
 };
