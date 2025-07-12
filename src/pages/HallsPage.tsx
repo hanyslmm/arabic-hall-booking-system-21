@@ -8,6 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Building } from "lucide-react";
 import { HallScheduleModal } from "@/components/hall/HallScheduleModal";
+import { AddHallModal } from "@/components/hall/AddHallModal";
+import { Button } from "@/components/ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface Hall {
   id: string;
@@ -18,7 +23,8 @@ interface Hall {
 
 const HallsPage = () => {
   const [selectedHall, setSelectedHall] = useState<{ id: string; name: string } | null>(null);
-  const { profile, isAdmin } = useAuth();
+  const { profile, isAdmin, canManageData } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: halls, isLoading } = useQuery({
     queryKey: ['halls'],
@@ -49,6 +55,31 @@ const HallsPage = () => {
     setSelectedHall({ id: hall.id, name: hall.name });
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: async (hallId: string) => {
+      const { error } = await supabase
+        .from('halls')
+        .delete()
+        .eq('id', hallId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['halls'] });
+      toast.success('تم حذف القاعة بنجاح');
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء حذف القاعة');
+      console.error('Error deleting hall:', error);
+    }
+  });
+
+  const handleDelete = (e: React.MouseEvent, hallId: string) => {
+    e.stopPropagation();
+    if (confirm('هل أنت متأكد من حذف هذه القاعة؟')) {
+      deleteMutation.mutate(hallId);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
@@ -65,9 +96,12 @@ const HallsPage = () => {
               عرض وإدارة القاعات في النظام
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            <span className="font-semibold">{halls?.length || 0} قاعة</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              <span className="font-semibold">{halls?.length || 0} قاعة</span>
+            </div>
+            {canManageData && <AddHallModal />}
           </div>
         </div>
 
@@ -108,7 +142,22 @@ const HallsPage = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center justify-between">
                     <span>{hall.name}</span>
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      {canManageData && (
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <AddHallModal hall={hall} isEdit={true} />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => handleDelete(e, hall.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

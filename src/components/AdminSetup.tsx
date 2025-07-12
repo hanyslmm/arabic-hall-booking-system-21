@@ -202,27 +202,6 @@ export const AdminSetup = () => {
           </CardContent>
         </Card>
 
-        {/* Force Create Profile */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-blue-600" />
-              إنشاء حساب sc_manager
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-gray-600">
-              إنشاء حساب جديد: sc_manager مع كلمة مرور Voda@123
-            </p>
-            <Button
-              onClick={handleCreateScManager}
-              disabled={isCreating}
-              className="w-full"
-            >
-              {isCreating ? "جاري الإنشاء..." : "إنشاء حساب sc_manager"}
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Force Create Profile */}
         <Card>
