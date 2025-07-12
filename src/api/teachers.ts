@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 export type Teacher = {
   id: string;
   name: string;
+  mobile_phone?: string | null;
+  subject_id?: string | null;
   created_by: string;
   created_at: string;
+  updated_at: string;
   // Add other fields as needed
 };
 

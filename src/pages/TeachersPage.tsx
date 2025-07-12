@@ -118,6 +118,9 @@ const TeachersPage = () => {
                     <TableHead className="text-right">اسم المعلم</TableHead>
                     <TableHead className="text-right">تاريخ الإضافة</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">رقم الجوال</TableHead>
+                    <TableHead className="text-right">المادة الدراسية</TableHead>
+                    <TableHead className="text-right">المراحل الدراسية</TableHead>
                     {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -134,6 +137,15 @@ const TeachersPage = () => {
                         <Badge variant="outline" className="text-green-600">
                           نشط
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {/* رقم الجوال */}
+                      </TableCell>
+                      <TableCell>
+                        {/* المادة الدراسية */}
+                      </TableCell>
+                      <TableCell>
+                        {/* المراحل الدراسية */}
                       </TableCell>
                       {canManage && (
                         <TableCell>

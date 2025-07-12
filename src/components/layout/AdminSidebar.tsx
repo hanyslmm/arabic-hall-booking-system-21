@@ -73,9 +73,15 @@ const navigation = [
         description: "إدارة بيانات المعلمين",
       },
       {
+        title: "المواد الدراسية",
+        url: "/subjects",
+        icon: BookOpen,
+        description: "إدارة المواد الدراسية",
+      },
+      {
         title: "المراحل التعليمية",
         url: "/stages",
-        icon: BookOpen,
+        icon: GraduationCap,
         description: "إدارة المراحل الدراسية",
       },
     ],
