@@ -149,10 +149,10 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
 
             {/* Mobile Phone */}
             <div className="space-y-2">
-              <Label htmlFor="mobile_phone">رقم الجوال</Label>
+              <Label htmlFor="mobile_phone">رقم التلفون</Label>
               <Input
                 id="mobile_phone"
-                placeholder="أدخل رقم الجوال"
+                placeholder="أدخل رقم التلفون"
                 {...form.register('mobile_phone')}
               />
             </div>

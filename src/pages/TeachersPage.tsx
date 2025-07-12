@@ -16,7 +16,14 @@ import { getTeachers, deleteTeacher } from "@/api/teachers";
 interface Teacher {
   id: string;
   name: string;
+  mobile_phone?: string | null;
+  subject_id?: string | null;
   created_at: string;
+  // Relations
+  subjects?: { name: string } | null;
+  teacher_academic_stages?: Array<{
+    academic_stages: { name: string };
+  }>;
 }
 
 const TeachersPage = () => {
@@ -118,7 +125,7 @@ const TeachersPage = () => {
                     <TableHead className="text-right">اسم المعلم</TableHead>
                     <TableHead className="text-right">تاريخ الإضافة</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">رقم الجوال</TableHead>
+                    <TableHead className="text-right">رقم التلفون</TableHead>
                     <TableHead className="text-right">المادة الدراسية</TableHead>
                     <TableHead className="text-right">المراحل الدراسية</TableHead>
                     {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
@@ -139,13 +146,17 @@ const TeachersPage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {/* رقم الجوال */}
+                        {teacher.mobile_phone || "غير محدد"}
                       </TableCell>
                       <TableCell>
-                        {/* المادة الدراسية */}
+                        {teacher.subjects?.name || "غير محدد"}
                       </TableCell>
                       <TableCell>
-                        {/* المراحل الدراسية */}
+                        {teacher.teacher_academic_stages && teacher.teacher_academic_stages.length > 0
+                          ? teacher.teacher_academic_stages
+                              .map(stage => stage.academic_stages.name)
+                              .join(", ")
+                          : "غير محدد"}
                       </TableCell>
                       {canManage && (
                         <TableCell>
