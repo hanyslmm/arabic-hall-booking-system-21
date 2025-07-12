@@ -16,31 +16,15 @@ export type Teacher = {
 };
 
 export const getTeachers = async (): Promise<Teacher[]> => {
-  try {
-    // Try to get teachers with related data first
-    const { data: teachersWithRelations, error: relationsError } = await supabase
-      .from("teachers")
-      .select(`
-        *,
-        subjects:subject_id(name),
-        teacher_academic_stages(
-          academic_stages(name)
-        )
-      `)
-      .order("name");
-    
-    if (!relationsError && teachersWithRelations) {
-      return teachersWithRelations as any[];
-    }
-  } catch (e) {
-    // If the above fails (missing tables/columns), fall back to basic query
-    console.warn("Failed to fetch teachers with relations, falling back to basic query:", e);
-  }
-  
-  // Fallback: just get basic teacher data
   const { data, error } = await supabase
     .from("teachers")
-    .select("*")
+    .select(`
+      *,
+      subjects:subject_id(name),
+      teacher_academic_stages(
+        academic_stages(name)
+      )
+    `)
     .order("name");
   
   if (error) {
@@ -48,26 +32,19 @@ export const getTeachers = async (): Promise<Teacher[]> => {
     throw error;
   }
 
-  return data as Teacher[];
+  return data as any[];
 };
 
 export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "created_at" | "updated_at" | "subjects" | "teacher_academic_stages">) => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error("غير مصرح");
   
-  // Build teacher data, including optional fields if they exist in the schema
   const teacherData: any = {
     name: teacher.name,
-    created_by: user.user.id
+    created_by: user.user.id,
+    mobile_phone: teacher.mobile_phone || null,
+    subject_id: teacher.subject_id || null,
   };
-  
-  // Try to include new fields, but don't fail if they don't exist
-  if (teacher.mobile_phone !== undefined) {
-    teacherData.mobile_phone = teacher.mobile_phone;
-  }
-  if (teacher.subject_id !== undefined) {
-    teacherData.subject_id = teacher.subject_id;
-  }
   
   const { data, error } = await supabase
     .from("teachers")
@@ -80,7 +57,6 @@ export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "c
 };
 
 export const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
-  // Build update data, including optional fields if they exist in the schema
   const updateData: any = {};
   
   if (updates.name !== undefined) {
@@ -111,33 +87,25 @@ export const deleteTeacher = async (id: string) => {
 };
 
 export const addTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
-  try {
-    const academicStagePromises = stageIds.map(async (stageId) => {
-      return (supabase as any)
-        .from('teacher_academic_stages')
-        .insert({ teacher_id: teacherId, academic_stage_id: stageId });
-    });
-    await Promise.all(academicStagePromises);
-  } catch (error) {
-    console.warn("Failed to add teacher academic stages - table may not exist:", error);
-    // Don't throw error, just log warning
-  }
+  if (stageIds.length === 0) return;
+  
+  const academicStagePromises = stageIds.map(async (stageId) => {
+    return supabase
+      .from('teacher_academic_stages')
+      .insert({ teacher_id: teacherId, academic_stage_id: stageId });
+  });
+  await Promise.all(academicStagePromises);
 };
 
 export const updateTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
-  try {
-    // First, remove existing stages
-    await (supabase as any)
-      .from('teacher_academic_stages')
-      .delete()
-      .eq('teacher_id', teacherId);
-    
-    // Then add new stages
-    if (stageIds.length > 0) {
-      await addTeacherAcademicStages(teacherId, stageIds);
-    }
-  } catch (error) {
-    console.warn("Failed to update teacher academic stages - table may not exist:", error);
-    // Don't throw error, just log warning
+  // First, remove existing stages
+  await supabase
+    .from('teacher_academic_stages')
+    .delete()
+    .eq('teacher_id', teacherId);
+  
+  // Then add new stages
+  if (stageIds.length > 0) {
+    await addTeacherAcademicStages(teacherId, stageIds);
   }
 };

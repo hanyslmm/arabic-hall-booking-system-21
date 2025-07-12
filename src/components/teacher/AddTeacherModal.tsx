@@ -82,11 +82,23 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
       const { addTeacher, addTeacherAcademicStages } = await import('@/api/teachers');
-      const teacher = await addTeacher({ 
+      
+      // Prepare teacher data with proper handling of empty strings
+      const teacherData: any = {
         name: data.name,
-        mobile_phone: data.mobile_phone || null,
-        subject_id: data.subject_id || null,
-      });
+      };
+      
+      // Only include mobile_phone if it has a value
+      if (data.mobile_phone && data.mobile_phone.trim() !== '') {
+        teacherData.mobile_phone = data.mobile_phone.trim();
+      }
+      
+      // Only include subject_id if it has a value
+      if (data.subject_id && data.subject_id !== '') {
+        teacherData.subject_id = data.subject_id;
+      }
+      
+      const teacher = await addTeacher(teacherData);
 
       // If academic stages are selected and teacher was created successfully, save them
       if (data.academic_stage_ids && data.academic_stage_ids.length > 0 && teacher) {

@@ -87,11 +87,22 @@ export const EditTeacherModal = ({ isOpen, onClose, teacher }: EditTeacherModalP
       if (!teacher?.id) throw new Error("No teacher ID");
       const { updateTeacher, updateTeacherAcademicStages } = await import('@/api/teachers');
       
-      const updatedTeacher = await updateTeacher(teacher.id, { 
+      // Prepare update data with proper handling of empty strings
+      const updateData: any = {
         name: data.name,
-        mobile_phone: data.mobile_phone || null,
-        subject_id: data.subject_id || null,
-      });
+      };
+      
+      // Only include mobile_phone if it has a value
+      if (data.mobile_phone && data.mobile_phone.trim() !== '') {
+        updateData.mobile_phone = data.mobile_phone.trim();
+      }
+      
+      // Only include subject_id if it has a value
+      if (data.subject_id && data.subject_id !== '') {
+        updateData.subject_id = data.subject_id;
+      }
+      
+      const updatedTeacher = await updateTeacher(teacher.id, updateData);
 
       // Update academic stages if they are selected
       if (data.academic_stage_ids) {

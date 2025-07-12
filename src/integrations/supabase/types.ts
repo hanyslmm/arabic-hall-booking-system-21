@@ -252,26 +252,100 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subjects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_academic_stages: {
+        Row: {
+          academic_stage_id: string
+          created_at: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          academic_stage_id: string
+          created_at?: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          academic_stage_id?: string
+          created_at?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_academic_stages_academic_stage_id_fkey"
+            columns: ["academic_stage_id"]
+            isOneToOne: false
+            referencedRelation: "academic_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_academic_stages_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teachers: {
         Row: {
           created_at: string | null
           created_by: string | null
           id: string
+          mobile_phone: string | null
           name: string
+          subject_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          mobile_phone?: string | null
           name: string
+          subject_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          mobile_phone?: string | null
           name?: string
+          subject_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -280,6 +354,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teachers_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]

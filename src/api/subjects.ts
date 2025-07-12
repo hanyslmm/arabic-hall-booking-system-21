@@ -25,80 +25,47 @@ const fallbackSubjects: Subject[] = [
 ];
 
 export const getSubjects = async (): Promise<Subject[]> => {
-  try {
-    const { data, error } = await (supabase as any)
-      .from("subjects")
-      .select("*")
-      .order("name");
+  const { data, error } = await supabase
+    .from("subjects")
+    .select("*")
+    .order("name");
 
-    if (error) {
-      console.warn("Subjects table not found, using fallback data:", error);
-      return fallbackSubjects;
-    }
-
-    return data as Subject[];
-  } catch (error) {
-    console.warn("Error fetching subjects, using fallback data:", error);
-    return fallbackSubjects;
+  if (error) {
+    console.error("Error fetching subjects:", error);
+    throw error;
   }
+
+  return data as Subject[];
 };
 
 export const addSubject = async (subject: { name: string }) => {
-  try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("غير مصرح");
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error("غير مصرح");
 
-    const { data, error } = await (supabase as any)
-      .from("subjects")
-      .insert([{ ...subject, created_by: user.user.id }])
-      .select()
-      .single();
-    
-    if (error) {
-      console.warn("Cannot add subject - table may not exist:", error);
-      throw new Error("لا يمكن إضافة المادة في الوقت الحالي");
-    }
-    
-    return data as Subject;
-  } catch (error) {
-    console.warn("Error adding subject:", error);
-    throw new Error("لا يمكن إضافة المادة في الوقت الحالي");
-  }
+  const { data, error } = await supabase
+    .from("subjects")
+    .insert([{ ...subject, created_by: user.user.id }])
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data as Subject;
 };
 
 export const updateSubject = async (id: string, updates: { name?: string }) => {
-  try {
-    const { data, error } = await (supabase as any)
-      .from("subjects")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.warn("Cannot update subject - table may not exist:", error);
-      throw new Error("لا يمكن تحديث المادة في الوقت الحالي");
-    }
-    
-    return data as Subject;
-  } catch (error) {
-    console.warn("Error updating subject:", error);
-    throw new Error("لا يمكن تحديث المادة في الوقت الحالي");
-  }
+  const { data, error } = await supabase
+    .from("subjects")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data as Subject;
 };
 
 export const deleteSubject = async (id: string) => {
-  try {
-    const { error } = await (supabase as any).from("subjects").delete().eq("id", id);
-    
-    if (error) {
-      console.warn("Cannot delete subject - table may not exist:", error);
-      throw new Error("لا يمكن حذف المادة في الوقت الحالي");
-    }
-    
-    return id;
-  } catch (error) {
-    console.warn("Error deleting subject:", error);
-    throw new Error("لا يمكن حذف المادة في الوقت الحالي");
-  }
+  const { error } = await supabase.from("subjects").delete().eq("id", id);
+  if (error) throw error;
+  return id;
 };
