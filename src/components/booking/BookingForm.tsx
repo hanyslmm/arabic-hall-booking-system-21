@@ -15,8 +15,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
+import { ar } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { formatArabicDate } from "@/utils/dateUtils";
 
 const bookingSchema = z.object({
   hall_id: z.string().min(1, "يرجى اختيار القاعة"),
@@ -274,7 +276,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.watch('start_date') ? format(form.watch('start_date'), "PPP") : <span>اختر التاريخ</span>}
+                  {form.watch('start_date') ? formatArabicDate(form.watch('start_date')) : <span>اختر التاريخ</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -305,7 +307,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.watch('end_date') ? format(form.watch('end_date'), "PPP") : <span>اختر التاريخ (اختياري)</span>}
+                  {form.watch('end_date') ? formatArabicDate(form.watch('end_date')) : <span>اختر التاريخ (اختياري)</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Building } from "lucide-react";
 import { HallScheduleModal } from "@/components/hall/HallScheduleModal";
+import { formatShortArabicDate } from "@/utils/dateUtils";
 import { AddHallModal } from "@/components/hall/AddHallModal";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
@@ -173,7 +174,7 @@ const HallsPage = () => {
                     </div>
                     
                     <div className="text-xs text-muted-foreground">
-                      تم الإنشاء: {new Date(hall.created_at).toLocaleDateString('ar-SA')}
+                      تم الإنشاء: {formatShortArabicDate(hall.created_at)}
                     </div>
                     
                     <p className="text-xs text-muted-foreground mt-2">

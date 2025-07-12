@@ -7,10 +7,10 @@ A comprehensive hall booking management system built with React, TypeScript, and
 
 - 🏢 Hall Management & Booking System
 - 👥 User Authentication & Role-based Access Control
-- 📅 Schedule Management with Weekly View
+- 📅 Schedule Management with Weekly View (Gregorian Calendar)
 - 👨‍🏫 Teacher Management
 - 📊 Dashboard with Statistics
-- 🌍 Arabic RTL Support
+- 🌍 Arabic RTL Support with Gregorian Calendar (ميلادي)
 - 📱 Responsive Design
 
 ## Tech Stack

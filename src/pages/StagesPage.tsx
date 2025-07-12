@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AddStageModal } from "@/components/stages/AddStageModal";
+import { formatShortArabicDate } from "@/utils/dateUtils";
 
 interface AcademicStage {
   id: string;
@@ -138,7 +139,7 @@ const StagesPage = () => {
                         {stage.name}
                       </TableCell>
                       <TableCell>
-                        {new Date(stage.created_at).toLocaleDateString('ar-SA')}
+                        {formatShortArabicDate(stage.created_at)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-green-600">

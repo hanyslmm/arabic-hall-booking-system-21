@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, GraduationCap } from "lucide-react";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
+import { formatShortArabicDate } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { getTeachers, deleteTeacher } from "@/api/teachers";
 
@@ -127,7 +128,7 @@ const TeachersPage = () => {
                         {teacher.name}
                       </TableCell>
                       <TableCell>
-                        {new Date(teacher.created_at).toLocaleDateString('ar-SA')}
+                        {formatShortArabicDate(teacher.created_at)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-green-600">

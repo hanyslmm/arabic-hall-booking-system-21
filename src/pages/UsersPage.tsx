@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Users, UserCog } from "lucide-react";
 import { AddUserModal } from "@/components/user/AddUserModal";
+import { formatShortArabicDate } from "@/utils/dateUtils";
 
 interface UserProfile {
   id: string;
@@ -183,7 +184,7 @@ const UsersPage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(user.created_at).toLocaleDateString('ar-SA')}
+                        {formatShortArabicDate(user.created_at)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

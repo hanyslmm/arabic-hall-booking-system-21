@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, Users, GraduationCap } from "lucide-react";
+import { formatShortArabicDate, formatArabicTime } from "@/utils/dateUtils";
 
 interface HallScheduleModalProps {
   hallId: string | null;
@@ -58,18 +59,6 @@ export const HallScheduleModal = ({ hallId, hallName, isOpen, onClose }: HallSch
     enabled: !!hallId,
   });
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('ar-SA', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ar-SA');
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -92,7 +81,7 @@ export const HallScheduleModal = ({ hallId, hallName, isOpen, onClose }: HallSch
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Clock className="h-5 w-5 text-primary" />
-                        {formatTime(booking.start_time)}
+                        {formatArabicTime(booking.start_time)}
                       </CardTitle>
                       <Badge variant="outline" className="bg-success/10 text-success border-success">
                         نشط
@@ -134,11 +123,11 @@ export const HallScheduleModal = ({ hallId, hallName, isOpen, onClose }: HallSch
                       
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-muted-foreground">
-                          من: <span className="font-medium">{formatDate(booking.start_date)}</span>
+                          من: <span className="font-medium">{formatShortArabicDate(booking.start_date)}</span>
                         </span>
                         {booking.end_date && (
                           <span className="text-muted-foreground">
-                            إلى: <span className="font-medium">{formatDate(booking.end_date)}</span>
+                            إلى: <span className="font-medium">{formatShortArabicDate(booking.end_date)}</span>
                           </span>
                         )}
                       </div>
