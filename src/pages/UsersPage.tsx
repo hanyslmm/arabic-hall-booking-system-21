@@ -26,6 +26,7 @@ const UsersPage = () => {
   const { profile, canManageUsers, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isAddUserOpen, setAddUserOpen] = useState(false);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
@@ -118,8 +119,6 @@ const UsersPage = () => {
       </div>
     );
   }
-
-  const [isAddUserOpen, setAddUserOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">

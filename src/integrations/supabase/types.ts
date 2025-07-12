@@ -368,10 +368,6 @@ export type Database = {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
       is_super_admin: {
         Args: { user_id: string }
         Returns: boolean
