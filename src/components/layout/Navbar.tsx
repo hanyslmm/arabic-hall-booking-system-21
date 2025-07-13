@@ -104,6 +104,15 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
                   <Settings className="h-4 w-4" />
                   المراحل
                 </Button>
+                <Button
+                  variant={location.pathname === "/subjects" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate("/subjects")}
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  المواد
+                </Button>
               </>
             )}
             {isOwnerOrAdmin && (
@@ -179,6 +188,10 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
                   <DropdownMenuItem onClick={() => navigate("/stages")} className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>المراحل</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/subjects")} className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>المواد</span>
                   </DropdownMenuItem>
                 </>
               )}

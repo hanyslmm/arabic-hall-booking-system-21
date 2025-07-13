@@ -16,19 +16,32 @@ export const StatsCards = () => {
         { count: hallsCount },
         { count: teachersCount },
         { count: stagesCount },
-        { count: bookingsCount }
+        { count: bookingsCount },
+        workingHoursData,
+        bookingsData
       ] = await Promise.all([
         supabase.from('halls').select('*', { count: 'exact', head: true }),
         supabase.from('teachers').select('*', { count: 'exact', head: true }),
         supabase.from('academic_stages').select('*', { count: 'exact', head: true }),
-        supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'active')
+        supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('working_hours').select('*'),
+        supabase.from('bookings').select('hall_id, start_time, days_of_week').eq('status', 'active')
       ]);
+
+      // Calculate occupancy ratio
+      const totalWorkingHours = workingHoursData.data?.length || 0;
+      const totalBookedSlots = bookingsData.data?.reduce((acc: number, booking: any) => {
+        return acc + (booking.days_of_week?.length || 0);
+      }, 0) || 0;
+      
+      const occupancyRatio = totalWorkingHours > 0 ? Math.round((totalBookedSlots / totalWorkingHours) * 100) : 0;
 
       return {
         halls: hallsCount || 0,
         teachers: teachersCount || 0,
         stages: stagesCount || 0,
-        activeBookings: bookingsCount || 0
+        activeBookings: bookingsCount || 0,
+        occupancyRatio
       };
     }
   });
@@ -61,11 +74,18 @@ export const StatsCards = () => {
       icon: Calendar,
       color: "text-destructive",
       onClick: () => navigate('/bookings')
+    },
+    {
+      title: "نسبة الإشغال",
+      value: `${stats?.occupancyRatio || 0}%`,
+      icon: Calendar,
+      color: "text-info",
+      onClick: () => navigate('/bookings')
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {statsData.map((stat, index) => (
         <Card 
           key={index} 
