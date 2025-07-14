@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -34,11 +33,12 @@ export default function UsersPage() {
     );
   }
 
+  // Check if user has permission to access users page
   if (!user || (!isOwner && !isAdmin)) {
     return <Navigate to="/login" replace />;
   }
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: getUsers,
   });
@@ -108,6 +108,16 @@ export default function UsersPage() {
       <AppLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-lg">جاري التحميل...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg text-destructive">خطأ في تحميل البيانات: {error.message}</div>
         </div>
       </AppLayout>
     );
