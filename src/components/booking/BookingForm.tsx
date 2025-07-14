@@ -26,9 +26,6 @@ const bookingSchema = z.object({
   academic_stage_id: z.string().min(1, "يرجى اختيار المرحلة الدراسية"),
   number_of_students: z.number().min(1, "يجب أن يكون عدد الطلاب أكبر من صفر"),
   start_time: z.string().min(1, "يرجى اختيار وقت البداية"),
-  end_time: z.string().min(1, "يرجى اختيار وقت النهاية"),
-  start_date: z.date({ required_error: "يرجى اختيار تاريخ البداية" }),
-  end_date: z.date().optional(),
   days_of_week: z.array(z.string()).min(1, "يرجى اختيار يوم واحد على الأقل"),
 });
 
@@ -61,26 +58,6 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
     },
   });
 
-  // Watch start_time to automatically set end_time
-  const startTime = form.watch('start_time');
-
-  useEffect(() => {
-    if (startTime) {
-      try {
-        // Parse the time string and add 1 hour
-        const [hours, minutes] = startTime.split(':').map(Number);
-        const startDate = new Date();
-        startDate.setHours(hours, minutes, 0, 0);
-        
-        const endDate = addHours(startDate, 1);
-        const endTimeString = format(endDate, 'HH:mm');
-        
-        form.setValue('end_time', endTimeString);
-      } catch (error) {
-        console.error('Error calculating end time:', error);
-      }
-    }
-  }, [startTime, form]);
 
   // Format time for display in AM/PM format
   const formatTimeDisplay = (timeString: string) => {
@@ -137,9 +114,8 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
         academic_stage_id: data.academic_stage_id,
         number_of_students: data.number_of_students,
         start_time: data.start_time,
-        end_time: data.end_time,
-        start_date: format(data.start_date, 'yyyy-MM-dd'),
-        end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
+        start_date: format(new Date(), 'yyyy-MM-dd'), // Use current date
+        end_date: null, // Permanent reservation
         days_of_week: data.days_of_week,
         created_by: user.user.id,
         status: 'active' as const,
@@ -284,22 +260,6 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             )}
           </div>
 
-          {/* End Time */}
-          <div className="space-y-2">
-            <Label htmlFor="end_time">وقت النهاية</Label>
-            <Input
-              type="time"
-              {...form.register('end_time')}
-            />
-            {form.watch('end_time') && (
-              <p className="text-sm text-muted-foreground">
-                العرض: {formatTimeDisplay(form.watch('end_time'))}
-              </p>
-            )}
-            {form.formState.errors.end_time && (
-              <p className="text-sm text-destructive">{form.formState.errors.end_time.message}</p>
-            )}
-          </div>
 
           {/* Days of Week */}
           <div className="space-y-2">
@@ -321,64 +281,6 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             )}
           </div>
 
-          {/* Start Date */}
-          <div className="space-y-2">
-            <Label>تاريخ البداية</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !form.watch('start_date') && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.watch('start_date') ? formatArabicDate(form.watch('start_date')) : <span>اختر التاريخ</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={form.watch('start_date')}
-                  onSelect={(date) => form.setValue('start_date', date!)}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            {form.formState.errors.start_date && (
-              <p className="text-sm text-destructive">{form.formState.errors.start_date.message}</p>
-            )}
-          </div>
-
-          {/* End Date (Optional) */}
-          <div className="space-y-2">
-            <Label>تاريخ النهاية (اختياري)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !form.watch('end_date') && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.watch('end_date') ? formatArabicDate(form.watch('end_date')) : <span>اختر التاريخ (اختياري)</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={form.watch('end_date')}
-                  onSelect={(date) => form.setValue('end_date', date)}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
 
           <Button
             type="submit"
