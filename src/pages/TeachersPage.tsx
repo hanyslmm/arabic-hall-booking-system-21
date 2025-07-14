@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, GraduationCap } from "lucide-react";
+import { Plus, Edit, Trash2, GraduationCap, Download, Upload } from "lucide-react";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { getTeachers, deleteTeacher } from "@/api/teachers";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface Teacher {
   id: string;
@@ -62,6 +64,120 @@ const TeachersPage = () => {
 
   const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || profile?.user_role === 'space_manager' || isAdmin;
 
+  // Export to CSV
+  const exportToCSV = () => {
+    if (!teachers || teachers.length === 0) return;
+
+    const headers = [
+      'الاسم',
+      'رقم التلفون',
+      'المادة الدراسية',
+      'المراحل الدراسية',
+      'تاريخ الإضافة'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...teachers.map(teacher => [
+        teacher.name,
+        teacher.mobile_phone || '',
+        teacher.subjects?.name || '',
+        teacher.teacher_academic_stages
+          ? teacher.teacher_academic_stages.map(stage => stage.academic_stages.name).join('; ')
+          : '',
+        format(new Date(teacher.created_at), 'yyyy-MM-dd')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `teachers-export-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Import from CSV
+  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const csv = e.target?.result as string;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',');
+        
+        // Skip header row
+        const teachersData = lines.slice(1)
+          .filter(line => line.trim())
+          .map(line => {
+            const values = line.split(',');
+            return {
+              name: values[0]?.trim(),
+              mobile_phone: values[1]?.trim() || null,
+              // For now, we'll just import basic data without subjects/stages
+              // as that would require more complex mapping
+            };
+          })
+          .filter(teacher => teacher.name);
+
+        if (teachersData.length === 0) {
+          toast({
+            title: "خطأ",
+            description: "لم يتم العثور على بيانات صالحة في الملف",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Get current user for created_by field
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) {
+          toast({
+            title: "خطأ",
+            description: "غير مصرح",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const teachersWithCreatedBy = teachersData.map(teacher => ({
+          ...teacher,
+          created_by: user.user.id
+        }));
+
+        const { error } = await supabase
+          .from('teachers')
+          .insert(teachersWithCreatedBy);
+
+        if (error) throw error;
+
+        toast({
+          title: "تم الاستيراد بنجاح",
+          description: `تم استيراد ${teachersData.length} معلم`,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      } catch (error) {
+        console.error('Import error:', error);
+        toast({
+          title: "خطأ في الاستيراد",
+          description: "فشل في استيراد البيانات",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    reader.readAsText(file);
+    // Reset input
+    event.target.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
@@ -84,13 +200,41 @@ const TeachersPage = () => {
               <span className="font-semibold">{teachers?.length || 0} معلم</span>
             </div>
             {canManage && (
-              <Button
-                onClick={() => setShowAddTeacher(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                إضافة معلم جديد
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={exportToCSV}
+                  disabled={!teachers || teachers.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  تصدير CSV
+                </Button>
+                <label className="cursor-pointer">
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    onClick={() => document.getElementById('import-csv')?.click()}
+                  >
+                    <Upload className="h-4 w-4" />
+                    استيراد CSV
+                  </Button>
+                  <input
+                    id="import-csv"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                  />
+                </label>
+                <Button
+                  onClick={() => setShowAddTeacher(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  إضافة معلم جديد
+                </Button>
+              </div>
             )}
           </div>
         </div>

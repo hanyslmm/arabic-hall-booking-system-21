@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
@@ -6,9 +7,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Users, Clock, MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Users, Clock, MapPin, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { EditBookingModal } from "@/components/booking/EditBookingModal";
 
 interface Booking {
   id: string;
@@ -34,19 +37,50 @@ interface Booking {
 const BookingsPage = () => {
   const { profile, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [selectedHall, setSelectedHall] = useState<string>('all');
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
+
+  // Fetch halls for filter
+  const { data: halls } = useQuery({
+    queryKey: ['halls'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('halls').select('id, name').order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch teachers for filter
+  const { data: teachers } = useQuery({
+    queryKey: ['teachers'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('teachers').select('id, name').order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ['bookings'],
+    queryKey: ['bookings', selectedHall, selectedTeacher],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select(`
           *,
           halls(name, capacity),
           teachers(name),
           academic_stages(name)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      if (selectedHall !== 'all') {
+        query = query.eq('hall_id', selectedHall);
+      }
+      
+      if (selectedTeacher !== 'all') {
+        query = query.eq('teacher_id', selectedTeacher);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as Booking[];
@@ -110,6 +144,52 @@ const BookingsPage = () => {
           </div>
         </div>
 
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              فلترة النتائج
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">القاعة</label>
+                <Select value={selectedHall} onValueChange={setSelectedHall}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="جميع القاعات" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع القاعات</SelectItem>
+                    {halls?.map((hall) => (
+                      <SelectItem key={hall.id} value={hall.id}>
+                        {hall.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">المعلم</label>
+                <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="جميع المعلمين" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المعلمين</SelectItem>
+                    {teachers?.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>قائمة الحجوزات</CardTitle>
@@ -137,13 +217,14 @@ const BookingsPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">القاعة</TableHead>
+                    <TableHead className="text-right">القاعة</TableHead>
                       <TableHead className="text-right">المعلم</TableHead>
                       <TableHead className="text-right">المرحلة</TableHead>
                       <TableHead className="text-right">التوقيت</TableHead>
                       <TableHead className="text-right">الأيام</TableHead>
                       <TableHead className="text-right">عدد الطلاب</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
+                      {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -175,6 +256,14 @@ const BookingsPage = () => {
                         <TableCell>
                           {getStatusBadge(booking.status)}
                         </TableCell>
+                        {canManage && (
+                          <TableCell>
+                            <EditBookingModal 
+                              bookingId={booking.id} 
+                              booking={booking} 
+                            />
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

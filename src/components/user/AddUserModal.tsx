@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 
 const userSchema = z.object({
-  email: z.string().email("يرجى إدخال بريد إلكتروني صحيح"),
-  full_name: z.string().min(1, "يرجى إدخال اسم المستخدم"),
+  username: z.string().min(1, "يرجى إدخال اسم المستخدم"),
+  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
   user_role: z.enum(["owner", "manager", "space_manager"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),
@@ -31,32 +31,25 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: { email: "", full_name: "", user_role: undefined },
+    defaultValues: { username: "", password: "", user_role: undefined },
   });
 
   const addUserMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-      // First, try to invite the user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(data.email, {
-        data: {
-          full_name: data.full_name,
-          user_role: data.user_role,
+      // Call the Edge Function to create user
+      const response = await supabase.functions.invoke('create-user', {
+        body: {
+          username: data.username,
+          password: data.password,
+          role: data.user_role,
         },
       });
 
-      // If auth invitation fails, create profile directly
-      if (authError) {
-        console.warn('Auth invitation failed, creating profile directly:', authError);
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create user');
       }
 
-      // Create or update the profile
-      const { error } = await supabase.from("profiles").upsert({
-        email: data.email,
-        full_name: data.full_name,
-        user_role: data.user_role,
-        id: authData?.user?.id || crypto.randomUUID(),
-      });
-      if (error) throw error;
+      return response.data;
     },
     onSuccess: () => {
       toast({
@@ -88,17 +81,17 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
-            <Input id="email" placeholder="أدخل البريد الإلكتروني" {...form.register("email")} />
-            {form.formState.errors.email && (
-              <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+            <Label htmlFor="username">اسم المستخدم</Label>
+            <Input id="username" placeholder="أدخل اسم المستخدم" {...form.register("username")} />
+            {form.formState.errors.username && (
+              <p className="text-sm text-destructive">{form.formState.errors.username.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="full_name">اسم المستخدم</Label>
-            <Input id="full_name" placeholder="أدخل اسم المستخدم" {...form.register("full_name")} />
-            {form.formState.errors.full_name && (
-              <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>
+            <Label htmlFor="password">كلمة المرور</Label>
+            <Input id="password" type="password" placeholder="أدخل كلمة المرور" {...form.register("password")} />
+            {form.formState.errors.password && (
+              <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
             )}
           </div>
           <div className="space-y-2">

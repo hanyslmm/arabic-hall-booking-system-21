@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,17 +7,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
-import { format, addHours, parse } from "date-fns";
-import { ar } from 'date-fns/locale';
-import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatArabicDate } from "@/utils/dateUtils";
 
 const bookingSchema = z.object({
   hall_id: z.string().min(1, "يرجى اختيار القاعة"),
@@ -27,6 +20,7 @@ const bookingSchema = z.object({
   number_of_students: z.number().min(1, "يجب أن يكون عدد الطلاب أكبر من صفر"),
   start_time: z.string().min(1, "يرجى اختيار وقت البداية"),
   days_of_week: z.array(z.string()).min(1, "يرجى اختيار يوم واحد على الأقل"),
+  status: z.enum(['active', 'cancelled', 'completed']),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -41,48 +35,44 @@ const DAYS_OF_WEEK = [
   { value: 'saturday', label: 'السبت' },
 ];
 
-interface BookingFormProps {
-  onSuccess?: () => void;
+interface EditBookingModalProps {
+  bookingId: string;
+  booking: any;
 }
 
-export const BookingForm = ({ onSuccess }: BookingFormProps) => {
+export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) => {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Fetch default booking duration from settings
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      number_of_students: 1,
-      days_of_week: [],
+      hall_id: booking.hall_id,
+      teacher_id: booking.teacher_id,
+      academic_stage_id: booking.academic_stage_id,
+      number_of_students: booking.number_of_students,
+      start_time: booking.start_time,
+      days_of_week: booking.days_of_week,
+      status: booking.status,
     },
   });
 
-
-  // Format time for display in AM/PM format
-  const formatTimeDisplay = (timeString: string) => {
-    if (!timeString) return '';
-    try {
-      const [hours, minutes] = timeString.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours, minutes, 0, 0);
-      return format(date, 'hh:mm a', { locale: ar });
-    } catch {
-      return timeString;
+  useEffect(() => {
+    if (booking) {
+      setSelectedDays(booking.days_of_week || []);
+      form.reset({
+        hall_id: booking.hall_id,
+        teacher_id: booking.teacher_id,
+        academic_stage_id: booking.academic_stage_id,
+        number_of_students: booking.number_of_students,
+        start_time: booking.start_time,
+        days_of_week: booking.days_of_week,
+        status: booking.status,
+      });
     }
-  };
+  }, [booking, form]);
 
   // Fetch halls
   const { data: halls } = useQuery({
@@ -114,48 +104,36 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
     },
   });
 
-  // Create booking mutation
-  const createBookingMutation = useMutation({
+  // Update booking mutation
+  const updateBookingMutation = useMutation({
     mutationFn: async (data: BookingFormData) => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('غير مصرح');
-
-      const bookingData = {
-        hall_id: data.hall_id,
-        teacher_id: data.teacher_id,
-        academic_stage_id: data.academic_stage_id,
-        number_of_students: data.number_of_students,
-        start_time: data.start_time,
-        start_date: format(new Date(), 'yyyy-MM-dd'), // Use current date
-        end_date: null, // Permanent reservation
-        days_of_week: data.days_of_week,
-        created_by: user.user.id,
-        status: 'active' as const,
-      };
-
-      const { data: result, error } = await supabase
+      const { error } = await supabase
         .from('bookings')
-        .insert([bookingData])
-        .select()
-        .single();
+        .update({
+          hall_id: data.hall_id,
+          teacher_id: data.teacher_id,
+          academic_stage_id: data.academic_stage_id,
+          number_of_students: data.number_of_students,
+          start_time: data.start_time,
+          days_of_week: data.days_of_week,
+          status: data.status,
+        })
+        .eq('id', bookingId);
 
       if (error) throw error;
-      return result;
     },
     onSuccess: () => {
       toast({
-        title: "تم إنشاء الحجز بنجاح",
-        description: "تم حفظ الحجز في النظام",
+        title: "تم تحديث الحجز بنجاح",
+        description: "تم حفظ التغييرات في النظام",
       });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      form.reset();
-      setSelectedDays([]);
-      onSuccess?.();
+      queryClient.invalidateQueries({ queryKey: ['bookings-report'] });
+      setOpen(false);
     },
     onError: (error) => {
       toast({
-        title: "خطأ في إنشاء الحجز",
+        title: "خطأ في تحديث الحجز",
         description: error.message,
         variant: "destructive",
       });
@@ -172,20 +150,29 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   };
 
   const onSubmit = (data: BookingFormData) => {
-    createBookingMutation.mutate(data);
+    updateBookingMutation.mutate(data);
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center">حجز قاعة جديد</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Edit className="w-4 h-4 mr-1" />
+          تعديل
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>تعديل الحجز</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Hall Selection */}
           <div className="space-y-2">
             <Label htmlFor="hall_id">القاعة</Label>
-            <Select onValueChange={(value) => form.setValue('hall_id', value)}>
+            <Select 
+              value={form.watch('hall_id')} 
+              onValueChange={(value) => form.setValue('hall_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="اختر القاعة" />
               </SelectTrigger>
@@ -205,7 +192,10 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
           {/* Teacher Selection */}
           <div className="space-y-2">
             <Label htmlFor="teacher_id">المعلم</Label>
-            <Select onValueChange={(value) => form.setValue('teacher_id', value)}>
+            <Select 
+              value={form.watch('teacher_id')} 
+              onValueChange={(value) => form.setValue('teacher_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="اختر المعلم" />
               </SelectTrigger>
@@ -225,7 +215,10 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
           {/* Academic Stage Selection */}
           <div className="space-y-2">
             <Label htmlFor="academic_stage_id">المرحلة الدراسية</Label>
-            <Select onValueChange={(value) => form.setValue('academic_stage_id', value)}>
+            <Select 
+              value={form.watch('academic_stage_id')} 
+              onValueChange={(value) => form.setValue('academic_stage_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="اختر المرحلة الدراسية" />
               </SelectTrigger>
@@ -262,16 +255,31 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
               type="time"
               {...form.register('start_time')}
             />
-            {form.watch('start_time') && (
-              <p className="text-sm text-muted-foreground">
-                العرض: {formatTimeDisplay(form.watch('start_time'))}
-              </p>
-            )}
             {form.formState.errors.start_time && (
               <p className="text-sm text-destructive">{form.formState.errors.start_time.message}</p>
             )}
           </div>
 
+          {/* Status */}
+          <div className="space-y-2">
+            <Label htmlFor="status">الحالة</Label>
+            <Select 
+              value={form.watch('status')} 
+              onValueChange={(value) => form.setValue('status', value as 'active' | 'cancelled' | 'completed')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="اختر الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">نشط</SelectItem>
+                <SelectItem value="cancelled">ملغي</SelectItem>
+                <SelectItem value="completed">مكتمل</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.formState.errors.status && (
+              <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
+            )}
+          </div>
 
           {/* Days of Week */}
           <div className="space-y-2">
@@ -293,16 +301,25 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             )}
           </div>
 
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={createBookingMutation.isPending}
-          >
-            {createBookingMutation.isPending ? "جاري الحفظ..." : "حفظ الحجز"}
-          </Button>
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="submit"
+              disabled={updateBookingMutation.isPending}
+              className="flex-1"
+            >
+              {updateBookingMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              إلغاء
+            </Button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
