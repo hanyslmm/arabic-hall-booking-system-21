@@ -85,19 +85,34 @@ export function ReportsPage() {
           number_of_students,
           status,
           created_at,
-          halls!inner(name),
-          teachers!inner(name),
-          academic_stages!inner(name)
+          hall_id,
+          teacher_id,
+          academic_stage_id
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
+      if (!data || data.length === 0) {
+        return [] as BookingReport[];
+      }
+
+      // Fetch related data separately
+      const [hallsRes, teachersRes, stagesRes] = await Promise.all([
+        supabase.from('halls').select('id, name'),
+        supabase.from('teachers').select('id, name'),
+        supabase.from('academic_stages').select('id, name')
+      ]);
+
+      const hallsMap = new Map(hallsRes.data?.map(h => [h.id, h.name]) || []);
+      const teachersMap = new Map(teachersRes.data?.map(t => [t.id, t.name]) || []);
+      const stagesMap = new Map(stagesRes.data?.map(s => [s.id, s.name]) || []);
+      
       return data.map(booking => ({
         id: booking.id,
-        hall_name: booking.halls.name,
-        teacher_name: booking.teachers.name,
-        stage_name: booking.academic_stages.name,
+        hall_name: hallsMap.get(booking.hall_id) || 'غير محدد',
+        teacher_name: teachersMap.get(booking.teacher_id) || 'غير محدد',
+        stage_name: stagesMap.get(booking.academic_stage_id) || 'غير محدد',
         start_time: booking.start_time,
         days_of_week: booking.days_of_week,
         number_of_students: booking.number_of_students,

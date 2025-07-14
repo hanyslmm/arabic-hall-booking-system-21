@@ -50,22 +50,36 @@ export function AuditLogPage() {
           actor_user_id,
           action,
           details,
-          created_at,
-          profiles!audit_logs_actor_user_id_fkey(full_name, email)
+          created_at
         `)
         .order('created_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
       
-      return data.map(log => ({
-        id: log.id,
-        actor_user_id: log.actor_user_id,
-        action: log.action,
-        details: log.details,
-        created_at: log.created_at,
-        actor_name: log.profiles?.full_name || log.profiles?.email || 'مستخدم محذوف'
-      })) as AuditLog[];
+      if (!data || data.length === 0) {
+        return [] as AuditLog[];
+      }
+
+      // Fetch profiles separately
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', data.map(log => log.actor_user_id));
+
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      return data.map(log => {
+        const profile = profilesMap.get(log.actor_user_id);
+        return {
+          id: log.id,
+          actor_user_id: log.actor_user_id,
+          action: log.action,
+          details: log.details,
+          created_at: log.created_at,
+          actor_name: profile?.full_name || profile?.email || 'مستخدم محذوف'
+        };
+      }) as AuditLog[];
     }
   });
 
