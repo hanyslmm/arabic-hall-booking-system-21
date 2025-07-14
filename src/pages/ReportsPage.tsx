@@ -22,10 +22,10 @@ interface BookingReport {
 }
 
 export function ReportsPage() {
-  const { user, profile } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   // Check if user is admin
-  if (!user || profile?.role !== 'ADMIN') {
+  if (!user || !isAdmin) {
     return <Navigate to="/login" replace />;
   }
 
