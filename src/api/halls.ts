@@ -4,9 +4,10 @@ export type Hall = {
   id: string;
   name: string;
   capacity: number;
+  operating_start_time?: string | null;
+  operating_end_time?: string | null;
   created_at: string | null;
   updated_at: string | null;
-  // Add other fields as needed
 };
 
 export const getHalls = async (): Promise<Hall[]> => {

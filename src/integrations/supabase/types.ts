@@ -489,6 +489,14 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      get_hall_occupancy_rates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          hall_id: string
+          name: string
+          occupancy_percentage: number
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

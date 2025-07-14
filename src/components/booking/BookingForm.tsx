@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { format, addHours, parse } from "date-fns";
 import { ar } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ const bookingSchema = z.object({
   academic_stage_id: z.string().min(1, "يرجى اختيار المرحلة الدراسية"),
   number_of_students: z.number().min(1, "يجب أن يكون عدد الطلاب أكبر من صفر"),
   start_time: z.string().min(1, "يرجى اختيار وقت البداية"),
+  end_time: z.string().min(1, "يرجى اختيار وقت النهاية"),
   start_date: z.date({ required_error: "يرجى اختيار تاريخ البداية" }),
   end_date: z.date().optional(),
   days_of_week: z.array(z.string()).min(1, "يرجى اختيار يوم واحد على الأقل"),
@@ -59,6 +60,40 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
       days_of_week: [],
     },
   });
+
+  // Watch start_time to automatically set end_time
+  const startTime = form.watch('start_time');
+
+  useEffect(() => {
+    if (startTime) {
+      try {
+        // Parse the time string and add 1 hour
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const startDate = new Date();
+        startDate.setHours(hours, minutes, 0, 0);
+        
+        const endDate = addHours(startDate, 1);
+        const endTimeString = format(endDate, 'HH:mm');
+        
+        form.setValue('end_time', endTimeString);
+      } catch (error) {
+        console.error('Error calculating end time:', error);
+      }
+    }
+  }, [startTime, form]);
+
+  // Format time for display in AM/PM format
+  const formatTimeDisplay = (timeString: string) => {
+    if (!timeString) return '';
+    try {
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return format(date, 'hh:mm a', { locale: ar });
+    } catch {
+      return timeString;
+    }
+  };
 
   // Fetch halls
   const { data: halls } = useQuery({
@@ -102,6 +137,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
         academic_stage_id: data.academic_stage_id,
         number_of_students: data.number_of_students,
         start_time: data.start_time,
+        end_time: data.end_time,
         start_date: format(data.start_date, 'yyyy-MM-dd'),
         end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
         days_of_week: data.days_of_week,
@@ -238,8 +274,30 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
               type="time"
               {...form.register('start_time')}
             />
+            {form.watch('start_time') && (
+              <p className="text-sm text-muted-foreground">
+                العرض: {formatTimeDisplay(form.watch('start_time'))}
+              </p>
+            )}
             {form.formState.errors.start_time && (
               <p className="text-sm text-destructive">{form.formState.errors.start_time.message}</p>
+            )}
+          </div>
+
+          {/* End Time */}
+          <div className="space-y-2">
+            <Label htmlFor="end_time">وقت النهاية</Label>
+            <Input
+              type="time"
+              {...form.register('end_time')}
+            />
+            {form.watch('end_time') && (
+              <p className="text-sm text-muted-foreground">
+                العرض: {formatTimeDisplay(form.watch('end_time'))}
+              </p>
+            )}
+            {form.formState.errors.end_time && (
+              <p className="text-sm text-destructive">{form.formState.errors.end_time.message}</p>
             )}
           </div>
 

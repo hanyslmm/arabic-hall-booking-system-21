@@ -2,11 +2,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, GraduationCap, Building } from "lucide-react";
+import { Users, Calendar, GraduationCap, Building, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 
-export const StatsCards = () => {
+interface StatsCardsProps {
+  averageOccupancy?: number;
+}
+
+export const StatsCards = ({ averageOccupancy = 0 }: StatsCardsProps) => {
   const navigate = useNavigate();
 
   const { data: stats, isLoading } = useQuery({
@@ -76,16 +80,16 @@ export const StatsCards = () => {
       onClick: () => navigate('/bookings')
     },
     {
-      title: "نسبة الإشغال",
-      value: `${stats?.occupancyRatio || 0}%`,
-      icon: Calendar,
-      color: "text-info",
-      onClick: () => navigate('/bookings')
+      title: "نسبة الاشغال",
+      value: `${averageOccupancy}%`,
+      icon: Activity,
+      color: "text-orange-600",
+      onClick: () => navigate('/halls')
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {statsData.map((stat, index) => (
         <Card 
           key={index} 

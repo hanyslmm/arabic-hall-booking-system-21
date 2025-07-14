@@ -8,10 +8,28 @@ import { useEffect, useState } from "react";
 import AdminSetup from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
 import { APP_CONFIG } from "@/lib/constants";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const [hasError, setHasError] = useState(false);
+
+  // Fetch occupancy data
+  const { data: occupancyData } = useQuery({
+    queryKey: ['hall-occupancy'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_hall_occupancy_rates');
+      if (error) throw error;
+      return data as Array<{ hall_id: string; name: string; occupancy_percentage: number }>;
+    },
+    enabled: !!user,
+  });
+
+  // Calculate average occupancy
+  const averageOccupancy = occupancyData && occupancyData.length > 0 
+    ? Math.round(occupancyData.reduce((sum, hall) => sum + hall.occupancy_percentage, 0) / occupancyData.length)
+    : 0;
   useEffect(() => {
     // Add error boundary logic
     const handleError = (event: ErrorEvent) => {
@@ -76,8 +94,8 @@ const Index = () => {
             {APP_CONFIG.description}
           </p>
         </div>
-        <StatsCards />
-        <HallsGrid />
+        <StatsCards averageOccupancy={averageOccupancy} />
+        <HallsGrid occupancyData={occupancyData} />
       </div>
     </AppLayout>
   );

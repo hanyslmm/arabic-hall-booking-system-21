@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Calendar } from "lucide-react";
+import { Users, Calendar, Activity } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HallScheduleModal } from "@/components/hall/HallScheduleModal";
 
@@ -14,7 +14,17 @@ interface Hall {
   capacity: number;
 }
 
-export const HallsGrid = () => {
+interface OccupancyData {
+  hall_id: string;
+  name: string;
+  occupancy_percentage: number;
+}
+
+interface HallsGridProps {
+  occupancyData?: OccupancyData[];
+}
+
+export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
   const [selectedHall, setSelectedHall] = useState<{ id: string; name: string } | null>(null);
 
   const { data: halls, isLoading, error } = useQuery({
@@ -40,6 +50,17 @@ export const HallsGrid = () => {
     if (capacity >= 70) return 'سعة كبيرة';
     if (capacity >= 40) return 'سعة متوسطة';
     return 'سعة صغيرة';
+  };
+
+  const getOccupancyForHall = (hallId: string): number => {
+    const hallOccupancy = occupancyData?.find(item => item.hall_id === hallId);
+    return hallOccupancy?.occupancy_percentage || 0;
+  };
+
+  const getOccupancyColor = (percentage: number): string => {
+    if (percentage >= 80) return 'text-red-600';
+    if (percentage >= 50) return 'text-yellow-600';
+    return 'text-green-600';
   };
 
   const handleHallClick = (hall: Hall) => {
@@ -103,9 +124,17 @@ export const HallsGrid = () => {
                     <span className="font-semibold text-primary">{hall.capacity} طالب</span>
                   </div>
                   
-                  <div className={`capacity-indicator ${getCapacityVariant(hall.capacity)}`}>
-                    {getCapacityLabel(hall.capacity)}
-                  </div>
+                    <div className={`capacity-indicator ${getCapacityVariant(hall.capacity)}`}>
+                      {getCapacityLabel(hall.capacity)}
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Activity className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">نسبة الاشغال:</span>
+                      <span className={`font-semibold ${getOccupancyColor(getOccupancyForHall(hall.id))}`}>
+                        {getOccupancyForHall(hall.id)}%
+                      </span>
+                    </div>
                   
                   <p className="text-xs text-muted-foreground mt-2">
                     انقر لعرض الجدول الأسبوعي

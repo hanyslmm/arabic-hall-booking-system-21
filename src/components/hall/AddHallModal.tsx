@@ -12,6 +12,8 @@ interface Hall {
   id?: string;
   name: string;
   capacity: number;
+  operating_start_time?: string;
+  operating_end_time?: string;
 }
 
 interface AddHallModalProps {
@@ -24,7 +26,9 @@ export const AddHallModal = ({ hall, isEdit = false, onSuccess }: AddHallModalPr
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<Omit<Hall, 'id'>>({
     name: hall?.name || '',
-    capacity: hall?.capacity || 30
+    capacity: hall?.capacity || 30,
+    operating_start_time: hall?.operating_start_time || '',
+    operating_end_time: hall?.operating_end_time || ''
   });
 
   const queryClient = useQueryClient();
@@ -40,7 +44,7 @@ export const AddHallModal = ({ hall, isEdit = false, onSuccess }: AddHallModalPr
       queryClient.invalidateQueries({ queryKey: ['halls'] });
       toast.success('تم إضافة القاعة بنجاح');
       setOpen(false);
-      setFormData({ name: '', capacity: 30 });
+      setFormData({ name: '', capacity: 30, operating_start_time: '', operating_end_time: '' });
       onSuccess?.();
     },
     onError: (error) => {
@@ -127,6 +131,28 @@ export const AddHallModal = ({ hall, isEdit = false, onSuccess }: AddHallModalPr
               value={formData.capacity}
               onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
               placeholder="أدخل سعة القاعة"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="operating_start_time">وقت بداية التشغيل</Label>
+            <Input
+              id="operating_start_time"
+              type="time"
+              value={formData.operating_start_time}
+              onChange={(e) => setFormData(prev => ({ ...prev, operating_start_time: e.target.value }))}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="operating_end_time">وقت نهاية التشغيل</Label>
+            <Input
+              id="operating_end_time"
+              type="time"
+              value={formData.operating_end_time}
+              onChange={(e) => setFormData(prev => ({ ...prev, operating_end_time: e.target.value }))}
               disabled={isLoading}
             />
           </div>
