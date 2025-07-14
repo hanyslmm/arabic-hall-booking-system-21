@@ -22,10 +22,10 @@ interface BookingReport {
 }
 
 export function ReportsPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
 
   // Check if user is admin
-  if (!user || !isAdmin) {
+  if (!user || (!isAdmin && !loading)) {
     return <Navigate to="/login" replace />;
   }
 
@@ -127,7 +127,7 @@ export function ReportsPage() {
     document.body.removeChild(link);
   };
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
