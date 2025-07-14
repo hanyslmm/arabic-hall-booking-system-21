@@ -1,240 +1,221 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/layout/Navbar";
-import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, UserCog } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Navigate } from "react-router-dom";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { getUsers, deleteUser, UserProfile } from "@/api/users";
 import { AddUserModal } from "@/components/user/AddUserModal";
-import { formatShortArabicDate } from "@/utils/dateUtils";
+import { EditUserModal } from "@/components/user/EditUserModal";
 
-interface UserProfile {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  user_role: 'owner' | 'manager' | 'space_manager';
-  role: 'USER' | 'ADMIN';
-  created_at: string;
-}
-
-const UsersPage = () => {
-  const { profile, canManageUsers, isAdmin } = useAuth();
+export default function UsersPage() {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isAddUserOpen, setAddUserOpen] = useState(false);
+  const { user, isOwner, isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">جاري التحميل...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!user || (!isOwner && !isAdmin)) {
+    return <Navigate to="/login" replace />;
+  }
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, user_role, role, created_at')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as UserProfile[];
-    }
+    queryKey: ["users"],
+    queryFn: getUsers,
   });
 
-  const updateUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole, appRole }: { userId: string; newRole: 'owner' | 'manager' | 'space_manager'; appRole?: 'USER' | 'ADMIN' }) => {
-      const updateData: any = { user_role: newRole };
-      if (appRole !== undefined) {
-        updateData.role = appRole;
-      }
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userId);
-      
-      if (error) throw error;
-    },
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
     onSuccess: () => {
       toast({
-        title: "تم تحديث الدور بنجاح",
-        description: "تم تحديث دور المستخدم في النظام",
+        title: "تم حذف المستخدم بنجاح",
+        description: "تم حذف المستخدم من النظام.",
       });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setUserToDelete(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "خطأ في تحديث الدور",
+        title: "خطأ في حذف المستخدم",
         description: error.message,
         variant: "destructive",
       });
+      setUserToDelete(null);
     },
   });
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'destructive';
-      case 'manager':
-        return 'default';
-      case 'space_manager':
-        return 'secondary';
-      default:
-        return 'outline';
+  const handleEditUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (userToDelete) {
+      deleteUserMutation.mutate(userToDelete.id);
     }
   };
 
-  const getRoleLabel = (role: string) => {
+  const getRoleBadge = (role?: string) => {
     switch (role) {
-      case 'owner':
-        return 'مالك';
-      case 'manager':
-        return 'مدير';
-      case 'space_manager':
-        return 'مدير قاعات';
+      case "owner":
+        return (
+          <Badge variant="destructive" className="text-xs">
+            مالك
+          </Badge>
+        );
+      case "manager":
+        return (
+          <Badge variant="secondary" className="text-xs">
+            مدير
+          </Badge>
+        );
+      case "space_manager":
+        return (
+          <Badge variant="outline" className="text-xs">
+            مدير قاعات
+          </Badge>
+        );
       default:
-        return 'مستخدم';
+        return (
+          <Badge variant="outline" className="text-xs">
+            مستخدم
+          </Badge>
+        );
     }
   };
 
-  if (!canManageUsers) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-          isAdmin={isAdmin}
-        />
-        <main className="container mx-auto p-4">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <UserCog className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-2xl font-bold mb-2">غير مصرح</h2>
-              <p className="text-muted-foreground">
-                هذه الصفحة متاحة للمالكين فقط
-              </p>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">جاري التحميل...</div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-          isAdmin={isAdmin}
-        />
-      <main className="container mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">إدارة المستخدمين</h1>
-            <p className="text-muted-foreground mt-2">
-              إدارة المستخدمين وأدوارهم في النظام
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            <span className="font-semibold">{users?.length || 0} مستخدم</span>
-            <Button onClick={() => setAddUserOpen(true)} variant="default" size="sm">
-              إضافة مستخدم
-            </Button>
-          </div>
+    <AppLayout>
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">إدارة المستخدمين</h1>
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            إضافة مستخدم جديد
+          </Button>
         </div>
-        <AddUserModal isOpen={isAddUserOpen} onClose={() => setAddUserOpen(false)} />
+
         <Card>
           <CardHeader>
             <CardTitle>قائمة المستخدمين</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">
-                <p>جاري تحميل المستخدمين...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">الاسم</TableHead>
-                    <TableHead className="text-right">البريد الإلكتروني</TableHead>
-                    <TableHead className="text-right">الدور</TableHead>
-                    <TableHead className="text-right">الصلاحيات</TableHead>
-                    <TableHead className="text-right">تاريخ التسجيل</TableHead>
-                    <TableHead className="text-right">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users?.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.full_name || 'غير محدد'}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.user_role)}>
-                          {getRoleLabel(user.user_role)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'ADMIN' ? 'destructive' : 'outline'}>
-                          {user.role === 'ADMIN' ? 'مدير' : 'مستخدم'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatShortArabicDate(user.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Select
-                            value={user.user_role}
-                            onValueChange={(value) => 
-                              updateUserRoleMutation.mutate({ 
-                                userId: user.id, 
-                                newRole: value as 'owner' | 'manager' | 'space_manager' 
-                              })
-                            }
-                            disabled={user.id === profile?.id}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="space_manager">مدير قاعات</SelectItem>
-                              <SelectItem value="manager">مدير</SelectItem>
-                              <SelectItem value="owner">مالك</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {profile?.role === 'ADMIN' && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الاسم</TableHead>
+                  <TableHead>البريد الإلكتروني</TableHead>
+                  <TableHead>الدور</TableHead>
+                  <TableHead>تاريخ الإنشاء</TableHead>
+                  <TableHead>الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.full_name || "غير محدد"}</TableCell>
+                    <TableCell>{user.email || "غير محدد"}</TableCell>
+                    <TableCell>{getRoleBadge(user.user_role)}</TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString("ar")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <Button
+                              variant="destructive"
                               size="sm"
-                              variant={user.role === 'ADMIN' ? "destructive" : "outline"}
-                              onClick={() => 
-                                updateUserRoleMutation.mutate({ 
-                                  userId: user.id, 
-                                  newRole: user.user_role,
-                                  appRole: user.role === 'ADMIN' ? 'USER' : 'ADMIN'
-                                })
-                              }
-                              disabled={user.id === profile?.id}
+                              onClick={() => setUserToDelete(user)}
                             >
-                              {user.role === 'ADMIN' ? 'إزالة صلاحية' : 'إضافة صلاحية'}
+                              <Trash2 className="w-4 h-4" />
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من حذف المستخدم "{user.full_name || user.email}"؟
+                                هذا الإجراء لا يمكن التراجع عنه.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDeleteConfirm}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                حذف
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {(!users || users.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                لا توجد مستخدمين في النظام
+              </div>
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
-  );
-};
+      </div>
 
-export default UsersPage;
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
+      
+      <EditUserModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+      />
+    </AppLayout>
+  );
+}

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, BarChart3, Users, Calendar, Building2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface BookingReport {
@@ -22,10 +22,16 @@ interface BookingReport {
   created_at: string;
 }
 
+interface DashboardStats {
+  totalBookings: number;
+  activeBookings: number;
+  totalTeachers: number;
+  totalHalls: number;
+}
+
 export function ReportsPage() {
   const { user, isAdmin, isOwner, canManageUsers, loading } = useAuth();
 
-  // Check if user has admin access
   const hasAdminAccess = isAdmin || isOwner || canManageUsers;
 
   if (loading) {
@@ -41,6 +47,30 @@ export function ReportsPage() {
   if (!user || !hasAdminAccess) {
     return <Navigate to="/login" replace />;
   }
+
+  // Fetch dashboard statistics
+  const { data: stats } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const [bookingsRes, teachersRes, hallsRes] = await Promise.all([
+        supabase.from('bookings').select('id, status'),
+        supabase.from('teachers').select('id'),
+        supabase.from('halls').select('id')
+      ]);
+
+      const totalBookings = bookingsRes.data?.length || 0;
+      const activeBookings = bookingsRes.data?.filter(b => b.status === 'active').length || 0;
+      const totalTeachers = teachersRes.data?.length || 0;
+      const totalHalls = hallsRes.data?.length || 0;
+
+      return {
+        totalBookings,
+        activeBookings,
+        totalTeachers,
+        totalHalls
+      } as DashboardStats;
+    }
+  });
 
   // Fetch all bookings with related data
   const { data: bookings, isLoading } = useQuery({
@@ -154,16 +184,60 @@ export function ReportsPage() {
     <AppLayout>
       <div className="space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">التقارير</h1>
+          <h1 className="text-3xl font-bold">التقارير والإحصائيات</h1>
           <Button onClick={exportToCSV} disabled={!bookings || bookings.length === 0}>
             <Download className="w-4 h-4 mr-2" />
             تصدير إلى CSV
           </Button>
         </div>
 
+        {/* Dashboard Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">إجمالي الحجوزات</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalBookings || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">الحجوزات النشطة</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.activeBookings || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">عدد المعلمين</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalTeachers || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">عدد القاعات</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalHalls || 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bookings Report Table */}
         <Card>
           <CardHeader>
-            <CardTitle>تقرير الحجوزات</CardTitle>
+            <CardTitle>تقرير الحجوزات التفصيلي</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -189,7 +263,15 @@ export function ReportsPage() {
                       <TableCell>{booking.start_time}</TableCell>
                       <TableCell>{getDaysInArabic(booking.days_of_week)}</TableCell>
                       <TableCell>{booking.number_of_students}</TableCell>
-                      <TableCell>{getStatusInArabic(booking.status)}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          booking.status === 'active' ? 'bg-green-100 text-green-800' :
+                          booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {getStatusInArabic(booking.status)}
+                        </span>
+                      </TableCell>
                       <TableCell>{format(new Date(booking.created_at), 'yyyy-MM-dd HH:mm')}</TableCell>
                     </TableRow>
                   ))}

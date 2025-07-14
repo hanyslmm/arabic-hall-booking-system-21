@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   LogOut,
+  Shield,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface AdminSidebarProps {
   children: React.ReactNode;
@@ -96,6 +98,12 @@ const navigation = [
         url: "/users",
         icon: Users,
         description: "إدارة المستخدمين والأذونات",
+      },
+      {
+        title: "سجل التدقيق",
+        url: "/audit-logs",
+        icon: Shield,
+        description: "عرض سجل أنشطة المستخدمين",
       },
       {
         title: "صلاحيات المدراء",
@@ -302,6 +310,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
           </Button>
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-lg font-semibold">لوحة التحكم الإدارية</h1>
+            <NotificationBell />
           </div>
         </header>
 
