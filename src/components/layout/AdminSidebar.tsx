@@ -11,11 +11,13 @@ import {
   BarChart3,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface AdminSidebarProps {
@@ -110,6 +112,32 @@ const navigation = [
     ],
   },
 ];
+
+const LogoutButton = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    }
+    setIsLoading(false);
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleSignOut}
+      disabled={isLoading}
+      className="w-full flex items-center gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10"
+    >
+      <LogOut className="h-4 w-4" />
+      <span>{isLoading ? "جاري الخروج..." : "تسجيل الخروج"}</span>
+    </Button>
+  );
+};
 
 export function AdminSidebar({ children }: AdminSidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -238,7 +266,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
 
         {/* Sidebar Footer */}
         <div className="border-t p-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-3">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-muted">
                 {profile?.full_name
@@ -255,6 +283,7 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
               </div>
             </div>
           </div>
+          <LogoutButton />
         </div>
       </div>
 
