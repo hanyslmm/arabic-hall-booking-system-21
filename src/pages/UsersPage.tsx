@@ -21,8 +21,17 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // All hooks must be called before any conditional returns
   const { user, isOwner, isAdmin, loading } = useAuth();
+  
+  const { data: users, isLoading, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: getUsers,
+    enabled: !!user && (isOwner || isAdmin), // Only fetch if user has permissions
+  });
 
+  // Handle loading state
   if (loading) {
     return (
       <AppLayout>
@@ -37,11 +46,6 @@ export default function UsersPage() {
   if (!user || (!isOwner && !isAdmin)) {
     return <Navigate to="/login" replace />;
   }
-
-  const { data: users, isLoading, error } = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
-  });
 
   const deleteUserMutation = useMutation({
     mutationFn: deleteUser,
