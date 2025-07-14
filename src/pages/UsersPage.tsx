@@ -31,22 +31,6 @@ export default function UsersPage() {
     enabled: !!user && (isOwner || isAdmin), // Only fetch if user has permissions
   });
 
-  // Handle loading state
-  if (loading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-lg">جاري التحميل...</div>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  // Check if user has permission to access users page
-  if (!user || (!isOwner && !isAdmin)) {
-    return <Navigate to="/login" replace />;
-  }
-
   const deleteUserMutation = useMutation({
     mutationFn: deleteUser,
     onSuccess: () => {
@@ -66,6 +50,22 @@ export default function UsersPage() {
       setUserToDelete(null);
     },
   });
+
+  // Handle loading state
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">جاري التحميل...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Check if user has permission to access users page
+  if (!user || (!isOwner && !isAdmin)) {
+    return <Navigate to="/login" replace />;
+  }
 
   const handleEditUser = (user: UserProfile) => {
     setSelectedUser(user);

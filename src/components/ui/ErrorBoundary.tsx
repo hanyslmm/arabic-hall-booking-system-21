@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Home } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -28,6 +28,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReload = () => {
     window.location.reload();
+  };
+
+  private handleGoHome = () => {
+    window.location.href = "/";
   };
 
   private handleReset = () => {
@@ -62,6 +66,10 @@ export class ErrorBoundary extends Component<Props, State> {
                 </details>
               )}
               <div className="flex gap-2">
+                <Button onClick={this.handleGoHome} variant="outline" className="flex-1">
+                  <Home className="w-4 h-4 mr-2" />
+                  الصفحة الرئيسية
+                </Button>
                 <Button onClick={this.handleReset} variant="outline" className="flex-1">
                   إعادة المحاولة
                 </Button>
