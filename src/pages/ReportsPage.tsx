@@ -1,9 +1,10 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Navbar } from "@/components/layout/Navbar";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Download } from "lucide-react";
@@ -22,10 +23,22 @@ interface BookingReport {
 }
 
 export function ReportsPage() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isOwner, canManageUsers, loading } = useAuth();
 
-  // Check if user is admin
-  if (!user || (!isAdmin && !loading)) {
+  // Check if user has admin access
+  const hasAdminAccess = isAdmin || isOwner || canManageUsers;
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">جاري التحميل...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!user || !hasAdminAccess) {
     return <Navigate to="/login" replace />;
   }
 
@@ -127,22 +140,20 @@ export function ReportsPage() {
     document.body.removeChild(link);
   };
 
-  if (loading || isLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <AppLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-lg">جاري التحميل...</div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+    <AppLayout>
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">التقارير</h1>
           <Button onClick={exportToCSV} disabled={!bookings || bookings.length === 0}>
             <Download className="w-4 h-4 mr-2" />
@@ -193,7 +204,7 @@ export function ReportsPage() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
