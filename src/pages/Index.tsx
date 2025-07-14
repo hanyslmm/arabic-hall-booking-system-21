@@ -62,17 +62,7 @@ const Index = () => {
   }
 
   if (!user) {
-    return (
-      <div>
-        <LoginPage />
-        {import.meta.env.DEV && (
-          <>
-            <AdminSetup />
-            <UserUpgrade />
-          </>
-        )}
-      </div>
-    );
+    return <LoginPage />;
   }
 
   return (
