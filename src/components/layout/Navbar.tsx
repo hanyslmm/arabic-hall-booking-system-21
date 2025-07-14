@@ -4,37 +4,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LogOut, User, Calendar, Home, Users, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-
 interface NavbarProps {
   userRole?: 'owner' | 'manager' | 'space_manager' | 'read_only';
   userName?: string;
   isAdmin?: boolean;
 }
-
-export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
+export const Navbar = ({
+  userRole,
+  userName,
+  isAdmin
+}: NavbarProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const {
+    theme,
+    setTheme
+  } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-
   const handleSignOut = async () => {
     setIsLoading(true);
-    const { error } = await supabase.auth.signOut();
+    const {
+      error
+    } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
     }
     setIsLoading(false);
   };
-
   const getRoleBadge = (role?: string) => {
     switch (role) {
       case 'owner':
@@ -47,85 +46,43 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
         return <Badge variant="outline" className="text-xs">مستخدم</Badge>;
     }
   };
-
   const canManageBookings = userRole === 'owner' || userRole === 'manager' || isAdmin;
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'manager' || isAdmin;
-
-  return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  return <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-4 space-x-reverse">
-          <h1 className="text-xl font-bold text-primary">نادي العلوم</h1>
+          <h1 className="text-xl font-bold text-primary">Science Club</h1>
           <div className="hidden md:flex items-center space-x-4 space-x-reverse">
-            <Button
-              variant={location.pathname === "/" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate("/")}
-              className="flex items-center gap-2"
-            >
+            <Button variant={location.pathname === "/" ? "default" : "ghost"} size="sm" onClick={() => navigate("/")} className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               الرئيسية
             </Button>
-            {canManageBookings && (
-              <>
-                <Button
-                  variant={location.pathname === "/bookings" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate("/bookings")}
-                  className="flex items-center gap-2"
-                >
+            {canManageBookings && <>
+                <Button variant={location.pathname === "/bookings" ? "default" : "ghost"} size="sm" onClick={() => navigate("/bookings")} className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   الحجوزات
                 </Button>
-                <Button
-                  variant={location.pathname === "/halls" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate("/halls")}
-                  className="flex items-center gap-2"
-                >
+                <Button variant={location.pathname === "/halls" ? "default" : "ghost"} size="sm" onClick={() => navigate("/halls")} className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   القاعات
                 </Button>
-                <Button
-                  variant={location.pathname === "/teachers" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate("/teachers")}
-                  className="flex items-center gap-2"
-                >
+                <Button variant={location.pathname === "/teachers" ? "default" : "ghost"} size="sm" onClick={() => navigate("/teachers")} className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   المعلمين
                 </Button>
-                <Button
-                  variant={location.pathname === "/stages" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate("/stages")}
-                  className="flex items-center gap-2"
-                >
+                <Button variant={location.pathname === "/stages" ? "default" : "ghost"} size="sm" onClick={() => navigate("/stages")} className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   المراحل
                 </Button>
-                <Button
-                  variant={location.pathname === "/subjects" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate("/subjects")}
-                  className="flex items-center gap-2"
-                >
+                <Button variant={location.pathname === "/subjects" ? "default" : "ghost"} size="sm" onClick={() => navigate("/subjects")} className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   المواد
                 </Button>
-              </>
-            )}
-            {isOwnerOrAdmin && (
-              <Button
-                variant={location.pathname === "/users" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => navigate("/users")}
-                className="flex items-center gap-2"
-              >
+              </>}
+            {isOwnerOrAdmin && <Button variant={location.pathname === "/users" ? "default" : "ghost"} size="sm" onClick={() => navigate("/users")} className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 إدارة المستخدمين
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
 
@@ -156,13 +113,9 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
             <DropdownMenuContent className="w-56 bg-background border shadow-lg" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  {userName && (
-                    <p className="font-medium">{userName}</p>
-                  )}
+                  {userName && <p className="font-medium">{userName}</p>}
                   <p className="w-[200px] truncate text-sm text-muted-foreground">
-                    {userRole === 'owner' ? 'مالك النظام' : 
-                     userRole === 'manager' ? 'مدير' : 
-                     'مدير قاعات'}
+                    {userRole === 'owner' ? 'مالك النظام' : userRole === 'manager' ? 'مدير' : 'مدير قاعات'}
                   </p>
                 </div>
               </div>
@@ -171,8 +124,7 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
                 <Home className="mr-2 h-4 w-4" />
                 <span>الرئيسية</span>
               </DropdownMenuItem>
-              {canManageBookings && (
-                <>
+              {canManageBookings && <>
                   <DropdownMenuItem onClick={() => navigate("/bookings")} className="cursor-pointer">
                     <Calendar className="mr-2 h-4 w-4" />
                     <span>الحجوزات</span>
@@ -193,20 +145,13 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>المواد</span>
                   </DropdownMenuItem>
-                </>
-              )}
-              {isOwnerOrAdmin && (
-                <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
+                </>}
+              {isOwnerOrAdmin && <DropdownMenuItem onClick={() => navigate("/users")} className="cursor-pointer">
                   <Users className="mr-2 h-4 w-4" />
                   <span>إدارة المستخدمين</span>
-                </DropdownMenuItem>
-              )}
+                </DropdownMenuItem>}
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleSignOut}
-                disabled={isLoading}
-                className="cursor-pointer text-destructive focus:text-destructive"
-              >
+              <DropdownMenuItem onClick={handleSignOut} disabled={isLoading} className="cursor-pointer text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>{isLoading ? "جاري تسجيل الخروج..." : "تسجيل الخروج"}</span>
               </DropdownMenuItem>
@@ -214,6 +159,5 @@ export const Navbar = ({ userRole, userName, isAdmin }: NavbarProps) => {
           </DropdownMenu>
         </div>
       </div>
-    </nav>
-  );
+    </nav>;
 };
