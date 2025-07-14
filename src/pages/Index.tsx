@@ -1,16 +1,16 @@
 import { useAuth } from "@/hooks/useAuth";
 import LoginPage from "@/pages/LoginPage";
-import { Navbar } from "@/components/layout/Navbar";
-import { AdminSidebar } from "@/components/layout/AdminSidebar";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import AdminSetup from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
+import { APP_CONFIG } from "@/lib/constants";
 
 const Index = () => {
-  const { user, profile, loading, isAdmin, isOwner, canManageUsers } = useAuth();
+  const { user, loading } = useAuth();
   const [hasError, setHasError] = useState(false);
   useEffect(() => {
     // Add error boundary logic
@@ -76,46 +76,20 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {(isAdmin || isOwner || canManageUsers) ? (
-        <AdminSidebar>
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-primary">
-                مرحباً بك في نادي العلوم
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                نظام إدارة وحجز القاعات التعليمية
-              </p>
-            </div>
-            <StatsCards />
-            <HallsGrid />
-          </div>
-        </AdminSidebar>
-      ) : (
-        <>
-          <Navbar 
-            userRole={profile?.user_role} 
-            userName={profile?.full_name || profile?.email || undefined}
-            isAdmin={isAdmin}
-          />
-          
-          <main className="container mx-auto p-4 space-y-8">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-primary">
-                مرحباً بك في نادي العلوم
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                نظام إدارة وحجز القاعات التعليمية
-              </p>
-            </div>
-            
-            <StatsCards />
-            <HallsGrid />
-          </main>
-        </>
-      )}
-    </div>
+    <AppLayout>
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-primary">
+            مرحباً بك في {APP_CONFIG.name}
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            {APP_CONFIG.description}
+          </p>
+        </div>
+        <StatsCards />
+        <HallsGrid />
+      </div>
+    </AppLayout>
   );
 };
 

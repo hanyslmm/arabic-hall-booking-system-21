@@ -1,19 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-
-export type Teacher = {
-  id: string;
-  name: string;
-  mobile_phone?: string | null;
-  subject_id?: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  // Relations
-  subjects?: { name: string } | null;
-  teacher_academic_stages?: Array<{
-    academic_stages: { name: string };
-  }>;
-};
+import { Teacher, TeacherFormData } from "@/types";
 
 export const getTeachers = async (): Promise<Teacher[]> => {
   const { data, error } = await supabase
@@ -32,23 +18,21 @@ export const getTeachers = async (): Promise<Teacher[]> => {
     throw error;
   }
 
-  return data as any[];
+  return data as Teacher[];
 };
 
-export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "created_at" | "updated_at" | "subjects" | "teacher_academic_stages">) => {
+export const addTeacher = async (teacherData: TeacherFormData) => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error("غير مصرح");
   
-  const teacherData: any = {
-    name: teacher.name,
-    created_by: user.user.id,
-    mobile_phone: teacher.mobile_phone || null,
-    subject_id: teacher.subject_id || null,
-  };
-  
   const { data, error } = await supabase
     .from("teachers")
-    .insert([teacherData])
+    .insert([{ 
+      name: teacherData.name,
+      mobile_phone: teacherData.mobile_phone || null,
+      subject_id: teacherData.subject_id || null,
+      created_by: user.user.id 
+    }])
     .select()
     .single();
   
@@ -56,18 +40,12 @@ export const addTeacher = async (teacher: Omit<Teacher, "id" | "created_by" | "c
   return data as Teacher;
 };
 
-export const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
+export const updateTeacher = async (id: string, updates: Partial<TeacherFormData>) => {
   const updateData: any = {};
   
-  if (updates.name !== undefined) {
-    updateData.name = updates.name;
-  }
-  if (updates.mobile_phone !== undefined) {
-    updateData.mobile_phone = updates.mobile_phone;
-  }
-  if (updates.subject_id !== undefined) {
-    updateData.subject_id = updates.subject_id;
-  }
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.mobile_phone !== undefined) updateData.mobile_phone = updates.mobile_phone;
+  if (updates.subject_id !== undefined) updateData.subject_id = updates.subject_id;
   
   const { data, error } = await supabase
     .from("teachers")
@@ -81,7 +59,7 @@ export const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
 };
 
 export const deleteTeacher = async (id: string) => {
-  const { error } = await (supabase as any).from("teachers").delete().eq("id", id);
+  const { error } = await supabase.from("teachers").delete().eq("id", id);
   if (error) throw error;
   return id;
 };

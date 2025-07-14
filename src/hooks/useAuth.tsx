@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-
-interface UserProfile {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  user_role: 'owner' | 'manager' | 'space_manager' | 'read_only';
-  role: 'USER' | 'ADMIN';
-}
+import { UserProfile, AuthPermissions } from "@/types";
+import { usePermissions } from "./usePermissions";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -60,7 +54,7 @@ export const useAuth = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, user_role, role')
+        .select('*')
         .eq('id', userId)
         .single();
 
@@ -73,22 +67,12 @@ export const useAuth = () => {
     }
   };
 
-  const isOwner = profile?.user_role === 'owner';
-  const isAdmin = profile?.role === 'ADMIN' || profile?.user_role === 'owner' || profile?.user_role === 'manager';
-  const isManager = profile?.user_role === 'manager' || isOwner || isAdmin;
-  const canManageBookings = isManager;
-  const canManageData = isManager;
-  const canManageUsers = isOwner || isAdmin;
+  const permissions = usePermissions(profile);
 
   return {
     user,
     profile,
     loading,
-    isOwner,
-    isAdmin,
-    isManager,
-    canManageBookings,
-    canManageData,
-    canManageUsers
+    ...permissions
   };
 };
