@@ -78,6 +78,14 @@ export const Navbar = ({
                   <Settings className="h-4 w-4" />
                   المواد
                 </Button>
+                <Button variant={location.pathname === "/students" ? "default" : "ghost"} size="sm" onClick={() => navigate("/students")} className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  الطلاب
+                </Button>
+                <Button variant={location.pathname === "/student-registrations" ? "default" : "ghost"} size="sm" onClick={() => navigate("/student-registrations")} className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  تسجيلات الطلاب
+                </Button>
               </>}
             {isOwnerOrAdmin && <Button variant={location.pathname === "/users" ? "default" : "ghost"} size="sm" onClick={() => navigate("/users")} className="flex items-center gap-2">
                 <Users className="h-4 w-4" />

@@ -13,6 +13,8 @@ import HallsPage from "./pages/HallsPage";
 import StagesPage from "./pages/StagesPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import BookingsPage from "./pages/BookingsPage";
+import StudentsPage from "./pages/StudentsPage";
+import StudentRegistrationsPage from "./pages/StudentRegistrationsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import AdminPrivilegesPage from "./pages/AdminPrivilegesPage";
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/stages" element={<StagesPage />} />
             <Route path="/subjects" element={<SubjectsPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/students" element={<StudentsPage />} />
+            <Route path="/student-registrations" element={<StudentRegistrationsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/admin-privileges" element={<AdminPrivilegesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
