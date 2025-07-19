@@ -1,0 +1,131 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { studentsApi, Student } from "@/api/students";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+interface EditStudentModalProps {
+  student: Student;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalProps) => {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    name: student.name,
+    mobile_phone: student.mobile_phone,
+    parent_phone: student.parent_phone || "",
+    city: student.city || "",
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (updates: any) => studentsApi.update(student.id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      toast.success("تم تحديث معلومات الطالب بنجاح");
+      onClose();
+    },
+    onError: (error: any) => {
+      if (error.message?.includes('mobile_phone')) {
+        toast.error("رقم الهاتف مستخدم من قبل طالب آخر");
+      } else {
+        toast.error("فشل في تحديث معلومات الطالب");
+      }
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.mobile_phone.trim()) {
+      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
+
+    // Validate mobile phone format (basic validation)
+    const phoneRegex = /^[0-9+\-\s()]+$/;
+    if (!phoneRegex.test(formData.mobile_phone)) {
+      toast.error("يرجى إدخال رقم هاتف صحيح");
+      return;
+    }
+
+    updateMutation.mutate({
+      name: formData.name.trim(),
+      mobile_phone: formData.mobile_phone.trim(),
+      parent_phone: formData.parent_phone.trim() || undefined,
+      city: formData.city.trim() || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>تعديل معلومات الطالب</DialogTitle>
+          <DialogDescription>
+            الرقم التسلسلي: {student.serial_number}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">الاسم *</Label>
+            <Input
+              id="name"
+              placeholder="اسم الطالب"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="mobile_phone">رقم الهاتف *</Label>
+            <Input
+              id="mobile_phone"
+              placeholder="رقم هاتف الطالب"
+              value={formData.mobile_phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, mobile_phone: e.target.value }))}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="parent_phone">هاتف ولي الأمر</Label>
+            <Input
+              id="parent_phone"
+              placeholder="رقم هاتف ولي الأمر"
+              value={formData.parent_phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, parent_phone: e.target.value }))}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="city">المدينة</Label>
+            <Input
+              id="city"
+              placeholder="المدينة"
+              value={formData.city}
+              onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              حفظ التغييرات
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};

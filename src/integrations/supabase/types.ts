@@ -46,6 +46,44 @@ export type Database = {
           },
         ]
       }
+      attendance_records: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          status: string
+          student_registration_id: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          status: string
+          student_registration_id: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          student_registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_student_registration_id_fkey"
+            columns: ["student_registration_id"]
+            isOneToOne: false
+            referencedRelation: "student_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -276,6 +314,50 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_records: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          reference_number: string | null
+          student_registration_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          reference_number?: string | null
+          student_registration_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          reference_number?: string | null
+          student_registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_student_registration_id_fkey"
+            columns: ["student_registration_id"]
+            isOneToOne: false
+            referencedRelation: "student_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -324,6 +406,99 @@ export type Database = {
           id?: number
           key?: string
           value?: string | null
+        }
+        Relationships: []
+      }
+      student_registrations: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          payment_status: string
+          registration_date: string
+          student_id: string
+          total_fees: number | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          payment_status?: string
+          registration_date?: string
+          student_id: string
+          total_fees?: number | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          payment_status?: string
+          registration_date?: string
+          student_id?: string
+          total_fees?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_registrations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_registrations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          city: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          mobile_phone: string
+          name: string
+          parent_phone: string | null
+          serial_number: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mobile_phone: string
+          name: string
+          parent_phone?: string | null
+          serial_number: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mobile_phone?: string
+          name?: string
+          parent_phone?: string | null
+          serial_number?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -558,6 +733,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      generate_student_serial: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_hall_occupancy_rates: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -573,6 +752,18 @@ export type Database = {
       is_super_admin: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      search_student: {
+        Args: { search_term: string }
+        Returns: {
+          id: string
+          serial_number: string
+          name: string
+          mobile_phone: string
+          parent_phone: string
+          city: string
+          created_at: string
+        }[]
       }
     }
     Enums: {
