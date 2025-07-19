@@ -4,12 +4,13 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import AdminSetup from "@/components/AdminSetup";
 import { UserUpgrade } from "@/components/UserUpgrade";
 import { APP_CONFIG } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { STALE_TIME, RETRY_CONFIG } from "@/utils/constants";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -24,12 +25,16 @@ const Index = () => {
       return data as Array<{ hall_id: string; name: string; occupancy_percentage: number }>;
     },
     enabled: !!user,
+    staleTime: STALE_TIME.LONG,
+    retry: RETRY_CONFIG.DEFAULT,
   });
 
-  // Calculate average occupancy
-  const averageOccupancy = occupancyData && occupancyData.length > 0 
-    ? Math.round(occupancyData.reduce((sum, hall) => sum + hall.occupancy_percentage, 0) / occupancyData.length)
-    : 0;
+  // Calculate average occupancy with memoization
+  const averageOccupancy = useMemo(() => {
+    return occupancyData && occupancyData.length > 0 
+      ? Math.round(occupancyData.reduce((sum, hall) => sum + hall.occupancy_percentage, 0) / occupancyData.length)
+      : 0;
+  }, [occupancyData]);
   useEffect(() => {
     // Add error boundary logic
     const handleError = (event: ErrorEvent) => {

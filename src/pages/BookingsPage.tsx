@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
+import { queryKeys } from "@/utils/queryKeys";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,26 +43,28 @@ const BookingsPage = () => {
 
   // Fetch halls for filter
   const { data: halls } = useQuery({
-    queryKey: ['halls'],
+    queryKey: queryKeys.halls(),
     queryFn: async () => {
       const { data, error } = await supabase.from('halls').select('id, name').order('name');
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch teachers for filter
+  // Fetch teachers for filter  
   const { data: teachers } = useQuery({
-    queryKey: ['teachers'],
+    queryKey: queryKeys.teachers(),
     queryFn: async () => {
       const { data, error } = await supabase.from('teachers').select('id, name').order('name');
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ['bookings', selectedHall, selectedTeacher],
+  const { data: bookings, isLoading, error } = useQuery({
+    queryKey: queryKeys.bookingsFiltered(selectedHall, selectedTeacher),
     queryFn: async () => {
       let query = supabase
         .from('bookings')
@@ -84,8 +87,33 @@ const BookingsPage = () => {
       
       if (error) throw error;
       return data as Booking[];
-    }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
+
+  // Memoize expensive calculations
+  const canManage = useMemo(() => 
+    profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin,
+    [profile?.user_role, isAdmin]
+  );
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar 
+          userRole={profile?.user_role} 
+          userName={profile?.full_name || profile?.email || undefined}
+          isAdmin={isAdmin}
+        />
+        <div className="container mx-auto py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-4">خطأ في تحميل البيانات</h1>
+            <p className="text-muted-foreground">يرجى المحاولة مرة أخرى</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -113,7 +141,6 @@ const BookingsPage = () => {
     return days.map(day => dayMap[day] || day).join(', ');
   };
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin;
 
   return (
     <div className="min-h-screen bg-background">
@@ -264,7 +291,7 @@ const BookingsPage = () => {
                                 onClick={() => navigate(`/class-management/${booking.id}`)}
                                 className="bg-primary hover:bg-primary/90"
                               >
-                                إدارة الصف
+                                إدارة المجموعة
                               </Button>
                               <EditBookingModal 
                                 bookingId={booking.id} 

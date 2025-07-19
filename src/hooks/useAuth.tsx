@@ -57,12 +57,18 @@ export const useAuth = () => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle missing profiles
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        setProfile(null);
+        return;
+      }
+      
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
