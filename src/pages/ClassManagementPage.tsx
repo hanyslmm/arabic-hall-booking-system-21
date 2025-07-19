@@ -14,10 +14,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { Navbar } from '@/components/layout/Navbar';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload } from 'lucide-react';
 import { bookingsApi } from '@/api/bookings';
 import { studentRegistrationsApi, attendanceApi, paymentsApi } from '@/api/students';
 import { studentsApi } from '@/api/students';
+import { BulkUploadModal } from '@/components/student/BulkUploadModal';
 import { format } from 'date-fns';
 
 interface AttendanceRecord {
@@ -45,8 +46,10 @@ export default function ClassManagementPage() {
   const [attendanceData, setAttendanceData] = useState<Record<string, AttendanceRecord>>({});
   const [paymentData, setPaymentData] = useState<Record<string, PaymentRecord>>({});
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [customFees, setCustomFees] = useState<Record<string, number>>({});
+  const [paymentMonth, setPaymentMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
 
   // Fetch booking details
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -120,6 +123,55 @@ export default function ClassManagementPage() {
     },
   });
 
+  // Bulk student upload mutation
+  const bulkStudentMutation = useMutation({
+    mutationFn: async (students: any[]) => {
+      // Create students first, then register them
+      const results = [];
+      for (const studentData of students) {
+        // Create student
+        const student = await studentsApi.create({
+          name: studentData.name,
+          mobile_phone: studentData.mobile,
+          parent_phone: studentData.home,
+          city: studentData.city,
+        });
+
+        // Register student to class
+        const registration = await studentRegistrationsApi.create({
+          student_id: student.id,
+          booking_id: bookingId!,
+          total_fees: studentData.payment || booking?.class_fees || 0,
+        });
+
+        // Add initial payment if amount > 0
+        if (studentData.payment > 0) {
+          await paymentsApi.create({
+            student_registration_id: registration.id,
+            amount: studentData.payment,
+            payment_date: format(new Date(), 'yyyy-MM-dd'),
+            payment_method: 'cash',
+            notes: `دفعة شهر ${paymentMonth}`,
+          });
+        }
+
+        results.push({ student, registration });
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ['registrations', bookingId] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast({ 
+        title: 'تم رفع الطلاب بنجاح', 
+        description: `تم إضافة ${results.length} طالب للمجموعة` 
+      });
+    },
+    onError: () => {
+      toast({ title: 'خطأ في رفع بيانات الطلاب', variant: 'destructive' });
+    },
+  });
+
   const handleAttendanceChange = (registrationId: string, status: 'present' | 'absent' | 'late') => {
     setAttendanceData(prev => ({
       ...prev,
@@ -139,6 +191,7 @@ export default function ClassManagementPage() {
         amount,
         payment_date: format(new Date(), 'yyyy-MM-dd'),
         payment_method: 'cash',
+        notes: `دفعة شهر ${paymentMonth}`,
       }
     }));
   };
@@ -207,7 +260,7 @@ export default function ClassManagementPage() {
             <ArrowLeft className="h-4 w-4 ml-2" />
             العودة للحجوزات
           </Button>
-          <h1 className="text-3xl font-bold">إدارة الصف</h1>
+          <h1 className="text-3xl font-bold">إدارة المجموعة</h1>
         </div>
 
         {/* Class Information */}
@@ -215,7 +268,7 @@ export default function ClassManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              معلومات الصف
+              معلومات المجموعة
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -237,8 +290,8 @@ export default function ClassManagementPage() {
                 <p className="text-lg">{booking.days_of_week?.join(', ')}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium">رسوم الصف</Label>
-                <p className="text-lg">{booking.class_fees || 0} ر.س</p>
+                <Label className="text-sm font-medium">رسوم المجموعة</Label>
+                <p className="text-lg">{booking.class_fees || 0} جنيه</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">عدد الطلاب</Label>
@@ -260,15 +313,15 @@ export default function ClassManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">إجمالي الرسوم</p>
-                <p className="text-2xl font-bold text-primary">{totalFees} ر.س</p>
+                <p className="text-2xl font-bold text-primary">{totalFees} جنيه</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">المدفوع</p>
-                <p className="text-2xl font-bold text-green-600">{totalPaid} ر.س</p>
+                <p className="text-2xl font-bold text-green-600">{totalPaid} جنيه</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">المتبقي</p>
-                <p className="text-2xl font-bold text-orange-600">{totalFees - totalPaid} ر.س</p>
+                <p className="text-2xl font-bold text-orange-600">{totalFees - totalPaid} جنيه</p>
               </div>
             </div>
           </CardContent>
@@ -281,16 +334,17 @@ export default function ClassManagementPage() {
               <Users className="h-5 w-5" />
               إدارة الطلاب
             </CardTitle>
-            <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 ml-2" />
-                  إضافة طالب
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-2">
+              <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 ml-2" />
+                    إضافة طالب
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>إضافة طالب للصف</DialogTitle>
+                  <DialogTitle>إضافة طالب للمجموعة</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -310,7 +364,7 @@ export default function ClassManagementPage() {
                   </div>
                   {selectedStudentId && (
                     <div>
-                      <Label>الرسوم (اختياري - سيتم استخدام رسوم الصف الافتراضية)</Label>
+                      <Label>الرسوم (اختياري - سيتم استخدام رسوم المجموعة الافتراضية)</Label>
                       <Input
                         type="number"
                         placeholder={`${booking.class_fees || 0}`}
@@ -332,6 +386,12 @@ export default function ClassManagementPage() {
                 </div>
               </DialogContent>
             </Dialog>
+            
+            <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline">
+              <Upload className="h-4 w-4 ml-2" />
+              رفع مجمع
+            </Button>
+          </div>
           </CardHeader>
           <CardContent>
             {registrations && registrations.length > 0 ? (
@@ -339,10 +399,21 @@ export default function ClassManagementPage() {
                 {/* Attendance Header */}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">تسجيل الحضور</h3>
-                  <Button onClick={saveAttendance} disabled={Object.keys(attendanceData).length === 0}>
-                    <Save className="h-4 w-4 ml-2" />
-                    حفظ الحضور
-                  </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">شهر الدفع:</Label>
+                      <Input
+                        type="month"
+                        value={paymentMonth}
+                        onChange={(e) => setPaymentMonth(e.target.value)}
+                        className="w-40"
+                      />
+                    </div>
+                    <Button onClick={saveAttendance} disabled={Object.keys(attendanceData).length === 0}>
+                      <Save className="h-4 w-4 ml-2" />
+                      حفظ الحضور
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Students Table */}
@@ -365,8 +436,8 @@ export default function ClassManagementPage() {
                         <tr key={registration.id} className="border-t">
                           <td className="p-3">{registration.student?.name}</td>
                           <td className="p-3">{registration.student?.serial_number}</td>
-                          <td className="p-3">{registration.total_fees} ر.س</td>
-                          <td className="p-3">{registration.paid_amount} ر.س</td>
+                           <td className="p-3">{registration.total_fees} جنيه</td>
+                           <td className="p-3">{registration.paid_amount} جنيه</td>
                           <td className="p-3">
                             <Badge 
                               variant={
@@ -439,6 +510,14 @@ export default function ClassManagementPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Bulk Upload Modal */}
+        <BulkUploadModal
+          isOpen={isBulkUploadOpen}
+          onClose={() => setIsBulkUploadOpen(false)}
+          onUpload={(students) => bulkStudentMutation.mutate(students)}
+          defaultClassFees={booking?.class_fees || 0}
+        />
       </div>
     </div>
   );

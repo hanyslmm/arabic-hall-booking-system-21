@@ -76,7 +76,7 @@ export default function ClassFinancialReportsPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalExpectedRevenue.toLocaleString()} ر.س</div>
+              <div className="text-2xl font-bold">{totalExpectedRevenue.toLocaleString()} جنيه</div>
               <p className="text-xs text-muted-foreground">من {totalRegistrations} تسجيل</p>
             </CardContent>
           </Card>
@@ -87,7 +87,7 @@ export default function ClassFinancialReportsPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{totalActualRevenue.toLocaleString()} ر.س</div>
+              <div className="text-2xl font-bold text-green-600">{totalActualRevenue.toLocaleString()} جنيه</div>
               <p className="text-xs text-muted-foreground">معدل التحصيل {collectionRate.toFixed(1)}%</p>
             </CardContent>
           </Card>
@@ -98,7 +98,7 @@ export default function ClassFinancialReportsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{totalPending.toLocaleString()} ر.س</div>
+              <div className="text-2xl font-bold text-orange-600">{totalPending.toLocaleString()} جنيه</div>
               <p className="text-xs text-muted-foreground">في انتظار التحصيل</p>
             </CardContent>
           </Card>
@@ -130,7 +130,7 @@ export default function ClassFinancialReportsPage() {
         {/* Class-wise Financial Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>التقرير المالي حسب الصف</CardTitle>
+            <CardTitle>التقرير المالي حسب المجموعة</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -156,15 +156,15 @@ export default function ClassFinancialReportsPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-sm text-muted-foreground">إجمالي الرسوم</p>
-                        <p className="text-xl font-bold">{classInfo.totalFees.toLocaleString()} ر.س</p>
+                        <p className="text-xl font-bold">{classInfo.totalFees.toLocaleString()} جنيه</p>
                       </div>
                       <div className="text-center">
                         <p className="text-sm text-muted-foreground">المحصل</p>
-                        <p className="text-xl font-bold text-green-600">{classInfo.totalPaid.toLocaleString()} ر.س</p>
+                        <p className="text-xl font-bold text-green-600">{classInfo.totalPaid.toLocaleString()} جنيه</p>
                       </div>
                       <div className="text-center">
                         <p className="text-sm text-muted-foreground">المتبقي</p>
-                        <p className="text-xl font-bold text-orange-600">{remaining.toLocaleString()} ر.س</p>
+                        <p className="text-xl font-bold text-orange-600">{remaining.toLocaleString()} جنيه</p>
                       </div>
                     </div>
 

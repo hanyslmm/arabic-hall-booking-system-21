@@ -50,6 +50,29 @@ const StudentsPage = () => {
     }
   });
 
+  const bulkUploadMutation = useMutation({
+    mutationFn: async (students: any[]) => {
+      const results = [];
+      for (const studentData of students) {
+        const student = await studentsApi.create({
+          name: studentData.name,
+          mobile_phone: studentData.mobile,
+          parent_phone: studentData.home,
+          city: studentData.city,
+        });
+        results.push(student);
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      toast.success(`تم إضافة ${results.length} طالب بنجاح`);
+    },
+    onError: () => {
+      toast.error("فشل في رفع بيانات الطلاب");
+    }
+  });
+
   const handleSearch = () => {
     if (searchTerm.trim()) {
       searchMutation.mutate(searchTerm.trim());
@@ -283,6 +306,8 @@ const StudentsPage = () => {
         <BulkUploadModal 
           isOpen={showBulkUpload}
           onClose={() => setShowBulkUpload(false)}
+          onUpload={(students) => bulkUploadMutation.mutate(students)}
+          defaultClassFees={0}
         />
         
         {editingStudent && (

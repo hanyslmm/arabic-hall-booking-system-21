@@ -1,238 +1,248 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { studentsApi } from "@/api/students";
-import { toast } from "sonner";
-import { Loader2, Upload, Download, FileSpreadsheet } from "lucide-react";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { Upload, Download, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface BulkUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onUpload: (students: BulkStudentData[]) => void;
+  defaultClassFees?: number;
 }
 
-export const BulkUploadModal = ({ isOpen, onClose }: BulkUploadModalProps) => {
-  const queryClient = useQueryClient();
+interface BulkStudentData {
+  name: string;
+  mobile: string;
+  home: string; // parent mobile
+  city: string;
+  class: string;
+  payment: number;
+}
+
+export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 0 }: BulkUploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<any[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [previewData, setPreviewData] = useState<BulkStudentData[]>([]);
+  const { toast } = useToast();
 
-  const bulkCreateMutation = useMutation({
-    mutationFn: studentsApi.bulkCreate,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-      toast.success(`تم إضافة ${data.length} طالب بنجاح`);
-      handleClose();
-    },
-    onError: (error: any) => {
-      toast.error("فشل في رفع البيانات");
-      console.error("Bulk upload error:", error);
-    }
-  });
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    // Validate file type
-    const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv'
+  const downloadTemplate = () => {
+    const templateData = [
+      {
+        'Name': 'أحمد محمد',
+        'Mobile': '01012345678',
+        'Home': '01098765432',
+        'City': 'القاهرة',
+        'Class': 'الفصل الأول',
+        'Payment': defaultClassFees
+      }
     ];
-    
-    if (!validTypes.includes(selectedFile.type)) {
-      toast.error("يرجى اختيار ملف Excel أو CSV صحيح");
-      return;
-    }
 
-    setFile(selectedFile);
-    parseFile(selectedFile);
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    XLSX.writeFile(wb, 'bulk_students_template.xlsx');
   };
 
-  const parseFile = async (file: File) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      processFile(selectedFile);
+    }
+  };
+
+  const processFile = async (file: File) => {
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Skip header row and parse data
-      const rows = jsonData.slice(1) as any[][];
-      const validationErrors: string[] = [];
-      const parsedData: any[] = [];
+      const processedData: BulkStudentData[] = [];
+      const errorList: string[] = [];
 
-      rows.forEach((row, index) => {
-        const rowNumber = index + 2; // +2 because we start from row 2 (after header)
+      jsonData.forEach((row: any, index: number) => {
+        const rowNumber = index + 2; // +2 because Excel rows start at 1 and we have header
         
-        if (!row[0] || !row[1]) {
-          validationErrors.push(`الصف ${rowNumber}: الاسم ورقم الهاتف مطلوبان`);
-          return;
+        // Validate required fields
+        if (!row.Name) {
+          errorList.push(`الصف ${rowNumber}: اسم الطالب مطلوب`);
+        }
+        if (!row.Mobile) {
+          errorList.push(`الصف ${rowNumber}: رقم الموبايل مطلوب`);
+        }
+        if (!row.Home) {
+          errorList.push(`الصف ${rowNumber}: رقم ولي الأمر مطلوب`);
         }
 
-        // Validate phone number format
-        const phoneRegex = /^[0-9+\-\s()]+$/;
-        if (!phoneRegex.test(String(row[1]))) {
-          validationErrors.push(`الصف ${rowNumber}: رقم الهاتف غير صحيح`);
-          return;
+        // Validate mobile numbers (Egyptian format)
+        const mobileRegex = /^01[0-9]{9}$/;
+        if (row.Mobile && !mobileRegex.test(row.Mobile.toString())) {
+          errorList.push(`الصف ${rowNumber}: رقم الموبايل غير صحيح (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
+        }
+        if (row.Home && !mobileRegex.test(row.Home.toString())) {
+          errorList.push(`الصف ${rowNumber}: رقم ولي الأمر غير صحيح (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
         }
 
-        parsedData.push({
-          name: String(row[0]).trim(),
-          mobile_phone: String(row[1]).trim(),
-          parent_phone: row[2] ? String(row[2]).trim() : undefined,
-          city: row[3] ? String(row[3]).trim() : undefined,
-        });
+        // Validate payment amount
+        const payment = Number(row.Payment) || defaultClassFees;
+        if (payment < 0) {
+          errorList.push(`الصف ${rowNumber}: مبلغ الدفع يجب أن يكون أكبر من أو يساوي الصفر`);
+        }
+
+        if (row.Name && row.Mobile && row.Home) {
+          processedData.push({
+            name: row.Name.toString().trim(),
+            mobile: row.Mobile.toString().trim(),
+            home: row.Home.toString().trim(),
+            city: row.City?.toString().trim() || '',
+            class: row.Class?.toString().trim() || '',
+            payment: payment
+          });
+        }
       });
 
-      setPreviewData(parsedData);
-      setErrors(validationErrors);
+      setErrors(errorList);
+      setPreviewData(processedData);
+
+      if (errorList.length === 0) {
+        toast({ title: 'تم تحميل الملف بنجاح', description: `تم العثور على ${processedData.length} طالب` });
+      }
     } catch (error) {
-      toast.error("فشل في قراءة الملف");
-      console.error("File parsing error:", error);
+      setErrors(['خطأ في قراءة الملف. تأكد من أن الملف Excel صالح.']);
+      toast({ title: 'خطأ في تحميل الملف', variant: 'destructive' });
     }
   };
 
-  const downloadTemplate = () => {
-    const template = [
-      ['Name', 'Mobile', 'Home', 'City'],
-      ['أحمد محمد', '0501234567', '0112345678', 'الرياض'],
-      ['فاطمة علي', '0559876543', '0134567890', 'جدة'],
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Students Template');
-    XLSX.writeFile(wb, 'students_template.xlsx');
-  };
-
-  const handleSubmit = () => {
-    if (errors.length > 0) {
-      toast.error("يرجى إصلاح الأخطاء أولاً");
-      return;
-    }
-
+  const handleUpload = () => {
     if (previewData.length === 0) {
-      toast.error("لا توجد بيانات للرفع");
+      toast({ title: 'لا توجد بيانات للرفع', variant: 'destructive' });
       return;
     }
 
-    bulkCreateMutation.mutate(previewData);
+    if (errors.length > 0) {
+      toast({ title: 'يرجى إصلاح الأخطاء قبل الرفع', variant: 'destructive' });
+      return;
+    }
+
+    onUpload(previewData);
+    handleClose();
   };
 
   const handleClose = () => {
     setFile(null);
-    setPreviewData([]);
     setErrors([]);
+    setPreviewData([]);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            رفع ملف Excel للطلاب
-          </DialogTitle>
-          <DialogDescription>
-            رفع عدة طلاب دفعة واحدة من ملف Excel أو CSV
-          </DialogDescription>
+          <DialogTitle>رفع بيانات الطلاب مجمعة</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4">
+
+        <div className="space-y-6">
           {/* Template Download */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-green-600" />
-              <span>تحميل نموذج الملف</span>
+            <div>
+              <h3 className="font-medium">تحميل نموذج Excel</h3>
+              <p className="text-sm text-muted-foreground">
+                حمل النموذج وأدخل بيانات الطلاب: الاسم، الموبايل، رقم ولي الأمر، المدينة، الفصل، المدفوع
+              </p>
             </div>
-            <Button variant="outline" onClick={downloadTemplate} size="sm">
-              <Download className="h-4 w-4 mr-2" />
+            <Button onClick={downloadTemplate} variant="outline">
+              <Download className="h-4 w-4 ml-2" />
               تحميل النموذج
             </Button>
           </div>
 
           {/* File Upload */}
           <div className="space-y-2">
-            <Label htmlFor="file">اختيار الملف</Label>
+            <Label>رفع ملف Excel</Label>
             <Input
-              id="file"
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls"
               onChange={handleFileChange}
             />
-            <p className="text-sm text-muted-foreground">
-              يجب أن يحتوي الملف على الأعمدة: Name, Mobile, Home, City
-            </p>
           </div>
 
-          {/* Validation Errors */}
+          {/* Errors */}
           {errors.length > 0 && (
             <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-1">
-                  <p className="font-medium">أخطاء في البيانات:</p>
+                  <p className="font-medium">تم العثور على الأخطاء التالية:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {errors.slice(0, 5).map((error, index) => (
+                    {errors.map((error, index) => (
                       <li key={index} className="text-sm">{error}</li>
                     ))}
-                    {errors.length > 5 && (
-                      <li className="text-sm">...و {errors.length - 5} خطأ آخر</li>
-                    )}
                   </ul>
                 </div>
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Preview Data */}
+          {/* Preview */}
           {previewData.length > 0 && (
             <div className="space-y-2">
-              <Label>معاينة البيانات ({previewData.length} طالب)</Label>
-              <div className="border rounded-lg p-4 max-h-40 overflow-y-auto">
-                <div className="grid grid-cols-4 gap-2 text-sm font-medium mb-2">
-                  <div>الاسم</div>
-                  <div>الهاتف</div>
-                  <div>هاتف ولي الأمر</div>
-                  <div>المدينة</div>
-                </div>
-                {previewData.slice(0, 5).map((student, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-2 text-sm py-1 border-t">
-                    <div>{student.name}</div>
-                    <div>{student.mobile_phone}</div>
-                    <div>{student.parent_phone || '-'}</div>
-                    <div>{student.city || '-'}</div>
-                  </div>
-                ))}
-                {previewData.length > 5 && (
-                  <div className="text-sm text-muted-foreground text-center py-2">
-                    ...و {previewData.length - 5} طالب آخر
+              <h3 className="font-medium">معاينة البيانات ({previewData.length} طالب)</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-right p-2">الاسم</th>
+                      <th className="text-right p-2">الموبايل</th>
+                      <th className="text-right p-2">ولي الأمر</th>
+                      <th className="text-right p-2">المدينة</th>
+                      <th className="text-right p-2">الفصل</th>
+                      <th className="text-right p-2">المدفوع</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.slice(0, 10).map((student, index) => (
+                      <tr key={index} className="border-t">
+                        <td className="p-2">{student.name}</td>
+                        <td className="p-2">{student.mobile}</td>
+                        <td className="p-2">{student.home}</td>
+                        <td className="p-2">{student.city}</td>
+                        <td className="p-2">{student.class}</td>
+                        <td className="p-2">{student.payment} جنيه</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {previewData.length > 10 && (
+                  <div className="p-2 text-center text-sm text-muted-foreground border-t">
+                    ... و {previewData.length - 10} طالب آخرين
                   </div>
                 )}
               </div>
             </div>
           )}
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-2 space-x-reverse">
+            <Button variant="outline" onClick={handleClose}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleUpload} 
+              disabled={previewData.length === 0 || errors.length > 0}
+            >
+              <Upload className="h-4 w-4 ml-2" />
+              رفع البيانات
+            </Button>
+          </div>
         </div>
-        
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
-            إلغاء
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!file || errors.length > 0 || previewData.length === 0 || bulkCreateMutation.isPending}
-          >
-            {bulkCreateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            رفع البيانات
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
