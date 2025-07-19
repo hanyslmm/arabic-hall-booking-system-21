@@ -258,10 +258,19 @@ const BookingsPage = () => {
                         </TableCell>
                         {canManage && (
                           <TableCell>
-                            <EditBookingModal 
-                              bookingId={booking.id} 
-                              booking={booking} 
-                            />
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => navigate(`/class-management/${booking.id}`)}
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                إدارة الصف
+                              </Button>
+                              <EditBookingModal 
+                                bookingId={booking.id} 
+                                booking={booking} 
+                              />
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>

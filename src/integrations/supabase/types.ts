@@ -111,6 +111,7 @@ export type Database = {
       bookings: {
         Row: {
           academic_stage_id: string
+          class_fees: number | null
           created_at: string | null
           created_by: string
           days_of_week: string[]
@@ -126,6 +127,7 @@ export type Database = {
         }
         Insert: {
           academic_stage_id: string
+          class_fees?: number | null
           created_at?: string | null
           created_by: string
           days_of_week: string[]
@@ -141,6 +143,7 @@ export type Database = {
         }
         Update: {
           academic_stage_id?: string
+          class_fees?: number | null
           created_at?: string | null
           created_by?: string
           days_of_week?: string[]

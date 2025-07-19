@@ -64,3 +64,28 @@ export const getBookingsByDate = async (startDate: string): Promise<Booking[]> =
   if (error) throw error;
   return data as Booking[];
 };
+
+export const getBookingById = async (id: string): Promise<Booking> => {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(`
+      *,
+      halls(name),
+      teachers(name),
+      academic_stages(name)
+    `)
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data as Booking;
+};
+
+// Export as bookingsApi object
+export const bookingsApi = {
+  getAll: getBookings,
+  getById: getBookingById,
+  getByDate: getBookingsByDate,
+  create: addBooking,
+  update: updateBooking,
+  delete: deleteBooking
+};

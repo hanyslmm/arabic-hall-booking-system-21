@@ -15,6 +15,8 @@ import SubjectsPage from "./pages/SubjectsPage";
 import BookingsPage from "./pages/BookingsPage";
 import StudentsPage from "./pages/StudentsPage";
 import StudentRegistrationsPage from "./pages/StudentRegistrationsPage";
+import ClassManagementPage from "./pages/ClassManagementPage";
+import ClassFinancialReportsPage from "./pages/ClassFinancialReportsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import AdminPrivilegesPage from "./pages/AdminPrivilegesPage";
@@ -41,7 +43,9 @@ const App = () => (
             <Route path="/subjects" element={<SubjectsPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/students" element={<StudentsPage />} />
-            <Route path="/student-registrations" element={<StudentRegistrationsPage />} />
+          <Route path="/student-registrations" element={<StudentRegistrationsPage />} />
+          <Route path="/class-management/:bookingId" element={<ClassManagementPage />} />
+          <Route path="/financial-reports" element={<ClassFinancialReportsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/admin-privileges" element={<AdminPrivilegesPage />} />
             <Route path="/settings" element={<SettingsPage />} />

@@ -287,6 +287,29 @@ export const attendanceApi = {
     
     if (error) throw error;
     return data as AttendanceRecord;
+  },
+
+  async bulkCreate(attendanceRecords: {
+    student_registration_id: string;
+    attendance_date: string;
+    status: 'present' | 'absent' | 'late' | 'excused';
+    notes?: string;
+  }[]): Promise<AttendanceRecord[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("غير مصرح");
+    
+    const recordsWithUser = attendanceRecords.map(record => ({
+      ...record,
+      created_by: user.user.id,
+    }));
+    
+    const { data, error } = await supabase
+      .from("attendance_records")
+      .insert(recordsWithUser)
+      .select();
+    
+    if (error) throw error;
+    return data as AttendanceRecord[];
   }
 };
 
@@ -346,5 +369,31 @@ export const paymentsApi = {
     const { error } = await supabase.from("payment_records").delete().eq("id", id);
     if (error) throw error;
     return id;
+  },
+
+  async bulkCreate(paymentRecords: {
+    student_registration_id: string;
+    amount: number;
+    payment_date?: string;
+    payment_method?: 'cash' | 'card' | 'transfer' | 'other';
+    reference_number?: string;
+    notes?: string;
+  }[]): Promise<PaymentRecord[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("غير مصرح");
+    
+    const recordsWithUser = paymentRecords.map(record => ({
+      ...record,
+      created_by: user.user.id,
+      payment_method: record.payment_method || 'cash' as const,
+    }));
+    
+    const { data, error } = await supabase
+      .from("payment_records")
+      .insert(recordsWithUser)
+      .select();
+    
+    if (error) throw error;
+    return data as PaymentRecord[];
   }
 };
