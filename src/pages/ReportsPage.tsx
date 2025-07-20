@@ -12,15 +12,13 @@ import { format } from "date-fns";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { CardDescription } from "@/components/ui/card";
 
-interface BookingReport {
+interface BookingFinancialData {
   id: string;
-  hall_name: string;
-  teacher_name: string;
-  stage_name: string;
-  start_time: string;
-  days_of_week: string[];
+  start_date: string;
+  class_fees: number;
   number_of_students: number;
-  status: string;
+  halls: { name: string } | null;
+  teachers: { name: string } | null;
   created_at: string;
 }
 
@@ -83,10 +81,10 @@ export function ReportsPage() {
         .select(`
           id,
           start_date,
-          class_fee,
-          student_count,
+          class_fees,
+          number_of_students,
           halls(name),
-          teachers(full_name),
+          teachers(name),
           subjects(name),
           created_at
         `)
@@ -98,70 +96,8 @@ export function ReportsPage() {
   });
 
   // Calculate total revenue
-  const totalRevenue = bookings?.reduce((sum, booking) => sum + (booking.class_fee || 0), 0) || 0;
+  const totalRevenue = bookings?.reduce((sum, booking) => sum + (booking.class_fees || 0), 0) || 0;
 
-  const getDaysInArabic = (days: string[]) => {
-    const dayMap: { [key: string]: string } = {
-      'sunday': 'الأحد',
-      'monday': 'الاثنين',
-      'tuesday': 'الثلاثاء',
-      'wednesday': 'الأربعاء',
-      'thursday': 'الخميس',
-      'friday': 'الجمعة',
-      'saturday': 'السبت'
-    };
-    return days.map(day => dayMap[day] || day).join(', ');
-  };
-
-  const getStatusInArabic = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'active': 'نشط',
-      'cancelled': 'ملغي',
-      'completed': 'مكتمل'
-    };
-    return statusMap[status] || status;
-  };
-
-  const exportToCSV = () => {
-    if (!bookings || bookings.length === 0) return;
-
-    const headers = [
-      'ID',
-      'اسم القاعة',
-      'اسم المدرس',
-      'المرحلة الدراسية',
-      'وقت البداية',
-      'الأيام',
-      'عدد الطلاب',
-      'الحالة',
-      'تاريخ الإنشاء'
-    ];
-
-    const csvContent = [
-      headers.join(','),
-      ...bookings.map(booking => [
-        booking.id,
-        booking.hall_name,
-        booking.teacher_name,
-        booking.stage_name,
-        booking.start_time,
-        `"${getDaysInArabic(booking.days_of_week)}"`,
-        booking.number_of_students,
-        getStatusInArabic(booking.status),
-        format(new Date(booking.created_at), 'yyyy-MM-dd HH:mm:ss')
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `bookings-report-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   if (isLoading) {
     return (
@@ -251,11 +187,11 @@ export function ReportsPage() {
                         {format(new Date(booking.start_date), "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell>{booking.halls?.name}</TableCell>
-                      <TableCell>{booking.teachers?.full_name}</TableCell>
-                      <TableCell>{booking.subjects?.name}</TableCell>
-                      <TableCell>{booking.student_count || 0}</TableCell>
+                      <TableCell>{booking.teachers?.name}</TableCell>
+                      <TableCell>-</TableCell>
+                      <TableCell>{booking.number_of_students || 0}</TableCell>
                       <TableCell className="font-semibold">
-                        {(booking.class_fee || 0).toLocaleString()} جنيه
+                        {(booking.class_fees || 0).toLocaleString()} جنيه
                       </TableCell>
                     </TableRow>
                   ))}
