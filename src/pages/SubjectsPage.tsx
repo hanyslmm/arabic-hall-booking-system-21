@@ -1,21 +1,24 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navbar } from "@/components/layout/Navbar";
-import { AdminLayout } from "@/components/layout/AdminLayout";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Plus, Pencil, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatShortArabicDate } from "@/utils/dateUtils";
+import { BookOpen, MoreHorizontal } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 interface Subject {
   id: string;
   name: string;
+  code?: string;
+  description?: string;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -26,8 +29,14 @@ const SubjectsPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [subjectName, setSubjectName] = useState("");
+  const [editForm, setEditForm] = useState({
+    name: "",
+    code: "",
+    description: ""
+  });
 
   // Mock data for now - will be replaced with real API calls after migration
   const { data: subjects = [], isLoading } = useQuery({
@@ -35,13 +44,13 @@ const SubjectsPage = () => {
     queryFn: async (): Promise<Subject[]> => {
       // Mock data
       return [
-        { id: "1", name: "الرياضيات", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
-        { id: "2", name: "العلوم", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
-        { id: "3", name: "الفيزياء", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
-        { id: "4", name: "الكيمياء", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
-        { id: "5", name: "الأحياء", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
-        { id: "6", name: "اللغة العربية", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
-        { id: "7", name: "اللغة الإنجليزية", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "1", name: "الرياضيات", code: "MATH", description: "مادة الرياضيات", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "2", name: "العلوم", code: "SCI", description: "مادة العلوم", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "3", name: "الفيزياء", code: "PHY", description: "مادة الفيزياء", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "4", name: "الكيمياء", code: "CHEM", description: "مادة الكيمياء", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "5", name: "الأحياء", code: "BIO", description: "مادة الأحياء", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "6", name: "اللغة العربية", code: "AR", description: "مادة اللغة العربية", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
+        { id: "7", name: "اللغة الإنجليزية", code: "EN", description: "مادة اللغة الإنجليزية", created_at: "2025-01-01", updated_at: "2025-01-01", created_by: "user1" },
       ];
     },
   });
@@ -62,19 +71,20 @@ const SubjectsPage = () => {
     },
   });
 
-  const updateSubjectMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Subject> }) => {
       // Mock implementation
       toast({
         title: "ملاحظة",
         description: "سيتم تنفيذ تحديث المواد الدراسية بعد تحديث قاعدة البيانات",
       });
-      return { id, name };
+      return { id, ...data };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      setShowEditModal(false);
       setEditingSubject(null);
-      setSubjectName("");
+      setEditForm({ name: "", code: "", description: "" });
     },
   });
 
@@ -94,196 +104,198 @@ const SubjectsPage = () => {
 
   const handleSubmit = () => {
     if (!subjectName.trim()) return;
+    createSubjectMutation.mutate(subjectName);
+  };
 
-    if (editingSubject) {
-      updateSubjectMutation.mutate({ id: editingSubject.id, name: subjectName });
-    } else {
-      createSubjectMutation.mutate(subjectName);
-    }
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSubject || !editForm.name.trim()) return;
+    updateMutation.mutate({ 
+      id: editingSubject.id, 
+      data: editForm 
+    });
   };
 
   const handleEdit = (subject: Subject) => {
     setEditingSubject(subject);
-    setSubjectName(subject.name);
-    setShowAddModal(true);
+    setEditForm({
+      name: subject.name,
+      code: subject.code || "",
+      description: subject.description || ""
+    });
+    setShowEditModal(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeleteSubject = (id: string) => {
     if (window.confirm("هل أنت متأكد من حذف هذه المادة؟")) {
       deleteSubjectMutation.mutate(id);
     }
   };
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin;
+  const AddSubjectModal = () => (
+    <Button onClick={() => setShowAddModal(true)}>
+      <BookOpen className="ml-2 h-4 w-4" />
+      إضافة مادة دراسية
+    </Button>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-        isAdmin={isAdmin}
-      />
-      
-      <AdminLayout>
-        <main className="flex-1 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-primary">المواد الدراسية</h1>
-              <p className="text-muted-foreground mt-2">
-                إدارة المواد الدراسية المتاحة في النظام
-              </p>
+    <UnifiedLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">المواد الدراسية</h1>
+          <AddSubjectModal />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {subjects?.map((subject) => (
+            <Card key={subject.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{subject.name}</CardTitle>
+                    {subject.description && (
+                      <CardDescription className="mt-1">
+                        {subject.description}
+                      </CardDescription>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(subject)}>
+                        تعديل
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => handleDeleteSubject(subject.id)}
+                      >
+                        حذف
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                  {subject.code && (
+                    <div>
+                      <span className="font-medium">الكود:</span> {subject.code}
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">تاريخ الإنشاء:</span>{" "}
+                    {format(new Date(subject.created_at), "dd/MM/yyyy", { locale: ar })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {subjects?.length === 0 && (
+          <Card className="p-8">
+            <div className="text-center text-muted-foreground">
+              <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">لا توجد مواد دراسية</h3>
+              <p className="mb-4">ابدأ بإضافة مادة دراسية جديدة</p>
+              <AddSubjectModal />
             </div>
+          </Card>
+        )}
+
+        {/* Add Subject Modal */}
+        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>إضافة مادة دراسية جديدة</DialogTitle>
+            </DialogHeader>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                <span className="font-semibold">{subjects?.length || 0} مادة</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="subject_name">اسم المادة</Label>
+                <Input
+                  id="subject_name"
+                  placeholder="أدخل اسم المادة"
+                  value={subjectName}
+                  onChange={(e) => setSubjectName(e.target.value)}
+                />
               </div>
-              {canManage && (
+              
+              <div className="flex justify-end space-x-2 space-x-reverse">
                 <Button 
+                  type="button" 
+                  variant="outline" 
                   onClick={() => {
-                    setEditingSubject(null);
+                    setShowAddModal(false);
                     setSubjectName("");
-                    setShowAddModal(true);
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  إضافة مادة
+                  إلغاء
                 </Button>
-              )}
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={!subjectName.trim() || createSubjectMutation.isPending}
+                >
+                  {createSubjectMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                </Button>
+              </div>
             </div>
-          </div>
+          </DialogContent>
+        </Dialog>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>قائمة المواد الدراسية</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <p>جاري تحميل المواد الدراسية...</p>
+        {/* Edit Subject Modal */}
+        {showEditModal && editingSubject && (
+          <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>تعديل المادة الدراسية</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-name">اسم المادة</Label>
+                  <Input
+                    id="edit-name"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    required
+                  />
                 </div>
-              ) : subjects?.length === 0 ? (
-                <div className="text-center py-8">
-                  <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">لا توجد مواد دراسية</h3>
-                  <p className="text-muted-foreground mb-4">
-                    لم يتم إضافة أي مواد دراسية بعد
-                  </p>
-                  {canManage && (
-                    <Button 
-                      onClick={() => {
-                        setEditingSubject(null);
-                        setSubjectName("");
-                        setShowAddModal(true);
-                      }}
-                    >
-                      إضافة مادة جديدة
-                    </Button>
-                  )}
+                <div>
+                  <Label htmlFor="edit-code">كود المادة</Label>
+                  <Input
+                    id="edit-code"
+                    value={editForm.code}
+                    onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+                  />
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">اسم المادة</TableHead>
-                        <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                        {canManage && (
-                          <TableHead className="text-right">الإجراءات</TableHead>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {subjects?.map((subject) => (
-                        <TableRow key={subject.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4 text-muted-foreground" />
-                              {subject.name}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {formatShortArabicDate(subject.created_at)}
-                          </TableCell>
-                          {canManage && (
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEdit(subject)}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDelete(subject.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div>
+                  <Label htmlFor="edit-description">الوصف</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
-      </AdminLayout>
-
-      {/* Add/Edit Subject Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSubject ? "تعديل المادة الدراسية" : "إضافة مادة دراسية جديدة"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="subject_name">اسم المادة</Label>
-              <Input
-                id="subject_name"
-                placeholder="أدخل اسم المادة"
-                value={subjectName}
-                onChange={(e) => setSubjectName(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex justify-end space-x-2 space-x-reverse">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditingSubject(null);
-                  setSubjectName("");
-                }}
-              >
-                إلغاء
-              </Button>
-              <Button 
-                onClick={handleSubmit}
-                disabled={!subjectName.trim() || createSubjectMutation.isPending || updateSubjectMutation.isPending}
-              >
-                {createSubjectMutation.isPending || updateSubjectMutation.isPending 
-                  ? "جاري الحفظ..." 
-                  : editingSubject ? "تحديث" : "حفظ"
-                }
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>
+                    إلغاء
+                  </Button>
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? "جاري الحفظ..." : "حفظ التعديلات"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    </UnifiedLayout>
   );
 };
 

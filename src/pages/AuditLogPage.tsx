@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import { Shield, Eye } from "lucide-react";
+import { Shield } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { CardDescription } from "@/components/ui/card";
 
 interface AuditLog {
   id: string;
@@ -27,11 +28,11 @@ export function AuditLogPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <UnifiedLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-lg">جاري التحميل...</div>
+          <LoadingSpinner />
         </div>
-      </AppLayout>
+      </UnifiedLayout>
     );
   }
 
@@ -132,28 +133,27 @@ export function AuditLogPage() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <UnifiedLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-lg">جاري التحميل...</div>
+          <LoadingSpinner />
         </div>
-      </AppLayout>
+      </UnifiedLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <UnifiedLayout>
       <div className="space-y-8">
-        <div className="flex items-center gap-2">
-          <Shield className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">سجل التدقيق</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">سجل التدقيق</h1>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              سجل أنشطة النظام
-            </CardTitle>
+            <CardTitle>سجل أنشطة النظام</CardTitle>
+            <CardDescription>
+              عرض جميع العمليات التي تم تنفيذها في النظام
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -161,21 +161,15 @@ export function AuditLogPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>المستخدم</TableHead>
-                    <TableHead>الإجراء</TableHead>
-                    <TableHead>النوع</TableHead>
+                    <TableHead>النشاط</TableHead>
                     <TableHead>التفاصيل</TableHead>
-                    <TableHead>التاريخ والوقت</TableHead>
+                    <TableHead>التاريخ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {auditLogs?.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="font-medium">
-                        {log.actor_name}
-                      </TableCell>
-                      <TableCell>
-                        {getActionDisplayName(log.action)}
-                      </TableCell>
+                      <TableCell>{log.actor_name}</TableCell>
                       <TableCell>
                         {getActionBadge(log.action)}
                       </TableCell>
@@ -183,22 +177,24 @@ export function AuditLogPage() {
                         {renderDetails(log.details)}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(log.created_at), 'PPp', { locale: ar })}
+                        {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-            
-            {(!auditLogs || auditLogs.length === 0) && (
+
+            {auditLogs?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                لا توجد سجلات تدقيق للعرض
+                <Shield className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">لا توجد سجلات</h3>
+                <p>لم يتم تسجيل أي أنشطة بعد</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </UnifiedLayout>
   );
 }

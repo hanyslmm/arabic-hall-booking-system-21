@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import { Download, BarChart3, Users, Calendar, Building2 } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { CardDescription } from "@/components/ui/card";
 
 interface BookingReport {
   id: string;
@@ -36,11 +38,11 @@ export function ReportsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
+      <UnifiedLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-lg">جاري التحميل...</div>
+          <LoadingSpinner />
         </div>
-      </AppLayout>
+      </UnifiedLayout>
     );
   }
 
@@ -72,55 +74,31 @@ export function ReportsPage() {
     }
   });
 
-  // Fetch all bookings with related data
+  // Fetch all bookings with financial data
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ['bookings-report'],
+    queryKey: ['financial-report'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           id,
-          start_time,
-          days_of_week,
-          number_of_students,
-          status,
-          created_at,
-          hall_id,
-          teacher_id,
-          academic_stage_id
+          start_date,
+          class_fee,
+          student_count,
+          halls(name),
+          teachers(full_name),
+          subjects(name),
+          created_at
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      
-      if (!data || data.length === 0) {
-        return [] as BookingReport[];
-      }
-
-      // Fetch related data separately
-      const [hallsRes, teachersRes, stagesRes] = await Promise.all([
-        supabase.from('halls').select('id, name'),
-        supabase.from('teachers').select('id, name'),
-        supabase.from('academic_stages').select('id, name')
-      ]);
-
-      const hallsMap = new Map(hallsRes.data?.map(h => [h.id, h.name]) || []);
-      const teachersMap = new Map(teachersRes.data?.map(t => [t.id, t.name]) || []);
-      const stagesMap = new Map(stagesRes.data?.map(s => [s.id, s.name]) || []);
-      
-      return data.map(booking => ({
-        id: booking.id,
-        hall_name: hallsMap.get(booking.hall_id) || 'غير محدد',
-        teacher_name: teachersMap.get(booking.teacher_id) || 'غير محدد',
-        stage_name: stagesMap.get(booking.academic_stage_id) || 'غير محدد',
-        start_time: booking.start_time,
-        days_of_week: booking.days_of_week,
-        number_of_students: booking.number_of_students,
-        status: booking.status,
-        created_at: booking.created_at
-      })) as BookingReport[];
+      return data || [];
     }
   });
+
+  // Calculate total revenue
+  const totalRevenue = bookings?.reduce((sum, booking) => sum + (booking.class_fee || 0), 0) || 0;
 
   const getDaysInArabic = (days: string[]) => {
     const dayMap: { [key: string]: string } = {
@@ -187,121 +165,114 @@ export function ReportsPage() {
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <UnifiedLayout>
         <div className="flex items-center justify-center h-96">
-          <div className="text-lg">جاري التحميل...</div>
+          <LoadingSpinner />
         </div>
-      </AppLayout>
+      </UnifiedLayout>
     );
   }
 
   return (
-    <AppLayout>
+    <UnifiedLayout>
       <div className="space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">التقارير والإحصائيات</h1>
-          <Button onClick={exportToCSV} disabled={!bookings || bookings.length === 0}>
-            <Download className="w-4 h-4 mr-2" />
-            تصدير إلى CSV
-          </Button>
+          <h1 className="text-3xl font-bold tracking-tight">التقارير المالية</h1>
         </div>
 
-        {/* Dashboard Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الحجوزات</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle className="text-lg">إجمالي الإيرادات</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalBookings || 0}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {totalRevenue.toLocaleString()} جنيه
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                من جميع الحجوزات
+              </p>
             </CardContent>
           </Card>
-          
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الحجوزات النشطة</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle className="text-lg">عدد الحجوزات</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.activeBookings || 0}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {bookings?.length || 0}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                إجمالي الحجوزات
+              </p>
             </CardContent>
           </Card>
-          
+
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">عدد المعلمين</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <CardHeader>
+              <CardTitle className="text-lg">متوسط قيمة الحجز</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalTeachers || 0}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">عدد القاعات</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalHalls || 0}</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {bookings?.length ? Math.round(totalRevenue / bookings.length).toLocaleString() : 0} جنيه
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                للحجز الواحد
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Bookings Report Table */}
         <Card>
           <CardHeader>
-            <CardTitle>تقرير الحجوزات التفصيلي</CardTitle>
+            <CardTitle>تقرير مفصل بالحجوزات</CardTitle>
+            <CardDescription>
+              جميع الحجوزات مع تفاصيل الأسعار
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>التاريخ</TableHead>
                     <TableHead>القاعة</TableHead>
-                    <TableHead>المدرس</TableHead>
-                    <TableHead>المرحلة</TableHead>
-                    <TableHead>الوقت</TableHead>
-                    <TableHead>الأيام</TableHead>
+                    <TableHead>المعلم</TableHead>
+                    <TableHead>المادة</TableHead>
                     <TableHead>عدد الطلاب</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>تاريخ الإنشاء</TableHead>
+                    <TableHead>السعر</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {bookings?.map((booking) => (
                     <TableRow key={booking.id}>
-                      <TableCell>{booking.hall_name}</TableCell>
-                      <TableCell>{booking.teacher_name}</TableCell>
-                      <TableCell>{booking.stage_name}</TableCell>
-                      <TableCell>{booking.start_time}</TableCell>
-                      <TableCell>{getDaysInArabic(booking.days_of_week)}</TableCell>
-                      <TableCell>{booking.number_of_students}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          booking.status === 'active' ? 'bg-green-100 text-green-800' :
-                          booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {getStatusInArabic(booking.status)}
-                        </span>
+                        {format(new Date(booking.start_date), "dd/MM/yyyy")}
                       </TableCell>
-                      <TableCell>{format(new Date(booking.created_at), 'yyyy-MM-dd HH:mm')}</TableCell>
+                      <TableCell>{booking.halls?.name}</TableCell>
+                      <TableCell>{booking.teachers?.full_name}</TableCell>
+                      <TableCell>{booking.subjects?.name}</TableCell>
+                      <TableCell>{booking.student_count || 0}</TableCell>
+                      <TableCell className="font-semibold">
+                        {(booking.class_fee || 0).toLocaleString()} جنيه
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-            
-            {(!bookings || bookings.length === 0) && (
+
+            {bookings?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                لا توجد حجوزات للعرض
+                <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">لا توجد حجوزات</h3>
+                <p>لم يتم إنشاء أي حجوزات بعد</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </UnifiedLayout>
   );
 }

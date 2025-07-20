@@ -55,6 +55,29 @@ const navigation = [
     ],
   },
   {
+    title: "إدارة الطلاب",
+    items: [
+      {
+        title: "الطلاب",
+        url: "/students",
+        icon: Users,
+        description: "إدارة بيانات الطلاب",
+      },
+      {
+        title: "تسجيل الطلاب",
+        url: "/student-registrations",
+        icon: Users,
+        description: "تسجيل الطلاب الجدد",
+      },
+      {
+        title: "إدارة المجموعة",
+        url: "/class-management",
+        icon: GraduationCap,
+        description: "إدارة الحضور والدفعات",
+      },
+    ],
+  },
+  {
     title: "إدارة الموارد",
     items: [
       {
@@ -80,6 +103,23 @@ const navigation = [
         url: "/stages",
         icon: GraduationCap,
         description: "إدارة المراحل الدراسية",
+      },
+    ],
+  },
+  {
+    title: "التقارير المالية",
+    items: [
+      {
+        title: "التقارير",
+        url: "/reports",
+        icon: BookOpen,
+        description: "عرض التقارير المالية",
+      },
+      {
+        title: "تقارير المجموعات",
+        url: "/class-financial-reports",
+        icon: BookOpen,
+        description: "التقارير المالية للمجموعات",
       },
     ],
   },

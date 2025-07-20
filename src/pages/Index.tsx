@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import LoginPage from "@/pages/LoginPage";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,20 +89,17 @@ const Index = () => {
   }
 
   return (
-    <AppLayout>
+    <UnifiedLayout>
       <div className="space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-primary">
-            مرحباً بك في {APP_CONFIG.name}
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            {APP_CONFIG.description}
-          </p>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">لوحة التحكم</h1>
         </div>
-        <StatsCards averageOccupancy={averageOccupancy} />
-        <HallsGrid occupancyData={occupancyData} />
+
+        <StatsCards />
+
+        <HallsGrid />
       </div>
-    </AppLayout>
+    </UnifiedLayout>
   );
 };
 
