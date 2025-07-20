@@ -56,6 +56,46 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
     }
   };
 
+  const normalizeMobileNumber = (mobile: string): string => {
+    if (!mobile) return '';
+    
+    // Remove all non-digit characters
+    const digits = mobile.toString().replace(/\D/g, '');
+    
+    // Add 0 at the beginning if not present
+    if (digits.length === 10 && !digits.startsWith('0')) {
+      return '0' + digits;
+    }
+    
+    return digits;
+  };
+
+  const normalizeCityName = (city: string): string => {
+    if (!city) return '';
+    
+    const cityLower = city.toString().toLowerCase().trim();
+    
+    // Normalize common city names
+    if (cityLower.includes('mit') && cityLower.includes('ghamr')) {
+      return 'Mit Ghamr';
+    }
+    if (cityLower.includes('zifta') || cityLower.includes('zefta')) {
+      return 'Zifta';
+    }
+    if (cityLower.includes('daqados') || cityLower.includes('daqa')) {
+      return 'Daqados';
+    }
+    
+    return city.toString().trim();
+  };
+
+  const convertToNumber = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    
+    const num = Number(value);
+    return isNaN(num) ? 0 : Math.max(0, num);
+  };
+
   const processFile = async (file: File) => {
     try {
       const data = await file.arrayBuffer();
@@ -69,42 +109,36 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
       jsonData.forEach((row: any, index: number) => {
         const rowNumber = index + 2; // +2 because Excel rows start at 1 and we have header
         
-        // Validate required fields
-        if (!row.Name) {
-          errorList.push(`الصف ${rowNumber}: اسم الطالب مطلوب`);
-        }
-        if (!row.Mobile) {
-          errorList.push(`الصف ${rowNumber}: رقم الموبايل مطلوب`);
-        }
-        if (!row.Home) {
-          errorList.push(`الصف ${rowNumber}: رقم ولي الأمر مطلوب`);
+        // Skip rows without names (ignore completely)
+        if (!row.Name || !row.Name.toString().trim()) {
+          return; // Skip this row entirely
         }
 
-        // Validate mobile numbers (Egyptian format)
+        // Process and normalize the data
+        const name = row.Name.toString().trim();
+        const mobile = normalizeMobileNumber(row.Mobile);
+        const home = normalizeMobileNumber(row.Home);
+        const city = normalizeCityName(row.City);
+        const payment = convertToNumber(row.Payment);
+
+        // Validate mobile numbers (Egyptian format) after normalization
         const mobileRegex = /^01[0-9]{9}$/;
-        if (row.Mobile && !mobileRegex.test(row.Mobile.toString())) {
-          errorList.push(`الصف ${rowNumber}: رقم الموبايل غير صحيح (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
+        if (mobile && !mobileRegex.test(mobile)) {
+          errorList.push(`الصف ${rowNumber}: رقم الموبايل غير صحيح "${mobile}" (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
         }
-        if (row.Home && !mobileRegex.test(row.Home.toString())) {
-          errorList.push(`الصف ${rowNumber}: رقم ولي الأمر غير صحيح (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
-        }
-
-        // Validate payment amount
-        const payment = Number(row.Payment) || defaultClassFees;
-        if (payment < 0) {
-          errorList.push(`الصف ${rowNumber}: مبلغ الدفع يجب أن يكون أكبر من أو يساوي الصفر`);
+        if (home && !mobileRegex.test(home)) {
+          errorList.push(`الصف ${rowNumber}: رقم ولي الأمر غير صحيح "${home}" (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
         }
 
-        if (row.Name && row.Mobile && row.Home) {
-          processedData.push({
-            name: row.Name.toString().trim(),
-            mobile: row.Mobile.toString().trim(),
-            home: row.Home.toString().trim(),
-            city: row.City?.toString().trim() || '',
-            class: row.Class?.toString().trim() || '',
-            payment: payment
-          });
-        }
+        // Only add to processed data if we have at least a name
+        processedData.push({
+          name: name,
+          mobile: mobile,
+          home: home,
+          city: city,
+          class: row.Class?.toString().trim() || '',
+          payment: payment
+        });
       });
 
       setErrors(errorList);
@@ -112,6 +146,12 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
 
       if (errorList.length === 0) {
         toast({ title: 'تم تحميل الملف بنجاح', description: `تم العثور على ${processedData.length} طالب` });
+      } else {
+        toast({ 
+          title: 'تحذير', 
+          description: `تم العثور على ${errorList.length} خطأ في البيانات`,
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       setErrors(['خطأ في قراءة الملف. تأكد من أن الملف Excel صالح.']);
