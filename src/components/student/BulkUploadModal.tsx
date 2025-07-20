@@ -92,7 +92,10 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
   const convertToNumber = (value: any): number => {
     if (value === null || value === undefined || value === '') return 0;
     
-    const num = Number(value);
+    // Convert to string first and remove spaces
+    const cleanValue = value.toString().trim().replace(/\s+/g, '');
+    
+    const num = Number(cleanValue);
     return isNaN(num) ? 0 : Math.max(0, num);
   };
 
@@ -121,13 +124,13 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
         const city = normalizeCityName(row.City);
         const payment = convertToNumber(row.Payment);
 
-        // Validate mobile numbers (Egyptian format) after normalization
+        // Validate mobile numbers (Egyptian format) after normalization - show warnings only
         const mobileRegex = /^01[0-9]{9}$/;
         if (mobile && !mobileRegex.test(mobile)) {
-          errorList.push(`الصف ${rowNumber}: رقم الموبايل غير صحيح "${mobile}" (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
+          errorList.push(`تحذير - الصف ${rowNumber}: رقم الموبايل قد يكون غير صحيح "${mobile}" (يفضل أن يبدأ بـ 01 ويكون 11 رقم)`);
         }
         if (home && !mobileRegex.test(home)) {
-          errorList.push(`الصف ${rowNumber}: رقم ولي الأمر غير صحيح "${home}" (يجب أن يبدأ بـ 01 ويكون 11 رقم)`);
+          errorList.push(`تحذير - الصف ${rowNumber}: رقم ولي الأمر قد يكون غير صحيح "${home}" (يفضل أن يبدأ بـ 01 ويكون 11 رقم)`);
         }
 
         // Only add to processed data if we have at least a name
@@ -165,11 +168,7 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
       return;
     }
 
-    if (errors.length > 0) {
-      toast({ title: 'يرجى إصلاح الأخطاء قبل الرفع', variant: 'destructive' });
-      return;
-    }
-
+    // Allow upload even with warnings
     onUpload(previewData);
     handleClose();
   };
@@ -275,7 +274,7 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
             </Button>
             <Button 
               onClick={handleUpload} 
-              disabled={previewData.length === 0 || errors.length > 0}
+              disabled={previewData.length === 0}
             >
               <Upload className="h-4 w-4 ml-2" />
               رفع البيانات
