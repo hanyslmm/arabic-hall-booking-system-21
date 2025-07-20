@@ -99,6 +99,22 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
     return isNaN(num) ? 0 : Math.max(0, num);
   };
 
+  const getPaymentValue = (row: any): number => {
+    // Check multiple possible column names for payment
+    const possiblePaymentColumns = [
+      'Payment', 'payment', 'المدفوع', 'مدفوع', 'الدفع', 'دفع', 
+      'Amount', 'amount', 'Fee', 'fee', 'Fees', 'fees'
+    ];
+    
+    for (const col of possiblePaymentColumns) {
+      if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
+        return convertToNumber(row[col]);
+      }
+    }
+    
+    return 0;
+  };
+
   const processFile = async (file: File) => {
     try {
       const data = await file.arrayBuffer();
@@ -122,7 +138,7 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
         const mobile = normalizeMobileNumber(row.Mobile);
         const home = normalizeMobileNumber(row.Home);
         const city = normalizeCityName(row.City);
-        const payment = convertToNumber(row.Payment);
+        const payment = getPaymentValue(row);
 
         // Validate mobile numbers (Egyptian format) after normalization - show warnings only
         const mobileRegex = /^01[0-9]{9}$/;
