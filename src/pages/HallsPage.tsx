@@ -42,6 +42,24 @@ const HallsPage = () => {
     }
   });
 
+  // Fetch hall occupancy data (actual students registered vs capacity)
+  const { data: hallOccupancy } = useQuery({
+    queryKey: ['hall-occupancy'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_hall_actual_occupancy');
+      
+      if (error) throw error;
+      return data as Array<{
+        hall_id: string;
+        hall_name: string;
+        capacity: number;
+        registered_students: number;
+        occupancy_percentage: number;
+      }>;
+    }
+  });
+
   const getCapacityVariant = (capacity: number) => {
     if (capacity >= 70) return 'capacity-high';
     if (capacity >= 40) return 'capacity-medium';

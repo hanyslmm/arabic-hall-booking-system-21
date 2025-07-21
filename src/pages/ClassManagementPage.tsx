@@ -166,60 +166,79 @@ export default function ClassManagementPage() {
     mutationFn: async (students: any[]) => {
       const results = [];
       for (const studentData of students) {
-        // Check if student already exists by mobile phone
-        const existingStudent = registrations?.find(reg => 
-          reg.student?.mobile_phone === studentData.mobile
-        );
+        try {
+          // Check if student already exists by mobile phone in this class
+          const existingRegistration = registrations?.find(reg => 
+            reg.student?.mobile_phone === studentData.mobile
+          );
 
-        if (existingStudent) {
-          // Update existing student info and payment
-          await studentsApi.update(existingStudent.student!.id, {
-            name: studentData.name,
-            mobile_phone: studentData.mobile,
-            parent_phone: studentData.home,
-            city: studentData.city,
-          });
-
-          // Update registration fees if needed
-          if (studentData.payment > 0) {
-            await paymentsApi.create({
-              student_registration_id: existingStudent.id,
-              amount: studentData.payment,
-              payment_date: format(new Date(), 'yyyy-MM-dd'),
-              payment_method: 'cash',
-              notes: `دفعة شهر ${paymentMonth}`,
+          if (existingRegistration) {
+            // Update existing student info and payment
+            await studentsApi.update(existingRegistration.student!.id, {
+              name: studentData.name,
+              mobile_phone: studentData.mobile,
+              parent_phone: studentData.home,
+              city: studentData.city,
             });
-          }
 
-          results.push({ student: existingStudent.student, registration: existingStudent, action: 'updated' });
-        } else {
-          // Create new student
-          const student = await studentsApi.create({
-            name: studentData.name,
-            mobile_phone: studentData.mobile,
-            parent_phone: studentData.home,
-            city: studentData.city,
-          });
+            // Add payment if amount > 0
+            if (studentData.payment > 0) {
+              await paymentsApi.create({
+                student_registration_id: existingRegistration.id,
+                amount: studentData.payment,
+                payment_date: format(new Date(), 'yyyy-MM-dd'),
+                payment_method: 'cash',
+                notes: `دفعة شهر ${paymentMonth}`,
+              });
+            }
 
-          // Register student to class
-          const registration = await studentRegistrationsApi.create({
-            student_id: student.id,
-            booking_id: bookingId!,
-            total_fees: studentData.payment || booking?.class_fees || 0,
-          });
+            results.push({ student: existingRegistration.student, registration: existingRegistration, action: 'updated' });
+          } else {
+            // Check if student exists globally but not in this class
+            const globalStudent = allStudents?.find(s => s.mobile_phone === studentData.mobile);
+            
+            let student;
+            if (globalStudent) {
+              // Update existing global student
+              student = await studentsApi.update(globalStudent.id, {
+                name: studentData.name,
+                mobile_phone: studentData.mobile,
+                parent_phone: studentData.home,
+                city: studentData.city,
+              });
+            } else {
+              // Create new student
+              student = await studentsApi.create({
+                name: studentData.name,
+                mobile_phone: studentData.mobile,
+                parent_phone: studentData.home,
+                city: studentData.city,
+              });
+            }
 
-          // Add initial payment if amount > 0
-          if (studentData.payment > 0) {
-            await paymentsApi.create({
-              student_registration_id: registration.id,
-              amount: studentData.payment,
-              payment_date: format(new Date(), 'yyyy-MM-dd'),
-              payment_method: 'cash',
-              notes: `دفعة شهر ${paymentMonth}`,
+            // Register student to class
+            const registration = await studentRegistrationsApi.create({
+              student_id: student.id,
+              booking_id: bookingId!,
+              total_fees: studentData.payment || booking?.class_fees || 0,
             });
-          }
 
-          results.push({ student, registration, action: 'created' });
+            // Add initial payment if amount > 0
+            if (studentData.payment > 0) {
+              await paymentsApi.create({
+                student_registration_id: registration.id,
+                amount: studentData.payment,
+                payment_date: format(new Date(), 'yyyy-MM-dd'),
+                payment_method: 'cash',
+                notes: `دفعة شهر ${paymentMonth}`,
+              });
+            }
+
+            results.push({ student, registration, action: globalStudent ? 'added_to_class' : 'created' });
+          }
+        } catch (error) {
+          console.error(`Error processing student ${studentData.name}:`, error);
+          // Continue with next student instead of failing entire batch
         }
       }
       return results;
