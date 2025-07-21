@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { Navbar } from '@/components/layout/Navbar';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload, Trash2, FileText, Edit, Filter } from 'lucide-react';
 import { bookingsApi } from '@/api/bookings';
 import { studentRegistrationsApi, attendanceApi, paymentsApi } from '@/api/students';
 import { studentsApi } from '@/api/students';
@@ -24,7 +24,7 @@ import { format } from 'date-fns';
 interface AttendanceRecord {
   student_registration_id: string;
   attendance_date: string;
-  status: 'present' | 'absent' | 'late';
+  status: 'present' | 'absent';
   notes?: string;
 }
 
@@ -47,9 +47,15 @@ export default function ClassManagementPage() {
   const [paymentData, setPaymentData] = useState<Record<string, PaymentRecord>>({});
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [isEditClassFeesOpen, setIsEditClassFeesOpen] = useState(false);
+  const [isAttendanceReportOpen, setIsAttendanceReportOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [customFees, setCustomFees] = useState<Record<string, number>>({});
   const [paymentMonth, setPaymentMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [searchFilter, setSearchFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [newClassFees, setNewClassFees] = useState<number>(0);
 
   // Fetch booking details
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -69,6 +75,20 @@ export default function ClassManagementPage() {
   const { data: allStudents } = useQuery({
     queryKey: ['students'],
     queryFn: studentsApi.getAll,
+  });
+
+  // Update booking mutation (for class fees)
+  const updateBookingMutation = useMutation({
+    mutationFn: (data: { id: string; class_fees: number }) =>
+      bookingsApi.update(data.id, { class_fees: data.class_fees }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      setIsEditClassFeesOpen(false);
+      toast({ title: 'تم تحديث رسوم المجموعة بنجاح' });
+    },
+    onError: () => {
+      toast({ title: 'خطأ في تحديث رسوم المجموعة', variant: 'destructive' });
+    },
   });
 
   // Add student to class mutation
@@ -98,6 +118,23 @@ export default function ClassManagementPage() {
     },
   });
 
+  // Bulk remove students mutation
+  const bulkRemoveStudentsMutation = useMutation({
+    mutationFn: async (registrationIds: string[]) => {
+      for (const id of registrationIds) {
+        await studentRegistrationsApi.delete(id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations', bookingId] });
+      setSelectedStudents(new Set());
+      toast({ title: 'تم حذف الطلاب المحددين بنجاح' });
+    },
+    onError: () => {
+      toast({ title: 'خطأ في حذف الطلاب', variant: 'destructive' });
+    },
+  });
+
   // Save attendance mutation
   const saveAttendanceMutation = useMutation({
     mutationFn: attendanceApi.bulkCreate,
@@ -123,48 +160,77 @@ export default function ClassManagementPage() {
     },
   });
 
-  // Bulk student upload mutation
+  // Enhanced bulk student upload mutation
   const bulkStudentMutation = useMutation({
     mutationFn: async (students: any[]) => {
-      // Create students first, then register them
       const results = [];
       for (const studentData of students) {
-        // Create student
-        const student = await studentsApi.create({
-          name: studentData.name,
-          mobile_phone: studentData.mobile,
-          parent_phone: studentData.home,
-          city: studentData.city,
-        });
+        // Check if student already exists by mobile phone
+        const existingStudent = registrations?.find(reg => 
+          reg.student?.mobile_phone === studentData.mobile
+        );
 
-        // Register student to class
-        const registration = await studentRegistrationsApi.create({
-          student_id: student.id,
-          booking_id: bookingId!,
-          total_fees: studentData.payment || booking?.class_fees || 0,
-        });
-
-        // Add initial payment if amount > 0
-        if (studentData.payment > 0) {
-          await paymentsApi.create({
-            student_registration_id: registration.id,
-            amount: studentData.payment,
-            payment_date: format(new Date(), 'yyyy-MM-dd'),
-            payment_method: 'cash',
-            notes: `دفعة شهر ${paymentMonth}`,
+        if (existingStudent) {
+          // Update existing student info and payment
+          await studentsApi.update(existingStudent.student!.id, {
+            name: studentData.name,
+            mobile_phone: studentData.mobile,
+            parent_phone: studentData.home,
+            city: studentData.city,
           });
-        }
 
-        results.push({ student, registration });
+          // Update registration fees if needed
+          if (studentData.payment > 0) {
+            await paymentsApi.create({
+              student_registration_id: existingStudent.id,
+              amount: studentData.payment,
+              payment_date: format(new Date(), 'yyyy-MM-dd'),
+              payment_method: 'cash',
+              notes: `دفعة شهر ${paymentMonth}`,
+            });
+          }
+
+          results.push({ student: existingStudent.student, registration: existingStudent, action: 'updated' });
+        } else {
+          // Create new student
+          const student = await studentsApi.create({
+            name: studentData.name,
+            mobile_phone: studentData.mobile,
+            parent_phone: studentData.home,
+            city: studentData.city,
+          });
+
+          // Register student to class
+          const registration = await studentRegistrationsApi.create({
+            student_id: student.id,
+            booking_id: bookingId!,
+            total_fees: studentData.payment || booking?.class_fees || 0,
+          });
+
+          // Add initial payment if amount > 0
+          if (studentData.payment > 0) {
+            await paymentsApi.create({
+              student_registration_id: registration.id,
+              amount: studentData.payment,
+              payment_date: format(new Date(), 'yyyy-MM-dd'),
+              payment_method: 'cash',
+              notes: `دفعة شهر ${paymentMonth}`,
+            });
+          }
+
+          results.push({ student, registration, action: 'created' });
+        }
       }
       return results;
     },
     onSuccess: (results) => {
       queryClient.invalidateQueries({ queryKey: ['registrations', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      const created = results.filter(r => r.action === 'created').length;
+      const updated = results.filter(r => r.action === 'updated').length;
       toast({ 
         title: 'تم رفع الطلاب بنجاح', 
-        description: `تم إضافة ${results.length} طالب للمجموعة` 
+        description: `تم إضافة ${created} طالب جديد وتحديث ${updated} طالب موجود` 
       });
     },
     onError: () => {
@@ -172,12 +238,12 @@ export default function ClassManagementPage() {
     },
   });
 
-  const handleAttendanceChange = (registrationId: string, status: 'present' | 'absent' | 'late') => {
+  const handleAttendanceChange = (registrationId: string, status: 'present' | 'absent') => {
     setAttendanceData(prev => ({
       ...prev,
       [registrationId]: {
         student_registration_id: registrationId,
-        attendance_date: format(new Date(), 'yyyy-MM-dd'),
+        attendance_date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         status,
       }
     }));
@@ -208,6 +274,37 @@ export default function ClassManagementPage() {
     });
   };
 
+  const handleStudentSelection = (registrationId: string, checked: boolean) => {
+    const newSelected = new Set(selectedStudents);
+    if (checked) {
+      newSelected.add(registrationId);
+    } else {
+      newSelected.delete(registrationId);
+    }
+    setSelectedStudents(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(new Set(filteredRegistrations.map(reg => reg.id)));
+    } else {
+      setSelectedStudents(new Set());
+    }
+  };
+
+  const handleBulkRemove = () => {
+    if (selectedStudents.size === 0) return;
+    bulkRemoveStudentsMutation.mutate(Array.from(selectedStudents));
+  };
+
+  const handleUpdateClassFees = () => {
+    if (!booking || newClassFees < 0) return;
+    updateBookingMutation.mutate({
+      id: booking.id,
+      class_fees: newClassFees
+    });
+  };
+
   const saveAttendance = () => {
     const records = Object.values(attendanceData);
     if (records.length === 0) {
@@ -225,6 +322,18 @@ export default function ClassManagementPage() {
     }
     savePaymentMutation.mutate(records);
   };
+
+  // Filter registrations based on search and status
+  const filteredRegistrations = registrations?.filter(registration => {
+    const matchesSearch = !searchFilter || 
+      registration.student?.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      registration.student?.mobile_phone.includes(searchFilter) ||
+      registration.student?.serial_number.includes(searchFilter);
+    
+    const matchesStatus = statusFilter === 'all' || registration.payment_status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  }) || [];
 
   if (isLoadingBooking || isLoadingRegistrations) {
     return <LoadingSpinner />;
@@ -266,9 +375,22 @@ export default function ClassManagementPage() {
         {/* Class Information */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              معلومات المجموعة
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                معلومات المجموعة
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setNewClassFees(booking.class_fees || 0);
+                  setIsEditClassFeesOpen(true);
+                }}
+              >
+                <Edit className="h-4 w-4 ml-2" />
+                تعديل الرسوم
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -301,7 +423,7 @@ export default function ClassManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Financial Summary */}
+        {/* Financial Summary - Removed "المتبقي" */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -310,7 +432,7 @@ export default function ClassManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">إجمالي الرسوم</p>
                 <p className="text-2xl font-bold text-primary">{totalFees} جنيه</p>
@@ -318,10 +440,6 @@ export default function ClassManagementPage() {
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">المدفوع</p>
                 <p className="text-2xl font-bold text-green-600">{totalPaid} جنيه</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">المتبقي</p>
-                <p className="text-2xl font-bold text-orange-600">{totalFees - totalPaid} جنيه</p>
               </div>
             </div>
           </CardContent>
@@ -335,6 +453,11 @@ export default function ClassManagementPage() {
               إدارة الطلاب
             </CardTitle>
             <div className="flex gap-2">
+              <Button onClick={() => setIsAttendanceReportOpen(true)} variant="outline">
+                <FileText className="h-4 w-4 ml-2" />
+                تقرير الحضور
+              </Button>
+              
               <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -342,60 +465,94 @@ export default function ClassManagementPage() {
                     إضافة طالب
                   </Button>
                 </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>إضافة طالب للمجموعة</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>اختر الطالب</Label>
-                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر طالب" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableStudents.map(student => (
-                          <SelectItem key={student.id} value={student.id}>
-                            {student.name} - {student.serial_number}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {selectedStudentId && (
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>إضافة طالب للمجموعة</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
                     <div>
-                      <Label>الرسوم (اختياري - سيتم استخدام رسوم المجموعة الافتراضية)</Label>
-                      <Input
-                        type="number"
-                        placeholder={`${booking.class_fees || 0}`}
-                        value={customFees[selectedStudentId] || ''}
-                        onChange={(e) => setCustomFees(prev => ({
-                          ...prev,
-                          [selectedStudentId]: Number(e.target.value) || 0
-                        }))}
-                      />
+                      <Label>اختر الطالب</Label>
+                      <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر طالب" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableStudents.map(student => (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.name} - {student.serial_number}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
-                  <Button 
-                    onClick={handleAddStudent} 
-                    disabled={!selectedStudentId || addStudentMutation.isPending}
-                    className="w-full"
-                  >
-                    إضافة الطالب
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-            
-            <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline">
-              <Upload className="h-4 w-4 ml-2" />
-              رفع مجمع
-            </Button>
-          </div>
+                    {selectedStudentId && (
+                      <div>
+                        <Label>الرسوم (اختياري - سيتم استخدام رسوم المجموعة الافتراضية)</Label>
+                        <Input
+                          type="number"
+                          placeholder={`${booking.class_fees || 0}`}
+                          value={customFees[selectedStudentId] || ''}
+                          onChange={(e) => setCustomFees(prev => ({
+                            ...prev,
+                            [selectedStudentId]: Number(e.target.value) || 0
+                          }))}
+                        />
+                      </div>
+                    )}
+                    <Button 
+                      onClick={handleAddStudent} 
+                      disabled={!selectedStudentId || addStudentMutation.isPending}
+                      className="w-full"
+                    >
+                      إضافة الطالب
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              <Button onClick={() => setIsBulkUploadOpen(true)} variant="outline">
+                <Upload className="h-4 w-4 ml-2" />
+                رفع مجمع
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {registrations && registrations.length > 0 ? (
               <div className="space-y-4">
+                {/* Filters and Search */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <Input
+                      placeholder="البحث بالاسم أو الموبايل أو الرقم التسلسلي"
+                      value={searchFilter}
+                      onChange={(e) => setSearchFilter(e.target.value)}
+                      className="w-64"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع الحالات</SelectItem>
+                      <SelectItem value="paid">مدفوع</SelectItem>
+                      <SelectItem value="partial">جزئي</SelectItem>
+                      <SelectItem value="pending">غير مدفوع</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {selectedStudents.size > 0 && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handleBulkRemove}
+                    >
+                      <Trash2 className="h-4 w-4 ml-2" />
+                      حذف المحدد ({selectedStudents.size})
+                    </Button>
+                  )}
+                </div>
+
                 {/* Attendance Header */}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">تسجيل الحضور</h3>
@@ -421,23 +578,37 @@ export default function ClassManagementPage() {
                   <table className="w-full">
                     <thead className="bg-muted">
                       <tr>
+                        <th className="text-center p-3">
+                          <Checkbox
+                            checked={selectedStudents.size === filteredRegistrations.length && filteredRegistrations.length > 0}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </th>
                         <th className="text-right p-3">الطالب</th>
                         <th className="text-right p-3">الرقم التسلسلي</th>
+                        <th className="text-right p-3">الموبايل</th>
                         <th className="text-right p-3">الرسوم</th>
                         <th className="text-right p-3">المدفوع</th>
-                        <th className="text-right p-3">الحالة</th>
+                        <th className="text-right p-3">حالة الدفع</th>
                         <th className="text-center p-3">الحضور اليوم</th>
                         <th className="text-center p-3">دفع اليوم</th>
                         <th className="text-center p-3">إجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {registrations.map((registration) => (
+                      {filteredRegistrations.map((registration) => (
                         <tr key={registration.id} className="border-t">
+                          <td className="p-3 text-center">
+                            <Checkbox
+                              checked={selectedStudents.has(registration.id)}
+                              onCheckedChange={(checked) => handleStudentSelection(registration.id, checked as boolean)}
+                            />
+                          </td>
                           <td className="p-3">{registration.student?.name}</td>
                           <td className="p-3">{registration.student?.serial_number}</td>
-                           <td className="p-3">{registration.total_fees} جنيه</td>
-                           <td className="p-3">{registration.paid_amount} جنيه</td>
+                          <td className="p-3">{registration.student?.mobile_phone}</td>
+                          <td className="p-3">{registration.total_fees} جنيه</td>
+                          <td className="p-3">{registration.paid_amount} جنيه</td>
                           <td className="p-3">
                             <Badge 
                               variant={
@@ -451,18 +622,17 @@ export default function ClassManagementPage() {
                           </td>
                           <td className="p-3 text-center">
                             <div className="flex items-center justify-center gap-2">
-                              {['present', 'absent', 'late'].map((status) => (
+                              {['present', 'absent'].map((status) => (
                                 <label key={status} className="flex items-center gap-1 text-sm">
                                   <Checkbox
                                     checked={attendanceData[registration.id]?.status === status}
                                     onCheckedChange={(checked) => {
                                       if (checked) {
-                                        handleAttendanceChange(registration.id, status as any);
+                                        handleAttendanceChange(registration.id, status as 'present' | 'absent');
                                       }
                                     }}
                                   />
-                                  {status === 'present' ? 'حاضر' : 
-                                   status === 'absent' ? 'غائب' : 'متأخر'}
+                                  {status === 'present' ? 'حاضر' : 'غائب'}
                                 </label>
                               ))}
                             </div>
@@ -510,6 +680,47 @@ export default function ClassManagementPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Class Fees Modal */}
+        <Dialog open={isEditClassFeesOpen} onOpenChange={setIsEditClassFeesOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>تعديل رسوم المجموعة</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>الرسوم الجديدة (جنيه)</Label>
+                <Input
+                  type="number"
+                  value={newClassFees}
+                  onChange={(e) => setNewClassFees(Number(e.target.value) || 0)}
+                  min="0"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditClassFeesOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button onClick={handleUpdateClassFees} disabled={updateBookingMutation.isPending}>
+                  حفظ التعديل
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Attendance Report Modal */}
+        <Dialog open={isAttendanceReportOpen} onOpenChange={setIsAttendanceReportOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>تقرير الحضور</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-muted-foreground">هذه الميزة قيد التطوير...</p>
+              {/* TODO: Implement attendance report */}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Bulk Upload Modal */}
         <BulkUploadModal
