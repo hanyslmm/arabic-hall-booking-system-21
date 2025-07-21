@@ -52,6 +52,7 @@ export default function ClassManagementPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [customFees, setCustomFees] = useState<Record<string, number>>({});
   const [paymentMonth, setPaymentMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
+  const [attendanceDate, setAttendanceDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -238,15 +239,24 @@ export default function ClassManagementPage() {
     },
   });
 
-  const handleAttendanceChange = (registrationId: string, status: 'present' | 'absent') => {
-    setAttendanceData(prev => ({
-      ...prev,
-      [registrationId]: {
-        student_registration_id: registrationId,
-        attendance_date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-        status,
-      }
-    }));
+  const handleAttendanceChange = (registrationId: string, isPresent: boolean) => {
+    if (isPresent) {
+      setAttendanceData(prev => ({
+        ...prev,
+        [registrationId]: {
+          student_registration_id: registrationId,
+          attendance_date: `${attendanceDate} ${format(new Date(), 'HH:mm:ss')}`,
+          status: 'present',
+        }
+      }));
+    } else {
+      // Remove from attendance data if unchecked (will be considered absent)
+      setAttendanceData(prev => {
+        const newData = { ...prev };
+        delete newData[registrationId];
+        return newData;
+      });
+    }
   };
 
   const handlePaymentChange = (registrationId: string, amount: number) => {
@@ -556,16 +566,25 @@ export default function ClassManagementPage() {
                 {/* Attendance Header */}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">تسجيل الحضور</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm">شهر الدفع:</Label>
-                      <Input
-                        type="month"
-                        value={paymentMonth}
-                        onChange={(e) => setPaymentMonth(e.target.value)}
-                        className="w-40"
-                      />
-                    </div>
+                   <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-2">
+                       <Label className="text-sm">شهر الدفع:</Label>
+                       <Input
+                         type="month"
+                         value={paymentMonth}
+                         onChange={(e) => setPaymentMonth(e.target.value)}
+                         className="w-40"
+                       />
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <Label className="text-sm">تاريخ الحضور:</Label>
+                       <Input
+                         type="date"
+                         value={attendanceDate}
+                         onChange={(e) => setAttendanceDate(e.target.value)}
+                         className="w-40"
+                       />
+                     </div>
                     <Button onClick={saveAttendance} disabled={Object.keys(attendanceData).length === 0}>
                       <Save className="h-4 w-4 ml-2" />
                       حفظ الحضور
@@ -621,20 +640,16 @@ export default function ClassManagementPage() {
                             </Badge>
                           </td>
                           <td className="p-3 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              {['present', 'absent'].map((status) => (
-                                <label key={status} className="flex items-center gap-1 text-sm">
-                                  <Checkbox
-                                    checked={attendanceData[registration.id]?.status === status}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        handleAttendanceChange(registration.id, status as 'present' | 'absent');
-                                      }
-                                    }}
-                                  />
-                                  {status === 'present' ? 'حاضر' : 'غائب'}
-                                </label>
-                              ))}
+                            <div className="flex items-center justify-center">
+                              <label className="flex items-center gap-1 text-sm">
+                                <Checkbox
+                                  checked={!!attendanceData[registration.id]}
+                                  onCheckedChange={(checked) => {
+                                    handleAttendanceChange(registration.id, checked as boolean);
+                                  }}
+                                />
+                                حاضر
+                              </label>
                             </div>
                           </td>
                           <td className="p-3 text-center">
