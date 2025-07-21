@@ -47,18 +47,45 @@ const HallsPage = () => {
     queryKey: ['hall-occupancy'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('get_hall_actual_occupancy');
+        .from('halls')
+        .select(`
+          id,
+          name,
+          capacity,
+          bookings!inner(
+            id,
+            student_registrations(count)
+          )
+        `)
+        .eq('bookings.status', 'active');
       
       if (error) throw error;
-      return data as Array<{
-        hall_id: string;
-        hall_name: string;
-        capacity: number;
-        registered_students: number;
-        occupancy_percentage: number;
-      }>;
+      
+      // Process the data to calculate occupancy
+      return data.map(hall => {
+        const registeredStudents = hall.bookings.reduce((total, booking) => {
+          return total + (booking.student_registrations?.[0]?.count || 0);
+        }, 0);
+        
+        return {
+          hall_id: hall.id,
+          hall_name: hall.name,
+          capacity: hall.capacity,
+          registered_students: registeredStudents,
+          occupancy_percentage: hall.capacity > 0 ? Math.round((registeredStudents / hall.capacity) * 100) : 0
+        };
+      });
     }
   });
+
+  const getOccupancyForHall = (hallId: string): { registered: number; capacity: number; percentage: number } => {
+    const occupancy = hallOccupancy?.find(item => item.hall_id === hallId);
+    return {
+      registered: occupancy?.registered_students || 0,
+      capacity: occupancy?.capacity || 0,
+      percentage: occupancy?.occupancy_percentage || 0
+    };
+  };
 
   const getCapacityVariant = (capacity: number) => {
     if (capacity >= 70) return 'capacity-high';
@@ -187,6 +214,24 @@ const HallsPage = () => {
                       <Users className="h-4 w-4 text-primary" />
                       <span className="text-sm text-muted-foreground">السعة:</span>
                       <span className="font-semibold text-primary">{hall.capacity} طالب</span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Users className="h-4 w-4 text-secondary" />
+                      <span className="text-sm text-muted-foreground">المسجلين:</span>
+                      <span className="font-semibold text-secondary">
+                        {getOccupancyForHall(hall.id).registered} طالب
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <span className="text-sm text-muted-foreground">نسبة الإشغال:</span>
+                      <span className={`font-semibold ${
+                        getOccupancyForHall(hall.id).percentage >= 80 ? 'text-red-600' :
+                        getOccupancyForHall(hall.id).percentage >= 50 ? 'text-yellow-600' : 'text-green-600'
+                      }`}>
+                        {getOccupancyForHall(hall.id).percentage}%
+                      </span>
                     </div>
                     
                     <div className={`capacity-indicator ${getCapacityVariant(hall.capacity)}`}>

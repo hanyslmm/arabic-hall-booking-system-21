@@ -740,6 +740,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_hall_actual_occupancy: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          hall_id: string
+          hall_name: string
+          capacity: number
+          registered_students: number
+          occupancy_percentage: number
+        }[]
+      }
       get_hall_occupancy_rates: {
         Args: Record<PropertyKey, never>
         Returns: {
