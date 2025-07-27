@@ -75,6 +75,30 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     },
   });
 
+  // Fetch existing registrations for the selected student
+  const { data: existingRegistrations = [] } = useQuery({
+    queryKey: ["student-existing-registrations", selectedStudent?.id],
+    queryFn: async () => {
+      if (!selectedStudent?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("student_registrations")
+        .select(`
+          id,
+          booking_id,
+          bookings!inner(
+            id,
+            days_of_week
+          )
+        `)
+        .eq("student_id", selectedStudent.id);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedStudent?.id,
+  });
+
   const searchMutation = useMutation({
     mutationFn: studentsApi.search,
     onSuccess: (students) => {
@@ -85,13 +109,18 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
         let autoTotal = 0;
         
         todaysBookings.forEach(booking => {
-          const fees = booking.class_fees || 0;
-          autoSelected[booking.id] = {
-            id: booking.id,
-            checked: true,
-            fees: fees
-          };
-          autoTotal += fees;
+          // Only auto-select if student is not already registered
+          const isAlreadyRegistered = existingRegistrations.some(reg => reg.booking_id === booking.id);
+          
+          if (!isAlreadyRegistered) {
+            const fees = booking.class_fees || 0;
+            autoSelected[booking.id] = {
+              id: booking.id,
+              checked: true,
+              fees: fees
+            };
+            autoTotal += fees;
+          }
         });
         
         setSelectedClasses(autoSelected);
@@ -377,19 +406,28 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                     {todaysBookings.map((booking) => {
                       const isSelected = selectedClasses[booking.id]?.checked || false;
                       const fees = selectedClasses[booking.id]?.fees || booking.class_fees || 0;
+                      const isAlreadyRegistered = existingRegistrations.some(reg => reg.booking_id === booking.id);
 
                       return (
-                        <div key={booking.id} className="flex items-center space-x-2 p-3 border rounded-lg">
+                        <div key={booking.id} className={`flex items-center space-x-2 p-3 border rounded-lg ${isAlreadyRegistered ? 'bg-yellow-50 border-yellow-200' : ''}`}>
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={(checked) => handleClassToggle(booking.id, checked as boolean)}
+                            disabled={isAlreadyRegistered}
                           />
                           <div className="flex-1 mr-3">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="font-medium">
-                                  {booking.halls?.name} - {booking.teachers?.name}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">
+                                    {booking.halls?.name} - {booking.teachers?.name}
+                                  </p>
+                                  {isAlreadyRegistered && (
+                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                      مسجل بالفعل
+                                    </Badge>
+                                  )}
+                                </div>
                                 <p className="text-sm text-muted-foreground">
                                   {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
                                   {booking.start_time ? 
@@ -410,7 +448,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                                   value={fees}
                                   onChange={(e) => handleFeesChange(booking.id, parseFloat(e.target.value) || 0)}
                                   className="w-20 text-sm"
-                                  disabled={!isSelected}
+                                  disabled={!isSelected || isAlreadyRegistered}
                                 />
                                 <span className="text-sm text-muted-foreground">ر.س</span>
                               </div>
