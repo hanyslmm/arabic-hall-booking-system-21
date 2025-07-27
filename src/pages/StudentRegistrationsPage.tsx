@@ -11,14 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { RegisterStudentModal } from "@/components/student/RegisterStudentModal";
+import { FastRegistrationModal } from "@/components/student/FastRegistrationModal";
 import { studentRegistrationsApi, StudentRegistration } from "@/api/students";
-import { Plus, Search, UserCheck, GraduationCap, DollarSign, Calendar, Trash2 } from "lucide-react";
+import { Plus, Search, UserCheck, GraduationCap, DollarSign, Calendar, Trash2, Scan } from "lucide-react";
 import { toast } from "sonner";
 
 const StudentRegistrationsPage = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [showRegisterStudent, setShowRegisterStudent] = useState(false);
+  const [showFastRegistration, setShowFastRegistration] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<string>("");
   const [paymentFilter, setPaymentFilter] = useState<string>("");
 
@@ -136,13 +138,23 @@ const StudentRegistrationsPage = () => {
           </div>
           
           {canManageRegistrations && (
-            <Button
-              onClick={() => setShowRegisterStudent(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              تسجيل طالب جديد
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowFastRegistration(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                <Scan className="h-4 w-4" />
+                التسجيل السريع
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowRegisterStudent(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                تسجيل طالب جديد
+              </Button>
+            </div>
           )}
         </div>
 
@@ -349,6 +361,12 @@ const StudentRegistrationsPage = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Fast Registration Modal */}
+        <FastRegistrationModal 
+          isOpen={showFastRegistration}
+          onClose={() => setShowFastRegistration(false)}
+        />
 
         {/* Register Student Modal */}
         <RegisterStudentModal 
