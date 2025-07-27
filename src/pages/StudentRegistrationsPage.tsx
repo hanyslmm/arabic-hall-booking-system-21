@@ -42,8 +42,8 @@ const StudentRegistrationsPage = () => {
 
   // Filter registrations based on booking and payment status
   const filteredRegistrations = registrations.filter(reg => {
-    const bookingMatch = !selectedBooking || reg.booking_id === selectedBooking;
-    const paymentMatch = !paymentFilter || reg.payment_status === paymentFilter;
+    const bookingMatch = selectedBooking === "all" || !selectedBooking || reg.booking_id === selectedBooking;
+    const paymentMatch = paymentFilter === "all" || !paymentFilter || reg.payment_status === paymentFilter;
     return bookingMatch && paymentMatch;
   });
 
@@ -229,7 +229,7 @@ const StudentRegistrationsPage = () => {
                     <SelectValue placeholder="جميع الدورات" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الدورات</SelectItem>
+                    <SelectItem value="all">جميع الدورات</SelectItem>
                     {uniqueBookings.map((booking) => (
                       <SelectItem key={booking.id} value={booking.id}>
                         {booking.label}
@@ -246,7 +246,7 @@ const StudentRegistrationsPage = () => {
                     <SelectValue placeholder="جميع الحالات" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الحالات</SelectItem>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
                     <SelectItem value="pending">لم يدفع</SelectItem>
                     <SelectItem value="partial">دفع جزئي</SelectItem>
                     <SelectItem value="paid">مدفوع</SelectItem>
