@@ -88,10 +88,12 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
           booking_id,
           bookings!inner(
             id,
-            days_of_week
+            days_of_week,
+            status
           )
         `)
-        .eq("student_id", selectedStudent.id);
+        .eq("student_id", selectedStudent.id)
+        .eq("bookings.status", "active");
       
       if (error) throw error;
       return data;
@@ -173,8 +175,38 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     },
     onSuccess: (results) => {
       queryClient.invalidateQueries({ queryKey: ["student-registrations"] });
+      queryClient.invalidateQueries({ queryKey: ["student-existing-registrations"] });
       toast.success(`تم تسجيل الطالب في ${results.length} دورة بنجاح`);
-      handleClose();
+      
+      // Auto-reactivate scanner for fast sequential scanning
+      setTimeout(() => {
+        if (scannerActive) {
+          // If mobile camera was active, keep it active
+          setScannerActive(true);
+        } else {
+          // If manual input was used, focus on the input field
+          const barcodeInput = document.querySelector('input[placeholder*="أدخل رقم الطالب"]') as HTMLInputElement;
+          if (barcodeInput) {
+            barcodeInput.focus();
+            barcodeInput.select();
+          }
+        }
+      }, 500);
+      
+      // Reset form but keep scanner preference
+      const wasScanning = scannerActive;
+      setBarcodeInput("");
+      setSelectedStudent(null);
+      setSelectedClasses({});
+      setTotalAmount(0);
+      setPaymentAmount("");
+      setIsRegistering(false);
+      searchMutation.reset();
+      
+      // Restore scanner state for quick next scan
+      if (wasScanning) {
+        setScannerActive(true);
+      }
     },
     onError: (error: any) => {
       if (error.message?.includes('student_id, booking_id')) {
@@ -299,7 +331,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Scan className="h-5 w-5" />
@@ -332,7 +364,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                   <div className="relative">
                     <BarcodeScannerComponent
                       width="100%"
-                      height={200}
+                      height={window.innerWidth < 640 ? 150 : 200}
                       onUpdate={(err, result) => {
                         if (result) {
                           handleBarcodeScan(result.getText());
@@ -342,7 +374,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="absolute top-2 right-2"
+                      className="absolute top-2 right-2 z-10"
                       onClick={() => setScannerActive(false)}
                     >
                       <X className="h-4 w-4" />
@@ -350,7 +382,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     placeholder="أدخل رقم الطالب أو امسح الرمز..."
                     value={barcodeInput}
@@ -362,6 +394,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                     type="button"
                     onClick={handleBarcodeSubmit}
                     disabled={searchMutation.isPending}
+                    className="w-full sm:w-auto"
                   >
                     {searchMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scan className="h-4 w-4" />}
                   </Button>
@@ -409,48 +442,51 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                       const isAlreadyRegistered = existingRegistrations.some(reg => reg.booking_id === booking.id);
 
                       return (
-                        <div key={booking.id} className={`flex items-center space-x-2 p-3 border rounded-lg ${isAlreadyRegistered ? 'bg-yellow-50 border-yellow-200' : ''}`}>
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={(checked) => handleClassToggle(booking.id, checked as boolean)}
-                            disabled={isAlreadyRegistered}
-                          />
-                          <div className="flex-1 mr-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium">
-                                    {booking.halls?.name} - {booking.teachers?.name}
+                        <div key={booking.id} className={`flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 p-3 border rounded-lg ${isAlreadyRegistered ? 'bg-yellow-50 border-yellow-200' : ''}`}>
+                          <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => handleClassToggle(booking.id, checked as boolean)}
+                              disabled={isAlreadyRegistered}
+                              className="flex-shrink-0"
+                            />
+                            <div className="flex-1 sm:mr-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                                <div className="flex-1">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <p className="font-medium text-sm sm:text-base">
+                                      {booking.halls?.name} - {booking.teachers?.name}
+                                    </p>
+                                    {isAlreadyRegistered && (
+                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 w-fit">
+                                        مسجل بالفعل
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                    {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
+                                    {booking.start_time ? 
+                                      new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      }) : ''
+                                    }
                                   </p>
-                                  {isAlreadyRegistered && (
-                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                                      مسجل بالفعل
-                                    </Badge>
-                                  )}
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
-                                  {booking.start_time ? 
-                                    new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: true
-                                    }) : ''
-                                  }
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Label className="text-sm">الرسوم:</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={fees}
-                                  onChange={(e) => handleFeesChange(booking.id, parseFloat(e.target.value) || 0)}
-                                  className="w-20 text-sm"
-                                  disabled={!isSelected || isAlreadyRegistered}
-                                />
-                                <span className="text-sm text-muted-foreground">ر.س</span>
+                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                  <Label className="text-xs sm:text-sm flex-shrink-0">الرسوم:</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={fees}
+                                    onChange={(e) => handleFeesChange(booking.id, parseFloat(e.target.value) || 0)}
+                                    className="w-20 text-xs sm:text-sm"
+                                    disabled={!isSelected || isAlreadyRegistered}
+                                  />
+                                  <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">ر.س</span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -473,12 +509,12 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                     <Label className="text-base font-medium">معلومات الدفع</Label>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>إجمالي الرسوم</Label>
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-lg">{totalAmount.toFixed(2)} ر.س</span>
+                        <span className="font-medium text-base sm:text-lg">{totalAmount.toFixed(2)} ر.س</span>
                       </div>
                     </div>
                     
@@ -509,13 +545,14 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
           )}
         </div>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
             إلغاء
           </Button>
           <Button 
             onClick={handleRegister}
             disabled={!selectedStudent || selectedClassCount === 0 || isRegistering}
+            className="w-full sm:w-auto"
           >
             {isRegistering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             تسجيل ({selectedClassCount} دورة)
