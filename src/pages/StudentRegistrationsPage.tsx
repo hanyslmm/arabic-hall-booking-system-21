@@ -126,22 +126,22 @@ const StudentRegistrationsPage = () => {
       
       <main className="container mx-auto p-4 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-              <UserCheck className="h-8 w-8" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary flex items-center gap-2">
+              <UserCheck className="h-6 w-6 sm:h-8 sm:w-8" />
               تسجيلات الطلاب
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               إدارة تسجيل الطلاب في الدورات والقاعات
             </p>
           </div>
           
           {canManageRegistrations && (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button
                 onClick={() => setShowFastRegistration(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 w-full sm:w-auto"
               >
                 <Scan className="h-4 w-4" />
                 التسجيل السريع
@@ -149,7 +149,7 @@ const StudentRegistrationsPage = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowRegisterStudent(true)}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
                 تسجيل طالب جديد
