@@ -178,22 +178,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
       queryClient.invalidateQueries({ queryKey: ["student-existing-registrations"] });
       toast.success(`تم تسجيل الطالب في ${results.length} دورة بنجاح`);
       
-      // Auto-reactivate scanner for fast sequential scanning
-      setTimeout(() => {
-        if (scannerActive) {
-          // If mobile camera was active, keep it active
-          setScannerActive(true);
-        } else {
-          // If manual input was used, focus on the input field
-          const barcodeInput = document.querySelector('input[placeholder*="أدخل رقم الطالب"]') as HTMLInputElement;
-          if (barcodeInput) {
-            barcodeInput.focus();
-            barcodeInput.select();
-          }
-        }
-      }, 500);
-      
-      // Reset form but keep scanner preference
+      // Reset form but keep scanner preference for fast sequential scanning
       const wasScanning = scannerActive;
       setBarcodeInput("");
       setSelectedStudent(null);
@@ -203,10 +188,19 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
       setIsRegistering(false);
       searchMutation.reset();
       
-      // Restore scanner state for quick next scan
-      if (wasScanning) {
-        setScannerActive(true);
-      }
+      // Auto-reactivate scanner/input for fast sequential scanning
+      setTimeout(() => {
+        if (wasScanning) {
+          // Keep camera active for next student
+          setScannerActive(true);
+        } else {
+          // Auto-focus on barcode input for next manual entry
+          const barcodeInput = document.getElementById('barcode') as HTMLInputElement;
+          if (barcodeInput) {
+            barcodeInput.focus();
+          }
+        }
+      }, 100);
     },
     onError: (error: any) => {
       if (error.message?.includes('student_id, booking_id')) {
@@ -331,92 +325,71 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Scan className="h-5 w-5" />
-            التسجيل السريع للطلاب
-          </DialogTitle>
-          <DialogDescription>
-            امسح رمز الطالب أو أدخله يدوياً للتسجيل السريع في دورات اليوم
-          </DialogDescription>
+          <DialogTitle className="text-right text-lg">التسجيل السريع</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Barcode Scanner Section */}
+        <div className="space-y-4">
+          {/* Compact Barcode Scanner Section */}
           <Card>
-            <CardContent className="p-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-medium">مسح رمز الطالب</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setScannerActive(!scannerActive)}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    {scannerActive ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}
-                  </Button>
-                </div>
-
-                {scannerActive && (
-                  <div className="relative">
-                    <BarcodeScannerComponent
-                      width="100%"
-                      height={window.innerWidth < 640 ? 150 : 200}
-                      onUpdate={(err, result) => {
-                        if (result) {
-                          handleBarcodeScan(result.getText());
-                        }
-                      }}
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 z-10"
-                      onClick={() => setScannerActive(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Input
-                    placeholder="أدخل رقم الطالب أو امسح الرمز..."
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleBarcodeSubmit()}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleBarcodeSubmit}
-                    disabled={searchMutation.isPending}
-                    className="w-full sm:w-auto"
-                  >
-                    {searchMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scan className="h-4 w-4" />}
-                  </Button>
-                </div>
+            <CardContent className="pt-4 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  id="barcode"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  placeholder="رقم الطالب أو امسح الباركود"
+                  className="text-right"
+                  onKeyPress={(e) => e.key === 'Enter' && handleBarcodeSubmit()}
+                />
+                <Button 
+                  onClick={handleBarcodeSubmit}
+                  disabled={searchMutation.isPending || !barcodeInput.trim()}
+                  size="sm"
+                >
+                  {searchMutation.isPending ? "بحث..." : "بحث"}
+                </Button>
               </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setScannerActive(!scannerActive)}
+                  className="flex-1"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {scannerActive ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}
+                </Button>
+              </div>
+
+              {scannerActive && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 h-32">
+                  <BarcodeScannerComponent
+                    width="100%"
+                    height={120}
+                    onUpdate={(err, result) => {
+                      if (result) {
+                        handleBarcodeScan(result.getText());
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Selected Student */}
+          {/* Compact Selected Student Info */}
           {selectedStudent && (
             <Card className="border-green-200 bg-green-50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-green-600" />
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-600">
-                      الطالب: {selectedStudent.name}
-                    </p>
-                    <div className="flex gap-2 text-sm text-muted-foreground">
-                      <Badge variant="outline">{selectedStudent.serial_number}</Badge>
-                      <span>{selectedStudent.mobile_phone}</span>
-                    </div>
+                    <span className="font-medium text-green-600">{selectedStudent.name}</span>
+                    <Badge variant="outline" className="ml-2 text-xs">{selectedStudent.serial_number}</Badge>
                   </div>
                 </div>
               </CardContent>

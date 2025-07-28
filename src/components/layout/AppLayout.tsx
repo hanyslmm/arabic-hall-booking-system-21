@@ -9,12 +9,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
   
-  const hasAdminAccess = isAdmin || isOwner || canManageUsers;
-
-  if (hasAdminAccess) {
-    return <AdminSidebar>{children}</AdminSidebar>;
-  }
-
+  // Use consistent navigation for all users
   return (
     <>
       <Navbar 
