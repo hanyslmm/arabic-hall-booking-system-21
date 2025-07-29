@@ -42,12 +42,16 @@ interface SelectedClass {
 export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModalProps) => {
   const queryClient = useQueryClient();
   const [scannerActive, setScannerActive] = useState(false);
+  const [scannerPreference, setScannerPreference] = useState(() => {
+    return localStorage.getItem('scanner-preference') === 'camera';
+  });
   const [barcodeInput, setBarcodeInput] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedClasses, setSelectedClasses] = useState<Record<string, SelectedClass>>({});
   const [totalAmount, setTotalAmount] = useState(0);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [autoRegisterMode, setAutoRegisterMode] = useState(false);
 
   // Get today's weekday to filter relevant classes
   const today = new Date();
@@ -258,6 +262,57 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     }));
   };
 
+  // Auto-activate scanner on modal open based on preference
+  useEffect(() => {
+    if (isOpen) {
+      if (scannerPreference) {
+        // Auto-activate camera scanner
+        setTimeout(() => setScannerActive(true), 500);
+      } else {
+        // Auto-focus on input field
+        setTimeout(() => {
+          const input = document.getElementById('barcode') as HTMLInputElement;
+          if (input) input.focus();
+        }, 500);
+      }
+    }
+  }, [isOpen, scannerPreference]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      
+      // Escape to close
+      if (e.key === 'Escape' && !isRegistering) {
+        handleClose();
+        return;
+      }
+      
+      // Space to toggle scanner (when not in input)
+      if (e.key === ' ' && e.target === document.body) {
+        e.preventDefault();
+        setScannerActive(prev => {
+          const newValue = !prev;
+          localStorage.setItem('scanner-preference', newValue ? 'camera' : 'manual');
+          setScannerPreference(newValue);
+          return newValue;
+        });
+        return;
+      }
+      
+      // Ctrl+Enter for quick register with default fees
+      if (e.ctrlKey && e.key === 'Enter' && selectedStudent && !isRegistering) {
+        e.preventDefault();
+        handleRegister();
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, selectedStudent, isRegistering]);
+
   // Calculate total when selected classes change
   useEffect(() => {
     const total = Object.values(selectedClasses).reduce((sum, cls) => sum + cls.fees, 0);
@@ -327,7 +382,14 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-right text-lg">التسجيل السريع</DialogTitle>
+          <DialogTitle className="text-right text-lg flex items-center justify-between">
+            التسجيل السريع
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline" className="text-xs">
+                Space: كاميرا | Ctrl+Enter: تسجيل سريع
+              </Badge>
+            </div>
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -366,16 +428,29 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
               </div>
 
               {scannerActive && (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 h-32">
+                <div className="border-2 border-dashed border-primary rounded-lg p-2 h-40 bg-background/50">
                   <BarcodeScannerComponent
                     width="100%"
-                    height={120}
+                    height={140}
+                    delay={300}
+                    facingMode="environment"
                     onUpdate={(err, result) => {
                       if (result) {
                         handleBarcodeScan(result.getText());
+                        // Visual feedback for successful scan
+                        const scanArea = document.querySelector('.border-dashed');
+                        if (scanArea) {
+                          scanArea.classList.add('border-green-500', 'bg-green-50');
+                          setTimeout(() => {
+                            scanArea.classList.remove('border-green-500', 'bg-green-50');
+                          }, 500);
+                        }
                       }
                     }}
                   />
+                  <div className="text-center text-xs text-muted-foreground mt-1">
+                    وجه الكاميرا نحو الباركود | Space للتبديل | Esc للإغلاق
+                  </div>
                 </div>
               )}
             </CardContent>
