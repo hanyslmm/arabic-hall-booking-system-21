@@ -110,28 +110,10 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     onSuccess: (students) => {
       if (students.length === 1) {
         setSelectedStudent(students[0]);
-        // Auto-select all today's classes with default fees
-        const autoSelected: Record<string, SelectedClass> = {};
-        let autoTotal = 0;
-        
-        todaysBookings.forEach(booking => {
-          // Only auto-select if student is not already registered
-          const isAlreadyRegistered = existingRegistrations.some(reg => reg.booking_id === booking.id);
-          
-          if (!isAlreadyRegistered) {
-            const fees = booking.class_fees || 0;
-            autoSelected[booking.id] = {
-              id: booking.id,
-              checked: true,
-              fees: fees
-            };
-            autoTotal += fees;
-          }
-        });
-        
-        setSelectedClasses(autoSelected);
-        setTotalAmount(autoTotal);
-        setPaymentAmount(autoTotal.toString());
+        // Clear any previous selections since we're showing registered classes only
+        setSelectedClasses({});
+        setTotalAmount(0);
+        setPaymentAmount("0");
       } else if (students.length === 0) {
         toast.error("لم يتم العثور على الطالب");
       }
@@ -383,10 +365,10 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-right text-lg flex items-center justify-between">
-            التسجيل السريع
+            استعلام عن دورات الطالب
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="outline" className="text-xs">
-                Space: كاميرا | Ctrl+Enter: تسجيل سريع
+                Space: كاميرا | Esc: إغلاق
               </Badge>
             </div>
           </DialogTitle>
@@ -471,139 +453,85 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
             </Card>
           )}
 
-          {/* Today's Classes */}
-          {selectedStudent && todaysBookings.length > 0 && (
+          {/* Student's Registered Classes */}
+          {selectedStudent && (
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
                     <Label className="text-base font-medium">
-                      دورات اليوم ({todaysBookings.length}) - {today.toLocaleDateString('ar-SA')}
+                      دورات الطالب ({todaysBookings.filter(booking => existingRegistrations.some(reg => reg.booking_id === booking.id)).length}) - {today.toLocaleDateString('ar-SA')}
                     </Label>
                   </div>
 
-                  <div className="space-y-3">
-                    {todaysBookings.map((booking) => {
-                      const isSelected = selectedClasses[booking.id]?.checked || false;
-                      const fees = selectedClasses[booking.id]?.fees || booking.class_fees || 0;
-                      const isAlreadyRegistered = existingRegistrations.some(reg => reg.booking_id === booking.id);
+                  {todaysBookings.filter(booking => existingRegistrations.some(reg => reg.booking_id === booking.id)).length === 0 ? (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold mb-2">لا توجد دورات مسجلة</h3>
+                      <p className="text-muted-foreground">
+                        الطالب غير مسجل في أي دورة لليوم
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {todaysBookings
+                        .filter((booking) => {
+                          // Only show classes the student is already registered for
+                          return existingRegistrations.some(reg => reg.booking_id === booking.id);
+                        })
+                        .map((booking) => {
+                        const isSelected = selectedClasses[booking.id]?.checked || false;
+                        const fees = selectedClasses[booking.id]?.fees || booking.class_fees || 0;
+                        const isAlreadyRegistered = true; // All filtered bookings are already registered
 
-                      return (
-                        <div key={booking.id} className={`flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 p-3 border rounded-lg ${isAlreadyRegistered ? 'bg-yellow-50 border-yellow-200' : ''}`}>
-                          <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={(checked) => handleClassToggle(booking.id, checked as boolean)}
-                              disabled={isAlreadyRegistered}
-                              className="flex-shrink-0"
-                            />
-                            <div className="flex-1 sm:mr-3">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                                <div className="flex-1">
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                    <p className="font-medium text-sm sm:text-base">
-                                      {booking.halls?.name} - {booking.teachers?.name}
+                        return (
+                          <div key={booking.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 p-3 border rounded-lg bg-green-50 border-green-200">
+                            <div className="flex items-center gap-3 w-full">
+                              <div className="flex-1">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                                  <div className="flex-1">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                      <p className="font-medium text-sm sm:text-base">
+                                        {booking.halls?.name} - {booking.teachers?.name}
+                                      </p>
+                                       <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
+                                         مسجل
+                                       </Badge>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                      {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
+                                      {booking.start_time ? 
+                                        new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                          hour12: true
+                                        }) : ''
+                                      }
                                     </p>
-                                    {isAlreadyRegistered && (
-                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 w-fit">
-                                        مسجل بالفعل
-                                      </Badge>
-                                    )}
                                   </div>
-                                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                                    {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
-                                    {booking.start_time ? 
-                                      new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: true
-                                      }) : ''
-                                    }
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2 w-full sm:w-auto">
-                                  <Label className="text-xs sm:text-sm flex-shrink-0">الرسوم:</Label>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={fees}
-                                    onChange={(e) => handleFeesChange(booking.id, parseFloat(e.target.value) || 0)}
-                                    className="w-20 text-xs sm:text-sm"
-                                    disabled={!isSelected || isAlreadyRegistered}
-                                  />
-                                  <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">ر.س</span>
+                                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                                    <Label className="text-xs sm:text-sm flex-shrink-0">الرسوم:</Label>
+                                    <span className="font-medium text-sm">{(booking.class_fees || 0).toFixed(2)} ر.س</span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Payment Section */}
-          {selectedStudent && selectedClassCount > 0 && (
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    <Label className="text-base font-medium">معلومات الدفع</Label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>إجمالي الرسوم</Label>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-base sm:text-lg">{totalAmount.toFixed(2)} ر.س</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="payment">المبلغ المدفوع</Label>
-                      <Input
-                        id="payment"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    دورات مختارة: {selectedClassCount} | 
-                    حالة الدفع: {
-                      parseFloat(paymentAmount) >= totalAmount ? 'مدفوع بالكامل' :
-                      parseFloat(paymentAmount) > 0 ? 'دفع جزئي' : 'لم يدفع'
-                    }
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
-            إلغاء
-          </Button>
-          <Button 
-            onClick={handleRegister}
-            disabled={!selectedStudent || selectedClassCount === 0 || isRegistering}
-            className="w-full sm:w-auto"
-          >
-            {isRegistering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            تسجيل ({selectedClassCount} دورة)
+          <Button type="button" onClick={handleClose} className="w-full">
+            إغلاق
           </Button>
         </DialogFooter>
       </DialogContent>
