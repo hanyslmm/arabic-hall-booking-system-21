@@ -71,7 +71,7 @@ const navigation = [
       },
       {
         title: "إدارة المجموعة",
-        url: "/class-management",
+        url: "/bookings",
         icon: GraduationCap,
         description: "إدارة الحضور والدفعات",
       },

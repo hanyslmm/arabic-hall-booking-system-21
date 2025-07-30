@@ -68,7 +68,7 @@ export const Navbar = ({
       items: [
         { title: "الطلاب", url: "/students", icon: Users, description: "إدارة بيانات الطلاب" },
         { title: "تسجيل الطلاب", url: "/student-registrations", icon: Users, description: "تسجيل الطلاب الجدد" },
-        { title: "إدارة المجموعة", url: "/class-management", icon: GraduationCap, description: "إدارة الحضور والدفعات" },
+        { title: "إدارة المجموعة", url: "/bookings", icon: GraduationCap, description: "إدارة الحضور والدفعات" },
       ],
     },
     {
