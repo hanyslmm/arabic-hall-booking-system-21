@@ -47,6 +47,9 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
   });
   const [barcodeInput, setBarcodeInput] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [physicalScannerMode, setPhysicalScannerMode] = useState(false);
+  const [scanBuffer, setScanBuffer] = useState("");
+  const [lastScanTime, setLastScanTime] = useState(0);
   const [selectedClasses, setSelectedClasses] = useState<Record<string, SelectedClass>>({});
   const [totalAmount, setTotalAmount] = useState(0);
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -283,10 +286,47 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     }
   }, [isOpen, scannerPreference]);
 
+  // Physical scanner support with buffer for rapid scanning
+  useEffect(() => {
+    const handlePhysicalScan = (e: KeyboardEvent) => {
+      if (!isOpen || !physicalScannerMode) return;
+      
+      const currentTime = Date.now();
+      
+      // If it's been more than 100ms since last keystroke, reset buffer
+      if (currentTime - lastScanTime > 100) {
+        setScanBuffer("");
+      }
+      
+      // Add character to buffer (physical scanners type very fast)
+      if (e.key.length === 1) {
+        e.preventDefault();
+        setScanBuffer(prev => prev + e.key);
+        setLastScanTime(currentTime);
+      }
+      
+      // Enter key indicates end of scan
+      if (e.key === 'Enter' && scanBuffer.length > 0) {
+        e.preventDefault();
+        handleBarcodeScan(scanBuffer);
+        setScanBuffer("");
+        toast.success("تم قراءة الباركود بواسطة الماسح الضوئي");
+      }
+    };
+
+    if (physicalScannerMode) {
+      document.addEventListener('keydown', handlePhysicalScan);
+      return () => document.removeEventListener('keydown', handlePhysicalScan);
+    }
+  }, [isOpen, physicalScannerMode, scanBuffer, lastScanTime]);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
+      
+      // Skip if physical scanner is processing
+      if (physicalScannerMode && e.key !== 'Escape' && e.key !== 'F1') return;
       
       // Escape to close
       if (e.key === 'Escape' && !isRegistering) {
@@ -294,8 +334,24 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
         return;
       }
       
-      // Space to toggle scanner (when not in input)
-      if (e.key === ' ' && e.target === document.body) {
+      // F1 to toggle physical scanner mode
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setPhysicalScannerMode(prev => {
+          const newMode = !prev;
+          if (newMode) {
+            setScannerActive(false); // Turn off camera when using physical scanner
+            toast.success("تم تفعيل الماسح الضوئي الخارجي - اضغط F1 للإلغاء");
+          } else {
+            toast.info("تم إلغاء تفعيل الماسح الضوئي الخارجي");
+          }
+          return newMode;
+        });
+        return;
+      }
+      
+      // Space to toggle camera scanner (when not in input and not using physical scanner)
+      if (e.key === ' ' && e.target === document.body && !physicalScannerMode) {
         e.preventDefault();
         setScannerActive(prev => {
           const newValue = !prev;
@@ -316,7 +372,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedStudent, isRegistering]);
+  }, [isOpen, selectedStudent, isRegistering, physicalScannerMode]);
 
   // Calculate total when selected classes change
   useEffect(() => {
@@ -389,9 +445,17 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
         <DialogHeader>
           <DialogTitle className="text-right text-base flex items-center justify-between">
             تسجيل سريع للطالب
-            <Badge variant="outline" className="text-xs">
-              Space: كاميرا | Esc: إغلاق
-            </Badge>
+            <div className="flex gap-2">
+              {physicalScannerMode && (
+                <Badge variant="default" className="text-xs bg-green-600">
+                  <Scan className="h-3 w-3 mr-1" />
+                  ماسح ضوئي متصل
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                F1: ماسح ضوئي | Space: كاميرا | Esc: إغلاق
+              </Badge>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
@@ -424,11 +488,40 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                   size="sm"
                   onClick={() => setScannerActive(!scannerActive)}
                   className="flex-1"
+                  disabled={physicalScannerMode}
                 >
                   <Camera className="h-4 w-4 mr-2" />
                   {scannerActive ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}
                 </Button>
+                <Button
+                  type="button"
+                  variant={physicalScannerMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPhysicalScannerMode(!physicalScannerMode)}
+                  className="flex-1"
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  {physicalScannerMode ? "إيقاف الماسح" : "ماسح ضوئي"}
+                </Button>
               </div>
+
+              {/* Physical Scanner Mode Indicator */}
+              {physicalScannerMode && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-2 text-green-700">
+                    <Scan className="h-4 w-4 animate-pulse" />
+                    <span className="text-sm font-medium">الماسح الضوئي جاهز</span>
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    امسح الباركود بالماسح الضوئي أو اضغط F1 للإلغاء
+                  </p>
+                  {scanBuffer && (
+                    <div className="mt-2 px-2 py-1 bg-white rounded border text-xs font-mono text-gray-700">
+                      {scanBuffer}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {scannerActive && (
                 <div className="border-2 border-dashed border-primary rounded-lg p-2 h-32 bg-background/50">
