@@ -52,6 +52,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
   const [paymentAmount, setPaymentAmount] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [autoRegisterMode, setAutoRegisterMode] = useState(false);
+  const [registerAllClasses, setRegisterAllClasses] = useState(false);
 
   // Get today's weekday to filter relevant classes
   const today = new Date();
@@ -110,6 +111,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
     onSuccess: (students) => {
       if (students.length === 1) {
         setSelectedStudent(students[0]);
+        setScannerActive(false); // Close camera after finding student
         // Clear any previous selections since we're showing registered classes only
         setSelectedClasses({});
         setTotalAmount(0);
@@ -200,7 +202,6 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
   // Handle barcode scan
   const handleBarcodeScan = (result: string) => {
     setBarcodeInput(result);
-    setScannerActive(false);
     if (result.trim()) {
       searchMutation.mutate(result.trim());
     }
@@ -210,6 +211,28 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
   const handleBarcodeSubmit = () => {
     if (barcodeInput.trim()) {
       searchMutation.mutate(barcodeInput.trim());
+    }
+  };
+
+  // Handle register all classes toggle
+  const handleRegisterAllToggle = (checked: boolean) => {
+    setRegisterAllClasses(checked);
+    if (checked) {
+      // Select all available classes
+      const allSelected: Record<string, SelectedClass> = {};
+      todaysBookings
+        .filter(booking => !existingRegistrations.some(reg => reg.booking_id === booking.id))
+        .forEach(booking => {
+          allSelected[booking.id] = {
+            id: booking.id,
+            checked: true,
+            fees: booking.class_fees || 0
+          };
+        });
+      setSelectedClasses(allSelected);
+    } else {
+      // Deselect all classes
+      setSelectedClasses({});
     }
   };
 
@@ -362,22 +385,20 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-right text-lg flex items-center justify-between">
-            استعلام عن دورات الطالب
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline" className="text-xs">
-                Space: كاميرا | Esc: إغلاق
-              </Badge>
-            </div>
+          <DialogTitle className="text-right text-base flex items-center justify-between">
+            تسجيل سريع للطالب
+            <Badge variant="outline" className="text-xs">
+              Space: كاميرا | Esc: إغلاق
+            </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Compact Barcode Scanner Section */}
           <Card>
-            <CardContent className="pt-4 space-y-3">
+            <CardContent className="pt-3 pb-3 space-y-2">
               <div className="flex gap-2">
                 <Input
                   id="barcode"
@@ -410,10 +431,10 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
               </div>
 
               {scannerActive && (
-                <div className="border-2 border-dashed border-primary rounded-lg p-2 h-40 bg-background/50">
+                <div className="border-2 border-dashed border-primary rounded-lg p-2 h-32 bg-background/50">
                   <BarcodeScannerComponent
                     width="100%"
-                    height={140}
+                    height={110}
                     delay={300}
                     facingMode="environment"
                     onUpdate={(err, result) => {
@@ -431,7 +452,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                     }}
                   />
                   <div className="text-center text-xs text-muted-foreground mt-1">
-                    وجه الكاميرا نحو الباركود | Space للتبديل | Esc للإغلاق
+                    وجه الكاميرا نحو الباركود
                   </div>
                 </div>
               )}
@@ -441,79 +462,81 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
           {/* Compact Selected Student Info */}
           {selectedStudent && (
             <Card className="border-green-200 bg-green-50">
-              <CardContent className="pt-3 pb-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Users className="h-4 w-4 text-green-600" />
-                  <div>
+              <CardContent className="pt-2 pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4 text-green-600" />
                     <span className="font-medium text-green-600">{selectedStudent.name}</span>
-                    <Badge variant="outline" className="ml-2 text-xs">{selectedStudent.serial_number}</Badge>
+                    <Badge variant="outline" className="text-xs">{selectedStudent.serial_number}</Badge>
+                  </div>
+                  {/* Register All Classes Option */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="register-all"
+                      checked={registerAllClasses}
+                      onCheckedChange={handleRegisterAllToggle}
+                    />
+                    <Label htmlFor="register-all" className="text-xs">تسجيل في جميع الدورات</Label>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Student's Registered Classes */}
+          {/* Available Classes for Registration */}
           {selectedStudent && (
             <Card>
-              <CardContent className="p-4">
-                <div className="space-y-4">
+              <CardContent className="p-3">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    <Label className="text-base font-medium">
-                      دورات الطالب ({todaysBookings.filter(booking => existingRegistrations.some(reg => reg.booking_id === booking.id)).length}) - {today.toLocaleDateString('ar-SA')}
+                    <Calendar className="h-4 w-4" />
+                    <Label className="text-sm font-medium">
+                      الدورات المتاحة اليوم ({todaysBookings.filter(booking => !existingRegistrations.some(reg => reg.booking_id === booking.id)).length})
                     </Label>
                   </div>
 
-                  {todaysBookings.filter(booking => existingRegistrations.some(reg => reg.booking_id === booking.id)).length === 0 ? (
-                    <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold mb-2">لا توجد دورات مسجلة</h3>
-                      <p className="text-muted-foreground">
-                        الطالب غير مسجل في أي دورة لليوم
+                  {todaysBookings.filter(booking => !existingRegistrations.some(reg => reg.booking_id === booking.id)).length === 0 ? (
+                    <div className="text-center py-4">
+                      <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        لا توجد دورات متاحة للتسجيل اليوم
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {todaysBookings
                         .filter((booking) => {
-                          // Only show classes the student is already registered for
-                          return existingRegistrations.some(reg => reg.booking_id === booking.id);
+                          // Only show classes the student is NOT registered for
+                          return !existingRegistrations.some(reg => reg.booking_id === booking.id);
                         })
                         .map((booking) => {
                         const isSelected = selectedClasses[booking.id]?.checked || false;
                         const fees = selectedClasses[booking.id]?.fees || booking.class_fees || 0;
-                        const isAlreadyRegistered = true; // All filtered bookings are already registered
 
                         return (
-                          <div key={booking.id} className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 p-3 border rounded-lg bg-green-50 border-green-200">
-                            <div className="flex items-center gap-3 w-full">
-                              <div className="flex-1">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                                  <div className="flex-1">
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                      <p className="font-medium text-sm sm:text-base">
-                                        {booking.halls?.name} - {booking.teachers?.name}
-                                      </p>
-                                       <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">
-                                         مسجل
-                                       </Badge>
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                                      {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
-                                      {booking.start_time ? 
-                                        new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
-                                          hour: '2-digit',
-                                          minute: '2-digit',
-                                          hour12: true
-                                        }) : ''
-                                      }
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                                    <Label className="text-xs sm:text-sm flex-shrink-0">الرسوم:</Label>
-                                    <span className="font-medium text-sm">{(booking.class_fees || 0).toFixed(2)} ر.س</span>
-                                  </div>
+                          <div key={booking.id} className="flex items-center gap-2 p-2 border rounded-lg hover:bg-muted/50">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => handleClassToggle(booking.id, !!checked)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {booking.halls?.name} - {booking.teachers?.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {booking.academic_stages?.name} | {booking.start_time ? 
+                                      new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      }) : ''
+                                    }
+                                  </p>
+                                </div>
+                                <div className="text-sm font-medium text-primary">
+                                  {fees.toFixed(0)} ر.س
                                 </div>
                               </div>
                             </div>
@@ -529,8 +552,28 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
 
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button type="button" onClick={handleClose} className="w-full">
+        <DialogFooter className="flex gap-2 pt-3">
+          {selectedStudent && selectedClassCount > 0 && (
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm">الإجمالي: {totalAmount.toFixed(0)} ر.س</span>
+              <Input
+                type="number"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="المبلغ المدفوع"
+                className="w-24 h-8 text-xs"
+              />
+            </div>
+          )}
+          <Button 
+            type="button" 
+            onClick={handleRegister}
+            disabled={isRegistering || !selectedStudent || selectedClassCount === 0}
+            className="h-8 px-4"
+          >
+            {isRegistering ? "جاري التسجيل..." : `تسجيل (${selectedClassCount})`}
+          </Button>
+          <Button type="button" variant="outline" onClick={handleClose} className="h-8 px-4">
             إغلاق
           </Button>
         </DialogFooter>

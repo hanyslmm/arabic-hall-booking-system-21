@@ -9,6 +9,7 @@ import { LogOut, User, Calendar, Home, Users, Settings, Menu, X, Building2, Grad
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ScrollArea } from "@/components/ui/scroll-area";
 interface NavbarProps {
   userRole?: 'owner' | 'manager' | 'space_manager' | 'read_only';
   userName?: string;
@@ -138,7 +139,7 @@ export const Navbar = ({
         </div>
 
         {/* Sidebar Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <ScrollArea className="flex-1 p-4">
           {navigation.map((group) => (
             <div key={group.title} className="mb-6">
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
@@ -169,7 +170,7 @@ export const Navbar = ({
               </nav>
             </div>
           ))}
-        </div>
+        </ScrollArea>
 
         {/* Sidebar Footer */}
         <div className="border-t p-4">
