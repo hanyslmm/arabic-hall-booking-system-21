@@ -131,6 +131,16 @@
     text-align: right;
   }
 
+  /* Force RTL direction for all elements */
+  html {
+    direction: rtl;
+  }
+
+  /* Ensure proper RTL transition animations */
+  .sidebar-transition {
+    transition: transform 0.3s ease-in-out;
+  }
+
   /* Arabic typography improvements */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cairo', sans-serif;

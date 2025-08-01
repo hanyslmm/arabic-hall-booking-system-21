@@ -16,13 +16,13 @@ const Index = () => {
   const { user, loading } = useAuth();
   const [hasError, setHasError] = useState(false);
 
-  // Fetch occupancy data
+  // Fetch actual occupancy data based on student registrations
   const { data: occupancyData } = useQuery({
-    queryKey: ['hall-occupancy'],
+    queryKey: ['hall-actual-occupancy'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_hall_occupancy_rates');
+      const { data, error } = await supabase.rpc('get_hall_actual_occupancy_updated');
       if (error) throw error;
-      return data as Array<{ hall_id: string; name: string; occupancy_percentage: number }>;
+      return data as Array<{ hall_id: string; hall_name: string; capacity: number; registered_students: number; occupancy_percentage: number }>;
     },
     enabled: !!user,
     staleTime: STALE_TIME.LONG,
@@ -95,9 +95,13 @@ const Index = () => {
           <h1 className="text-3xl font-bold tracking-tight">لوحة التحكم</h1>
         </div>
 
-        <StatsCards />
+        <StatsCards averageOccupancy={averageOccupancy} />
 
-        <HallsGrid />
+        <HallsGrid occupancyData={occupancyData?.map(h => ({ 
+          hall_id: h.hall_id, 
+          name: h.hall_name, 
+          occupancy_percentage: h.occupancy_percentage 
+        })) || []} />
       </div>
     </UnifiedLayout>
   );

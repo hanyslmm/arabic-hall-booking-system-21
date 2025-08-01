@@ -244,9 +244,10 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-72 transform bg-card border-l transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
+          "fixed inset-y-0 right-0 z-50 w-72 transform bg-card border-l sidebar-transition lg:static lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "translate-x-full"
         )}
+        style={{ direction: 'rtl' }}
       >
         {/* Sidebar Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b">

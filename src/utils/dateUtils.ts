@@ -45,6 +45,24 @@ export const formatArabicTime = (time: string): string => {
 };
 
 /**
+ * Format time to 12-hour format with AM/PM
+ * @param time - Time string (HH:mm:ss or HH:mm format)
+ * @returns Formatted time string with AM/PM
+ */
+export const formatTimeAmPm = (time: string): string => {
+  // Remove seconds if present
+  const cleanTime = time.split(':').slice(0, 2).join(':');
+  const [hours, minutes] = cleanTime.split(':');
+  const hour = parseInt(hours, 10);
+  const minute = parseInt(minutes, 10);
+  
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  
+  return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+};
+
+/**
  * Check if a date is in Gregorian calendar format
  * @param date - Date to check
  * @returns true if date is valid Gregorian date

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, GraduationCap, Download, Upload } from "lucide-react";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
+import { TeacherCodeManager } from "@/components/teacher/TeacherCodeManager";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { getTeachers, deleteTeacher } from "@/api/teachers";
@@ -333,6 +334,9 @@ const TeachersPage = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Teacher Code Management */}
+        {canManage && <TeacherCodeManager />}
 
         {canManage && (
           <>

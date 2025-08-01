@@ -21,31 +21,26 @@ export const StatsCards = ({ averageOccupancy = 0 }: StatsCardsProps) => {
         { count: teachersCount },
         { count: stagesCount },
         { count: bookingsCount },
-        workingHoursData,
-        bookingsData
+        actualOccupancyData
       ] = await Promise.all([
         supabase.from('halls').select('*', { count: 'exact', head: true }),
         supabase.from('teachers').select('*', { count: 'exact', head: true }),
         supabase.from('academic_stages').select('*', { count: 'exact', head: true }),
         supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('working_hours').select('*'),
-        supabase.from('bookings').select('hall_id, start_time, days_of_week').eq('status', 'active')
+        supabase.rpc('get_hall_actual_occupancy_updated')
       ]);
 
-      // Calculate occupancy ratio
-      const totalWorkingHours = workingHoursData.data?.length || 0;
-      const totalBookedSlots = bookingsData.data?.reduce((acc: number, booking: any) => {
-        return acc + (booking.days_of_week?.length || 0);
-      }, 0) || 0;
-      
-      const occupancyRatio = totalWorkingHours > 0 ? Math.round((totalBookedSlots / totalWorkingHours) * 100) : 0;
+      // Calculate average occupancy based on actual student registrations
+      const avgOccupancy = actualOccupancyData.data && actualOccupancyData.data.length > 0 
+        ? Math.round(actualOccupancyData.data.reduce((sum: number, hall: any) => sum + hall.occupancy_percentage, 0) / actualOccupancyData.data.length)
+        : 0;
 
       return {
         halls: hallsCount || 0,
         teachers: teachersCount || 0,
         stages: stagesCount || 0,
         activeBookings: bookingsCount || 0,
-        occupancyRatio
+        occupancyRatio: avgOccupancy
       };
     }
   });

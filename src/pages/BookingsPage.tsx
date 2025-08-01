@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Users, Clock, MapPin, Filter } from "lucide-react";
+import { Calendar, Users, Clock, MapPin, Filter, Hash } from "lucide-react";
+import { formatTimeAmPm } from "@/utils/dateUtils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { EditBookingModal } from "@/components/booking/EditBookingModal";
@@ -21,6 +22,7 @@ interface Booking {
   start_time: string;
   days_of_week: string[];
   number_of_students: number;
+  class_code?: string;
   status: 'active' | 'cancelled' | 'completed';
   created_at: string;
   halls: {
@@ -29,10 +31,12 @@ interface Booking {
   };
   teachers: {
     name: string;
+    teacher_code?: string;
   };
   academic_stages: {
     name: string;
   };
+  actual_student_count?: number;
 }
 
 const BookingsPage = () => {
@@ -63,6 +67,7 @@ const BookingsPage = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Fetch bookings with actual student count
   const { data: bookings, isLoading, error } = useQuery({
     queryKey: queryKeys.bookingsFiltered(selectedHall, selectedTeacher),
     queryFn: async () => {
@@ -71,7 +76,7 @@ const BookingsPage = () => {
         .select(`
           *,
           halls(name, capacity),
-          teachers(name),
+          teachers(name, teacher_code),
           academic_stages(name)
         `);
       
@@ -83,10 +88,26 @@ const BookingsPage = () => {
         query = query.eq('teacher_id', selectedTeacher);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data: bookingsData, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Booking[];
+
+      // Get actual registered student counts for each booking
+      const bookingsWithCounts = await Promise.all(
+        bookingsData.map(async (booking) => {
+          const { count } = await supabase
+            .from('student_registrations')
+            .select('*', { count: 'exact', head: true })
+            .eq('booking_id', booking.id);
+          
+          return {
+            ...booking,
+            actual_student_count: count || 0
+          };
+        })
+      );
+      
+      return bookingsWithCounts as (Booking & { actual_student_count: number })[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -241,34 +262,52 @@ const BookingsPage = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                    <TableHead className="text-right">القاعة</TableHead>
-                      <TableHead className="text-right">المعلم</TableHead>
-                      <TableHead className="text-right">المرحلة</TableHead>
-                      <TableHead className="text-right">التوقيت</TableHead>
-                      <TableHead className="text-right">الأيام</TableHead>
-                      <TableHead className="text-right">عدد الطلاب</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
-                    </TableRow>
-                  </TableHeader>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">كود المجموعة</TableHead>
+                        <TableHead className="text-right">القاعة</TableHead>
+                        <TableHead className="text-right">المعلم</TableHead>
+                        <TableHead className="text-right">المرحلة</TableHead>
+                        <TableHead className="text-right">التوقيت</TableHead>
+                        <TableHead className="text-right">الأيام</TableHead>
+                        <TableHead className="text-right">عدد الطلاب</TableHead>
+                        <TableHead className="text-right">الحالة</TableHead>
+                        {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {bookings?.map((booking) => (
                       <TableRow key={booking.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Hash className="h-4 w-4 text-primary" />
+                            <span className="font-mono text-sm bg-primary/10 px-2 py-1 rounded">
+                              {booking.class_code || 'غير محدد'}
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
                             {booking.halls.name}
                           </div>
                         </TableCell>
-                        <TableCell>{booking.teachers.name}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{booking.teachers.name}</span>
+                            {booking.teachers.teacher_code && (
+                              <span className="text-xs bg-secondary px-1 py-0.5 rounded">
+                                {booking.teachers.teacher_code}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{booking.academic_stages.name}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            {booking.start_time}
+                            {formatTimeAmPm(booking.start_time)}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -277,7 +316,12 @@ const BookingsPage = () => {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            {booking.number_of_students}
+                            <span className="font-semibold text-primary">
+                              {booking.actual_student_count || 0}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              / {booking.number_of_students}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>

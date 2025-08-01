@@ -111,6 +111,7 @@ export type Database = {
       bookings: {
         Row: {
           academic_stage_id: string
+          class_code: string | null
           class_fees: number | null
           created_at: string | null
           created_by: string
@@ -127,6 +128,7 @@ export type Database = {
         }
         Insert: {
           academic_stage_id: string
+          class_code?: string | null
           class_fees?: number | null
           created_at?: string | null
           created_by: string
@@ -143,6 +145,7 @@ export type Database = {
         }
         Update: {
           academic_stage_id?: string
+          class_code?: string | null
           class_fees?: number | null
           created_at?: string | null
           created_by?: string
@@ -581,6 +584,7 @@ export type Database = {
           mobile_phone: string | null
           name: string
           subject_id: string | null
+          teacher_code: string | null
           updated_at: string | null
         }
         Insert: {
@@ -590,6 +594,7 @@ export type Database = {
           mobile_phone?: string | null
           name: string
           subject_id?: string | null
+          teacher_code?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -599,6 +604,7 @@ export type Database = {
           mobile_phone?: string | null
           name?: string
           subject_id?: string | null
+          teacher_code?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -736,11 +742,29 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      generate_class_code: {
+        Args: {
+          p_teacher_id: string
+          p_days_of_week: string[]
+          p_start_time: string
+        }
+        Returns: string
+      }
       generate_student_serial: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
       get_hall_actual_occupancy: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          hall_id: string
+          hall_name: string
+          capacity: number
+          registered_students: number
+          occupancy_percentage: number
+        }[]
+      }
+      get_hall_actual_occupancy_updated: {
         Args: Record<PropertyKey, never>
         Returns: {
           hall_id: string
