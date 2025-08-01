@@ -16,6 +16,7 @@ import { EnhancedBulkUploadModal } from "@/components/student/EnhancedBulkUpload
 import { studentsApi, Student } from "@/api/students";
 import { Plus, Search, Upload, Edit, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
+import { formatShortArabicDate } from "@/utils/dateUtils";
 
 const StudentsPage = () => {
   const { profile } = useAuth();
@@ -251,7 +252,7 @@ const StudentsPage = () => {
                         <TableCell>{student.parent_phone || '-'}</TableCell>
                         <TableCell>{student.city || '-'}</TableCell>
                         <TableCell>
-                          {new Date(student.created_at).toLocaleDateString('ar-SA')}
+                          {formatShortArabicDate(student.created_at)}
                         </TableCell>
                         {canManageStudents && (
                           <TableCell>

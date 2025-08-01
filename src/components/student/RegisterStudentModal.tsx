@@ -12,6 +12,7 @@ import { studentsApi, studentRegistrationsApi, Student } from "@/api/students";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Search, User, Plus } from "lucide-react";
+import { formatTimeAmPm } from "@/utils/dateUtils";
 
 interface RegisterStudentModalProps {
   isOpen: boolean;
@@ -349,15 +350,11 @@ export const RegisterStudentModal = ({ isOpen, onClose }: RegisterStudentModalPr
                       <p className="font-medium">
                         {booking.halls?.name} - {booking.teachers?.name}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
-                        {booking.start_time ? 
-                          new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                          }) : ''
-                        }
+                       <p className="text-sm text-muted-foreground">
+                         {booking.academic_stages?.name} | {getDaysInArabic(booking.days_of_week)} | 
+                         {booking.start_time ? 
+                           formatTimeAmPm(booking.start_time) : ''
+                         }
                       </p>
                     </div>
                   </SelectItem>
@@ -368,7 +365,7 @@ export const RegisterStudentModal = ({ isOpen, onClose }: RegisterStudentModalPr
 
           {/* Fees */}
           <div className="space-y-2">
-            <Label htmlFor="fees">الرسوم الإجمالية (ر.س)</Label>
+            <Label htmlFor="fees">الرسوم الإجمالية (LE)</Label>
             <Input
               id="fees"
               type="number"

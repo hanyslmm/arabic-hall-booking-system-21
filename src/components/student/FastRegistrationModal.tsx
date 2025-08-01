@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Scan, DollarSign, Calendar, Users, Camera, X, CreditCard } from "lucide-react";
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
+import { formatTimeAmPm } from "@/utils/dateUtils";
 
 interface FastRegistrationModalProps {
   isOpen: boolean;
@@ -136,7 +137,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
           student_id: reg.student_id,
           booking_id: reg.booking_id,
           total_fees: reg.total_fees,
-          notes: reg.paid_amount > 0 ? `دفع سريع: ${reg.paid_amount} ر.س` : undefined
+          notes: reg.paid_amount > 0 ? `دفع سريع: ${reg.paid_amount} LE` : undefined
         })
       );
       
@@ -618,19 +619,15 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                                   <p className="text-sm font-medium truncate">
                                     {booking.halls?.name} - {booking.teachers?.name}
                                   </p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {booking.academic_stages?.name} | {booking.start_time ? 
-                                      new Date(`2000-01-01T${booking.start_time}`).toLocaleTimeString('ar-SA', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: true
-                                      }) : ''
-                                    }
+                                   <p className="text-xs text-muted-foreground truncate">
+                                     {booking.academic_stages?.name} | {booking.start_time ? 
+                                       formatTimeAmPm(booking.start_time) : ''
+                                     }
                                   </p>
                                 </div>
-                                <div className="text-sm font-medium text-primary">
-                                  {fees.toFixed(0)} ر.س
-                                </div>
+                                 <div className="text-sm font-medium text-primary">
+                                   {fees.toFixed(0)} LE
+                                 </div>
                               </div>
                             </div>
                           </div>
@@ -648,7 +645,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
         <DialogFooter className="flex gap-2 pt-3">
           {selectedStudent && selectedClassCount > 0 && (
             <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm">الإجمالي: {totalAmount.toFixed(0)} ر.س</span>
+              <span className="text-sm">الإجمالي: {totalAmount.toFixed(0)} LE</span>
               <Input
                 type="number"
                 value={paymentAmount}

@@ -15,6 +15,7 @@ import { FastRegistrationModal } from "@/components/student/FastRegistrationModa
 import { studentRegistrationsApi, StudentRegistration } from "@/api/students";
 import { Plus, Search, UserCheck, GraduationCap, DollarSign, Calendar, Trash2, Scan } from "lucide-react";
 import { toast } from "sonner";
+import { formatTimeAmPm, formatShortArabicDate } from "@/utils/dateUtils";
 
 const StudentRegistrationsPage = () => {
   const { profile } = useAuth();
@@ -301,11 +302,7 @@ const StudentRegistrationsPage = () => {
                         <TableCell>{registration.booking?.academic_stages?.name}</TableCell>
                         <TableCell>
                           {registration.booking?.start_time ? 
-                            new Date(`2000-01-01T${registration.booking.start_time}`).toLocaleTimeString('ar-SA', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            }) : '-'
+                            formatTimeAmPm(registration.booking.start_time) : '-'
                           }
                         </TableCell>
                         <TableCell>
@@ -313,11 +310,11 @@ const StudentRegistrationsPage = () => {
                             getDaysInArabic(registration.booking.days_of_week) : '-'
                           }
                         </TableCell>
-                        <TableCell>{registration.total_fees?.toFixed(2) || '0.00'} ر.س</TableCell>
-                        <TableCell>{registration.paid_amount?.toFixed(2) || '0.00'} ر.س</TableCell>
+                        <TableCell>{registration.total_fees?.toFixed(2) || '0.00'} LE</TableCell>
+                        <TableCell>{registration.paid_amount?.toFixed(2) || '0.00'} LE</TableCell>
                         <TableCell>{getPaymentStatusBadge(registration.payment_status)}</TableCell>
                         <TableCell>
-                          {new Date(registration.registration_date).toLocaleDateString('ar-SA')}
+                          {formatShortArabicDate(registration.registration_date)}
                         </TableCell>
                         {canManageRegistrations && (
                           <TableCell>
