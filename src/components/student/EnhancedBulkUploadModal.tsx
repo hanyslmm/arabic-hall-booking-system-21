@@ -245,51 +245,86 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
 
   const processFile = async (file: File) => {
     try {
+      console.log('Starting file processing...');
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const errorList: string[] = [];
       const classDataList: ParsedClassData[] = [];
+      
+      console.log('Workbook sheet names:', workbook.SheetNames);
 
       // Process each sheet
       for (const sheetName of workbook.SheetNames) {
+        console.log(`Processing sheet: ${sheetName}`);
         const parsedSheetInfo = parseSheetName(sheetName);
         
         if (!parsedSheetInfo) {
-          errorList.push(`Invalid sheet name format: ${sheetName}`);
+          errorList.push(`Invalid sheet name format: ${sheetName}. Expected format: Teacher_Day_Time (e.g., B_SAT_9)`);
           continue;
         }
 
         const worksheet = workbook.Sheets[sheetName];
+        
+        if (!worksheet) {
+          errorList.push(`Cannot read sheet: ${sheetName}`);
+          continue;
+        }
+        
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        if (!Array.isArray(jsonData) || jsonData.length === 0) {
+          errorList.push(`Sheet "${sheetName}" is empty or contains no valid data`);
+          continue;
+        }
 
         const students: StudentDataRow[] = [];
 
         jsonData.forEach((row: any, index: number) => {
-          // Skip rows without names
-          if (!row.Name || !row.Name.toString().trim()) {
-            return;
+          try {
+            // Skip rows without names
+            if (!row || !row.Name || typeof row.Name !== 'string' && typeof row.Name !== 'number') {
+              return;
+            }
+
+            const name = row.Name.toString().trim();
+            if (!name) {
+              return;
+            }
+
+            const mobile = normalizeMobileNumber(row.Mobile);
+            const home = normalizeMobileNumber(row.Home);
+            const city = row.City?.toString().trim() || '';
+            const payment = getPaymentValue(row, 'Dars'); // Use "Dars" column for payment
+
+            // Validate mobile numbers
+            const mobileRegex = /^01[0-9]{9}$/;
+            if (mobile && !mobileRegex.test(mobile)) {
+              errorList.push(`${sheetName} - Row ${index + 2}: Invalid mobile number "${mobile}"`);
+            }
+
+            students.push({
+              name,
+              mobile,
+              home,
+              city,
+              payment
+            });
+          } catch (rowError) {
+            errorList.push(`${sheetName} - Row ${index + 2}: Error processing row - ${rowError}`);
           }
-
-          const name = row.Name.toString().trim();
-          const mobile = normalizeMobileNumber(row.Mobile);
-          const home = normalizeMobileNumber(row.Home);
-          const city = row.City?.toString().trim() || '';
-          const payment = getPaymentValue(row, 'Dars'); // Use "Dars" column for payment
-
-          // Validate mobile numbers
-          const mobileRegex = /^01[0-9]{9}$/;
-          if (mobile && !mobileRegex.test(mobile)) {
-            errorList.push(`${sheetName} - Row ${index + 2}: Invalid mobile number "${mobile}"`);
-          }
-
-          students.push({
-            name,
-            mobile,
-            home,
-            city,
-            payment
-          });
         });
+
+        // Validate that we have students with required data
+        if (students.length === 0) {
+          errorList.push(`Sheet "${sheetName}" contains no valid students. Please check that the sheet has Name and Mobile columns with valid data.`);
+          continue;
+        }
+        
+        // Additional validation - check if we have at least some valid mobile numbers
+        const validMobileCount = students.filter(s => s.mobile && s.mobile.length > 0).length;
+        if (validMobileCount === 0) {
+          errorList.push(`Sheet "${sheetName}" contains students but no valid mobile numbers. Please check the Mobile column format.`);
+        }
 
         classDataList.push({
           sheetName,
@@ -317,8 +352,14 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
         });
       }
     } catch (error) {
-      setErrors(['خطأ في قراءة الملف. تأكد من أن الملف Excel صالح.']);
-      toast({ title: 'خطأ في تحميل الملف', variant: 'destructive' });
+      console.error('File processing error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setErrors([`خطأ في قراءة الملف: ${errorMessage}. تأكد من أن الملف Excel صالح.`]);
+      toast({ 
+        title: 'خطأ في تحميل الملف', 
+        description: errorMessage,
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -380,8 +421,10 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
               <li>• الملف يجب أن يحتوي على عدة sheets، كل sheet يمثل فصل</li>
               <li>• اسم الـ sheet يجب أن يكون بالصيغة: B_SUN_9 (B=باسم، SUN=الأحد، 9=الساعة)</li>
               <li>• الأرقام أقل من 9 تعني مساءً، 9 فما فوق تعني صباحاً</li>
-              <li>• العمود "Dars" يحتوي على المدفوعات</li>
-              <li>• العمود "Home" يحتوي على رقم ولي الأمر</li>
+              <li>• أعمدة مطلوبة: Name (الاسم)، Mobile (الموبايل)</li>
+              <li>• أعمدة اختيارية: Home (رقم ولي الأمر)، City (المدينة)، Dars (المدفوعات)</li>
+              <li>• يجب أن تكون أسماء الأعمدة في الصف الأول</li>
+              <li>• بيانات الطلاب تبدأ من الصف الثاني</li>
             </ul>
           </div>
 
