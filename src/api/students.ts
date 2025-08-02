@@ -78,13 +78,18 @@ export const studentsApi = {
     mobile_phone: string;
     parent_phone?: string;
     city?: string;
+    serial_number?: string;
   }): Promise<Student> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("غير مصرح");
     
     const { data, error } = await supabase
       .from("students")
-      .insert([{ ...studentData, created_by: user.user.id, serial_number: '' }])
+      .insert([{ 
+        ...studentData, 
+        created_by: user.user.id, 
+        serial_number: studentData.serial_number || '' 
+      }])
       .select()
       .single();
     
@@ -97,6 +102,7 @@ export const studentsApi = {
     mobile_phone: string;
     parent_phone: string;
     city: string;
+    serial_number: string;
   }>): Promise<Student> {
     const { data, error } = await supabase
       .from("students")

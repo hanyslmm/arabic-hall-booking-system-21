@@ -21,6 +21,7 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
     mobile_phone: student.mobile_phone,
     parent_phone: student.parent_phone || "",
     city: student.city || "",
+    serial_number: student.serial_number,
   });
 
   const updateMutation = useMutation({
@@ -33,6 +34,8 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
     onError: (error: any) => {
       if (error.message?.includes('mobile_phone')) {
         toast.error("رقم الهاتف مستخدم من قبل طالب آخر");
+      } else if (error.message?.includes('serial_number')) {
+        toast.error("الرقم التسلسلي مستخدم بالفعل، يرجى اختيار رقم آخر");
       } else {
         toast.error("فشل في تحديث معلومات الطالب");
       }
@@ -42,8 +45,15 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.mobile_phone.trim()) {
+    if (!formData.name.trim() || !formData.mobile_phone.trim() || !formData.serial_number.trim()) {
       toast.error("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
+
+    // Validate serial number range
+    const serialNum = parseInt(formData.serial_number);
+    if (isNaN(serialNum) || serialNum < 1 || serialNum > 99999) {
+      toast.error("الرقم التسلسلي يجب أن يكون بين 1 و 99999");
       return;
     }
 
@@ -59,6 +69,7 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
       mobile_phone: formData.mobile_phone.trim(),
       parent_phone: formData.parent_phone.trim() || undefined,
       city: formData.city.trim() || undefined,
+      serial_number: formData.serial_number.trim(),
     });
   };
 
@@ -67,12 +78,26 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>تعديل معلومات الطالب</DialogTitle>
-          <DialogDescription>
-            الرقم التسلسلي: {student.serial_number}
-          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="serial_number">الرقم التسلسلي *</Label>
+            <Input
+              id="serial_number"
+              type="number"
+              min="1"
+              max="99999"
+              placeholder="رقم من 1 إلى 99999"
+              value={formData.serial_number}
+              onChange={(e) => setFormData(prev => ({ ...prev, serial_number: e.target.value }))}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              رقم تسلسلي فريد من 1 إلى 99999
+            </p>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="name">الاسم *</Label>
             <Input

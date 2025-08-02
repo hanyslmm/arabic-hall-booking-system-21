@@ -20,6 +20,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
     mobile_phone: "",
     parent_phone: "",
     city: "",
+    serial_number: "",
   });
 
   const createMutation = useMutation({
@@ -32,6 +33,8 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
     onError: (error: any) => {
       if (error.message?.includes('mobile_phone')) {
         toast.error("رقم الهاتف مستخدم من قبل طالب آخر");
+      } else if (error.message?.includes('serial_number')) {
+        toast.error("الرقم التسلسلي مستخدم بالفعل، يرجى اختيار رقم آخر");
       } else {
         toast.error("فشل في إنشاء الطالب");
       }
@@ -46,6 +49,15 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
       return;
     }
 
+    // Validate serial number if provided
+    if (formData.serial_number.trim()) {
+      const serialNum = parseInt(formData.serial_number);
+      if (isNaN(serialNum) || serialNum < 1 || serialNum > 99999) {
+        toast.error("الرقم التسلسلي يجب أن يكون بين 1 و 99999");
+        return;
+      }
+    }
+
     // Validate mobile phone format (basic validation)
     const phoneRegex = /^[0-9+\-\s()]+$/;
     if (!phoneRegex.test(formData.mobile_phone)) {
@@ -58,6 +70,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
       mobile_phone: formData.mobile_phone.trim(),
       parent_phone: formData.parent_phone.trim() || undefined,
       city: formData.city.trim() || undefined,
+      serial_number: formData.serial_number.trim() || undefined,
     });
   };
 
@@ -67,6 +80,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
       mobile_phone: "",
       parent_phone: "",
       city: "",
+      serial_number: "",
     });
     onClose();
   };
@@ -77,11 +91,27 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
         <DialogHeader>
           <DialogTitle>إضافة طالب جديد</DialogTitle>
           <DialogDescription>
-            أدخل معلومات الطالب. سيتم إنشاء رقم تسلسلي تلقائياً للطالب.
+            أدخل معلومات الطالب. يمكنك تحديد رقم تسلسلي أو تركه فارغاً للتوليد التلقائي.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="serial_number">الرقم التسلسلي (اختياري)</Label>
+            <Input
+              id="serial_number"
+              type="number"
+              min="1"
+              max="99999"
+              placeholder="رقم من 1 إلى 99999 (اختياري)"
+              value={formData.serial_number}
+              onChange={(e) => setFormData(prev => ({ ...prev, serial_number: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              اتركه فارغاً لتوليد رقم تسلسلي تلقائياً
+            </p>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="name">الاسم *</Label>
             <Input

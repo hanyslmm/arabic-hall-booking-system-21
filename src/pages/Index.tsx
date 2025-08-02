@@ -68,6 +68,46 @@ const Index = () => {
       ? Math.round(occupancyData.reduce((sum, hall) => sum + hall.occupancy_percentage, 0) / occupancyData.length)
       : 0;
   }, [occupancyData]);
+
+  // Fetch time slot availability data
+  const { data: timeSlotData } = useQuery({
+    queryKey: ['time-slot-availability'],
+    queryFn: async () => {
+      // Get total halls
+      const { data: halls, error: hallsError } = await supabase
+        .from('halls')
+        .select('id, name');
+      
+      if (hallsError) throw hallsError;
+
+      // Get active bookings
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, hall_id')
+        .eq('status', 'active');
+      
+      if (bookingsError) throw bookingsError;
+
+      // Calculate time slot availability
+      // Assume 7 days per week and 12 possible time slots per day (8 AM to 8 PM)
+      const daysPerWeek = 7;
+      const timeSlotsPerDay = 12; // 8 AM to 8 PM (12 hours)
+      const totalPossibleSlots = (halls?.length || 0) * daysPerWeek * timeSlotsPerDay;
+      const bookedSlots = bookings?.length || 0;
+      
+      return {
+        totalSlots: totalPossibleSlots,
+        bookedSlots: bookedSlots,
+        availableSlots: totalPossibleSlots - bookedSlots,
+        availabilityPercentage: totalPossibleSlots > 0 
+          ? Math.round((bookedSlots / totalPossibleSlots) * 100)
+          : 0
+      };
+    },
+    enabled: !!user,
+    staleTime: STALE_TIME.LONG,
+    retry: RETRY_CONFIG.DEFAULT,
+  });
   useEffect(() => {
     // Add error boundary logic
     const handleError = (event: ErrorEvent) => {
@@ -128,7 +168,12 @@ const Index = () => {
           <h1 className="text-3xl font-bold tracking-tight">لوحة التحكم</h1>
         </div>
 
-        <StatsCards averageOccupancy={averageOccupancy} />
+        <StatsCards 
+          averageOccupancy={averageOccupancy} 
+          timeSlotAvailability={timeSlotData?.availabilityPercentage || 0}
+          totalSlots={timeSlotData?.totalSlots || 0}
+          bookedSlots={timeSlotData?.bookedSlots || 0}
+        />
 
         <HallsGrid occupancyData={occupancyData?.map(h => ({ 
           hall_id: h.hall_id, 

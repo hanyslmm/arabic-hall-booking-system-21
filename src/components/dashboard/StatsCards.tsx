@@ -8,9 +8,17 @@ import { useNavigate } from "react-router-dom";
 
 interface StatsCardsProps {
   averageOccupancy?: number;
+  timeSlotAvailability?: number;
+  totalSlots?: number;
+  bookedSlots?: number;
 }
 
-export const StatsCards = ({ averageOccupancy = 0 }: StatsCardsProps) => {
+export const StatsCards = ({ 
+  averageOccupancy = 0, 
+  timeSlotAvailability = 0,
+  totalSlots = 0,
+  bookedSlots = 0 
+}: StatsCardsProps) => {
   const navigate = useNavigate();
 
   const { data: stats, isLoading } = useQuery({
@@ -80,6 +88,14 @@ export const StatsCards = ({ averageOccupancy = 0 }: StatsCardsProps) => {
       icon: Activity,
       color: "text-orange-600",
       onClick: () => navigate('/halls')
+    },
+    {
+      title: "إشغال الفترات الزمنية",
+      value: `${timeSlotAvailability}%`,
+      icon: Calendar,
+      color: "text-blue-600",
+      description: `${bookedSlots} من ${totalSlots} فترة محجوزة`,
+      onClick: () => navigate('/bookings')
     }
   ];
 
@@ -104,7 +120,7 @@ export const StatsCards = ({ averageOccupancy = 0 }: StatsCardsProps) => {
               <div className="text-2xl font-bold">{stat.value}</div>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              انقر للعرض التفصيلي
+              {stat.description || "انقر للعرض التفصيلي"}
             </p>
           </CardContent>
         </Card>
