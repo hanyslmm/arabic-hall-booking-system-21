@@ -21,6 +21,7 @@ const bookingSchema = z.object({
   start_time: z.string().min(1, "يرجى اختيار وقت البداية"),
   days_of_week: z.array(z.string()).min(1, "يرجى اختيار يوم واحد على الأقل"),
   status: z.enum(['active', 'cancelled', 'completed']),
+  class_code: z.string().optional(),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -56,6 +57,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
       start_time: booking.start_time,
       days_of_week: booking.days_of_week,
       status: booking.status,
+      class_code: booking.class_code || '',
     },
   });
 
@@ -70,6 +72,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
         start_time: booking.start_time,
         days_of_week: booking.days_of_week,
         status: booking.status,
+        class_code: booking.class_code || '',
       });
     }
   }, [booking, form]);
@@ -117,6 +120,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
           start_time: data.start_time,
           days_of_week: data.days_of_week,
           status: data.status,
+          class_code: data.class_code || null,
         })
         .eq('id', bookingId);
 
@@ -278,6 +282,21 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
             </Select>
             {form.formState.errors.status && (
               <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
+            )}
+          </div>
+
+          {/* Class Code */}
+          <div className="space-y-2">
+            <Label htmlFor="class_code">كود المجموعة</Label>
+            <Input
+              placeholder="مثال: B_SAT_1_PM"
+              {...form.register('class_code')}
+            />
+            <p className="text-xs text-muted-foreground">
+              اتركه فارغاً لتوليد الكود تلقائياً بناءً على المعلم والوقت
+            </p>
+            {form.formState.errors.class_code && (
+              <p className="text-sm text-destructive">{form.formState.errors.class_code.message}</p>
             )}
           </div>
 

@@ -27,6 +27,7 @@ const bookingSchema = z.object({
   number_of_students: z.number().min(1, "يجب أن يكون عدد الطلاب أكبر من صفر"),
   start_time: z.string().min(1, "يرجى اختيار وقت البداية"),
   days_of_week: z.array(z.string()).min(1, "يرجى اختيار يوم واحد على الأقل"),
+  class_code: z.string().optional(),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -131,6 +132,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
         days_of_week: data.days_of_week,
         created_by: user.user.id,
         status: 'active' as const,
+        class_code: data.class_code || null,
       };
 
       const { data: result, error } = await supabase
@@ -298,6 +300,20 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             )}
           </div>
 
+          {/* Class Code */}
+          <div className="space-y-2">
+            <Label htmlFor="class_code">كود المجموعة (اختياري)</Label>
+            <Input
+              placeholder="مثال: B_SAT_1_PM"
+              {...form.register('class_code')}
+            />
+            <p className="text-xs text-muted-foreground">
+              اتركه فارغاً لتوليد الكود تلقائياً بناءً على المعلم والوقت
+            </p>
+            {form.formState.errors.class_code && (
+              <p className="text-sm text-destructive">{form.formState.errors.class_code.message}</p>
+            )}
+          </div>
 
           <Button
             type="submit"
