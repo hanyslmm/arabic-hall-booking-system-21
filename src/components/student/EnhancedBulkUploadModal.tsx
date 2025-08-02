@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Download, AlertCircle, FileSpreadsheet, Users, Clock } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -44,6 +45,12 @@ interface ProcessingProgress {
   isComplete: boolean;
 }
 
+interface HallSelection {
+  sheetName: string;
+  availableHalls: any[];
+  selectedHallId?: string;
+}
+
 export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedClassData[]>([]);
@@ -55,6 +62,8 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
     currentStep: '',
     isComplete: false
   });
+  const [hallSelections, setHallSelections] = useState<HallSelection[]>([]);
+  const [showHallSelectionDialog, setShowHallSelectionDialog] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -71,7 +80,8 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (classData: ParsedClassData[]) => {
+    mutationFn: async (data: { classData: ParsedClassData[], hallSelections: HallSelection[] }) => {
+      const { classData, hallSelections: selectedHalls } = data;
       setProcessing(true);
       
       for (let i = 0; i < classData.length; i++) {
@@ -83,7 +93,7 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
           isComplete: false
         });
 
-        await processClassRegistrations(classInfo);
+        await processClassRegistrations(classInfo, selectedHalls);
       }
 
       setProgress(prev => ({ ...prev, isComplete: true, currentStep: 'Complete!' }));
@@ -102,12 +112,25 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
   });
 
   const parseSheetName = (sheetName: string) => {
-    // Parse format: B_SUN_9 = Basim, Sunday, 9 AM (or 6 PM if < 9)
+    // Parse format: B_SAT_1_PM or B_SAT_1_AM = Basim, Saturday, 1 PM/AM
     const parts = sheetName.split('_');
-    if (parts.length !== 3) return null;
+    if (parts.length < 3 || parts.length > 4) return null;
 
-    const [teacherCode, dayCode, timeStr] = parts;
+    const [teacherCode, dayCode, timeStr, amPmStr] = parts;
     const time = parseInt(timeStr);
+    
+    // Determine AM/PM - if explicitly provided, use it; otherwise use old logic for backward compatibility
+    let isPM: boolean;
+    let amPm: string;
+    
+    if (amPmStr && (amPmStr.toUpperCase() === 'AM' || amPmStr.toUpperCase() === 'PM')) {
+      isPM = amPmStr.toUpperCase() === 'PM';
+      amPm = amPmStr.toUpperCase();
+    } else {
+      // Fallback to old logic for backward compatibility
+      isPM = time < 9;
+      amPm = isPM ? 'PM' : 'AM';
+    }
     
     // Map teacher codes to names
     const teacherMap: Record<string, string> = {
@@ -129,19 +152,19 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
 
     const teacherName = teacherMap[teacherCode] || teacherCode;
     const dayOfWeek = dayMap[dayCode] || dayCode.toLowerCase();
-    const isPM = time < 9;
-    const displayTime = isPM ? `${time}:00 PM` : `${time}:00 AM`;
+    const displayTime = `${time}:00 ${amPm}`;
 
     return {
       teacherName,
       dayOfWeek,
       time: displayTime,
       isPM,
-      hourValue: time
+      hourValue: time,
+      amPm
     };
   };
 
-  const processClassRegistrations = async (classData: ParsedClassData) => {
+  const processClassRegistrations = async (classData: ParsedClassData, selectedHalls: HallSelection[]) => {
     try {
       // Find matching teacher
       const teacher = teachers.find(t => 
@@ -155,14 +178,34 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
 
       // Find matching booking for this teacher, day, and time
       const bookings = await bookingsApi.getAll();
-      const targetBooking = bookings.find(b => 
+      let targetBooking = bookings.find(b => 
         b.teacher_id === teacher.id &&
         b.days_of_week.includes(classData.dayOfWeek) &&
         b.start_time === formatTimeForDB(classData.time)
       );
 
+      // If no booking exists, create one using the selected hall
       if (!targetBooking) {
-        throw new Error(`No booking found for ${classData.teacherName} on ${classData.dayOfWeek} at ${classData.time}`);
+        const hallSelection = selectedHalls.find(h => h.sheetName === classData.sheetName);
+        const selectedHall = hallSelection ? halls.find(h => h.id === hallSelection.selectedHallId) : halls[0];
+        
+        if (!selectedHall) {
+          throw new Error(`No hall selected for ${classData.sheetName}`);
+        }
+
+        // Create new booking
+        const { bookingsApi: bookingApi } = await import('@/api/bookings');
+        targetBooking = await bookingApi.create({
+          teacher_id: teacher.id,
+          hall_id: selectedHall.id,
+          academic_stage_id: halls[0]?.id || '', // Use first available stage as default
+          number_of_students: classData.students.length,
+          start_time: formatTimeForDB(classData.time),
+          start_date: new Date().toISOString().split('T')[0],
+          days_of_week: [classData.dayOfWeek],
+          class_code: `${classData.sheetName}_${classData.amPm}`,
+          status: 'active' as const
+        });
       }
 
       // Clear existing registrations for this booking
@@ -363,7 +406,19 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
       setErrors(errorList);
       setParsedData(classDataList);
 
+      // Generate hall selections for all classes
+      const hallSelectionsNeeded: HallSelection[] = classDataList.map(classData => ({
+        sheetName: classData.sheetName,
+        availableHalls: halls || [],
+        selectedHallId: halls?.[0]?.id // Default to first hall
+      }));
+      
+      setHallSelections(hallSelectionsNeeded);
+
       if (errorList.length === 0) {
+        if (hallSelectionsNeeded.length > 0) {
+          setShowHallSelectionDialog(true);
+        }
         toast({ 
           title: 'تم تحليل الملف بنجاح', 
           description: `تم العثور على ${classDataList.length} فصل و ${classDataList.reduce((sum, cls) => sum + cls.students.length, 0)} طالب` 
@@ -409,13 +464,29 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
     return 0;
   };
 
+  const handleHallSelection = (sheetName: string, hallId: string) => {
+    setHallSelections(prev => 
+      prev.map(selection => 
+        selection.sheetName === sheetName 
+          ? { ...selection, selectedHallId: hallId }
+          : selection
+      )
+    );
+  };
+
   const handleUpload = () => {
     if (parsedData.length === 0) {
       toast({ title: 'لا توجد بيانات للرفع', variant: 'destructive' });
       return;
     }
 
-    uploadMutation.mutate(parsedData);
+    if (!hallSelections.every(h => h.selectedHallId)) {
+      toast({ title: 'يرجى اختيار قاعة لكل فصل', variant: 'destructive' });
+      return;
+    }
+
+    setShowHallSelectionDialog(false);
+    uploadMutation.mutate({ classData: parsedData, hallSelections });
   };
 
   const handleClose = () => {
@@ -424,6 +495,8 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
     setParsedData([]);
     setProcessing(false);
     setProgress({ currentSheet: 0, totalSheets: 0, currentStep: '', isComplete: false });
+    setHallSelections([]);
+    setShowHallSelectionDialog(false);
     onClose();
   };
 
@@ -443,8 +516,9 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
             <h3 className="font-medium mb-2">تعليمات الرفع:</h3>
             <ul className="text-sm space-y-1 text-muted-foreground">
               <li>• الملف يجب أن يحتوي على عدة sheets، كل sheet يمثل فصل</li>
-              <li>• اسم الـ sheet يجب أن يكون بالصيغة: B_SUN_9 (B=باسم، SUN=الأحد، 9=الساعة)</li>
-              <li>• الأرقام أقل من 9 تعني مساءً، 9 فما فوق تعني صباحاً</li>
+              <li>• اسم الـ sheet يجب أن يكون بالصيغة: B_SAT_1_PM أو B_SAT_1_AM</li>
+              <li>• B=باسم، SAT=السبت، 1=الساعة الواحدة، PM/AM=مساءً/صباحاً</li>
+              <li>• استخدم PM للفترة المسائية و AM للفترة الصباحية</li>
               <li>• أعمدة مطلوبة: Name (الاسم)، Mobile (الموبايل)</li>
               <li>• أعمدة اختيارية: Home (رقم ولي الأمر)، City (المدينة)، Dars (المدفوعات)</li>
               <li>• يجب أن تكون أسماء الأعمدة في الصف الأول</li>
@@ -494,8 +568,42 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
             </Alert>
           )}
 
+          {/* Hall Selection Dialog */}
+          {showHallSelectionDialog && hallSelections.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium">اختيار القاعات</h3>
+              <p className="text-sm text-muted-foreground">
+                يرجى اختيار القاعة المناسبة لكل فصل:
+              </p>
+              <div className="space-y-3">
+                {hallSelections.map((selection) => (
+                  <div key={selection.sheetName} className="flex items-center justify-between p-3 border rounded">
+                    <span className="font-medium">{selection.sheetName}</span>
+                    <div className="min-w-[200px]">
+                      <Select
+                        value={selection.selectedHallId || ''}
+                        onValueChange={(value) => handleHallSelection(selection.sheetName, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر القاعة" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selection.availableHalls.map((hall) => (
+                            <SelectItem key={hall.id} value={hall.id}>
+                              {hall.name} (سعة {hall.capacity} طالب)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Preview */}
-          {parsedData.length > 0 && (
+          {parsedData.length > 0 && !showHallSelectionDialog && (
             <div className="space-y-4">
               <h3 className="font-medium flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -542,7 +650,7 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
             </Button>
             <Button 
               onClick={handleUpload} 
-              disabled={parsedData.length === 0 || processing}
+              disabled={parsedData.length === 0 || processing || (showHallSelectionDialog && !hallSelections.every(h => h.selectedHallId))}
             >
               <Upload className="h-4 w-4 ml-2" />
               {processing ? 'جاري المعالجة...' : 'رفع البيانات'}
