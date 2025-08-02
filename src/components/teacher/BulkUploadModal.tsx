@@ -50,6 +50,12 @@ interface AmPmClarification {
   selected?: 'AM' | 'PM';
 }
 
+interface HallSelection {
+  classCode: string;
+  availableHalls: any[];
+  selectedHallId?: string;
+}
+
 export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -59,6 +65,8 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   const [progress, setProgress] = useState<ProcessingProgress | null>(null);
   const [amPmClarifications, setAmPmClarifications] = useState<AmPmClarification[]>([]);
   const [showClarificationDialog, setShowClarificationDialog] = useState(false);
+  const [hallSelections, setHallSelections] = useState<HallSelection[]>([]);
+  const [showHallSelectionDialog, setShowHallSelectionDialog] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -83,7 +91,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (data: { parsedData: ParsedClassData[], clarifications: AmPmClarification[] }) => {
+    mutationFn: async (data: { parsedData: ParsedClassData[], clarifications: AmPmClarification[], hallSelections: HallSelection[] }) => {
       setIsProcessing(true);
       const totalSteps = data.parsedData.reduce((sum, classData) => sum + classData.students.length, 0);
       let processedSteps = 0;
@@ -173,9 +181,11 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
               );
           } else {
             // Create new booking if not exists
-            const defaultHall = halls?.[0];
-            if (!defaultHall) {
-              errors.push(`لا توجد قاعات متاحة`);
+            const hallSelection = data.hallSelections.find(h => h.classCode === classCode);
+            const selectedHall = hallSelection ? halls?.find(h => h.id === hallSelection.selectedHallId) : halls?.[0];
+            
+            if (!selectedHall) {
+              errors.push(`لا توجد قاعة محددة للمجموعة ${classCode}`);
               continue;
             }
 
@@ -202,7 +212,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
               .from('bookings')
               .insert({
                 teacher_id: teacher.id,
-                hall_id: defaultHall.id,
+                hall_id: selectedHall.id,
                 academic_stage_id: defaultStageId,
                 number_of_students: classData.students.length,
                 start_time: startTime,
@@ -324,14 +334,17 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
       const teacher = parts[0];
       const days = parts[1];
       const time = parts[2];
-      const amPm = parts[3]; // This might not exist
+      const amPm = parts[3]; // Should be AM or PM in new format
+      
+      // Check if AM/PM is explicitly provided
+      const hasValidAmPm = amPm && (amPm.toUpperCase() === 'AM' || amPm.toUpperCase() === 'PM');
       
       return {
         teacher,
         days,
         time,
-        amPm,
-        needsAmPmClarification: !amPm
+        amPm: hasValidAmPm ? amPm.toUpperCase() : undefined,
+        needsAmPmClarification: !hasValidAmPm
       };
     }
     return { needsAmPmClarification: true };
@@ -474,8 +487,19 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
       setErrors(newErrors);
       setAmPmClarifications(clarificationsNeeded);
 
+      // Generate hall selections for all classes
+      const hallSelectionsNeeded: HallSelection[] = parsedSheets.map(sheet => ({
+        classCode: sheet.sheetName,
+        availableHalls: halls || [],
+        selectedHallId: halls?.[0]?.id // Default to first hall
+      }));
+      
+      setHallSelections(hallSelectionsNeeded);
+
       if (clarificationsNeeded.length > 0) {
         setShowClarificationDialog(true);
+      } else if (hallSelectionsNeeded.length > 0) {
+        setShowHallSelectionDialog(true);
       }
 
     } catch (error) {
@@ -503,16 +527,37 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     );
   };
 
+  const handleHallSelection = (classCode: string, hallId: string) => {
+    setHallSelections(prev => 
+      prev.map(selection => 
+        selection.classCode === classCode 
+          ? { ...selection, selectedHallId: hallId }
+          : selection
+      )
+    );
+  };
+
   const canProceedWithUpload = () => {
     return parsedData.length > 0 && 
            amPmClarifications.every(c => c.selected) && 
+           hallSelections.every(h => h.selectedHallId) &&
            errors.length === 0;
   };
 
   const handleUpload = () => {
     if (canProceedWithUpload()) {
       setShowClarificationDialog(false);
-      uploadMutation.mutate({ parsedData, clarifications: amPmClarifications });
+      setShowHallSelectionDialog(false);
+      uploadMutation.mutate({ parsedData, clarifications: amPmClarifications, hallSelections });
+    }
+  };
+
+  const handleAmPmNext = () => {
+    if (amPmClarifications.every(c => c.selected)) {
+      setShowClarificationDialog(false);
+      if (hallSelections.length > 0) {
+        setShowHallSelectionDialog(true);
+      }
     }
   };
 
@@ -524,6 +569,8 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     setIsProcessing(false);
     setAmPmClarifications([]);
     setShowClarificationDialog(false);
+    setHallSelections([]);
+    setShowHallSelectionDialog(false);
     setOpen(false);
   };
 
@@ -547,7 +594,8 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>• يجب أن يحتوي الملف على ورقة منفصلة لكل مجموعة</p>
-            <p>• اسم الورقة يجب أن يكون بتنسيق: معلم_أيام_وقت (مثل: B_SAT_9)</p>
+            <p>• اسم الورقة يجب أن يكون بتنسيق: B_SAT_1_PM أو B_SAT_1_AM</p>
+            <p>• B=المعلم، SAT=اليوم، 1=الساعة، PM/AM=مساءً/صباحاً</p>
             <p>• كل ورقة يجب أن تحتوي على أعمدة: Name (الاسم)، Mobile (الموبايل)</p>
             <p>• أعمدة اختيارية: Home (هاتف المنزل)، City (المدينة)</p>
             <p>• الصف الأول يجب أن يحتوي على أسماء الأعمدة</p>
@@ -654,8 +702,44 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             </Card>
           )}
 
+          {/* Hall Selection Dialog */}
+          {showHallSelectionDialog && hallSelections.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>اختيار القاعات</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  يرجى اختيار القاعة المناسبة لكل مجموعة:
+                </p>
+                {hallSelections.map((selection) => (
+                  <div key={selection.classCode} className="flex items-center justify-between p-3 border rounded">
+                    <span className="font-medium">{selection.classCode}</span>
+                    <div className="min-w-[200px]">
+                      <Select
+                        value={selection.selectedHallId || ''}
+                        onValueChange={(value) => handleHallSelection(selection.classCode, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر القاعة" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selection.availableHalls.map((hall) => (
+                            <SelectItem key={hall.id} value={hall.id}>
+                              {hall.name} (سعة {hall.capacity} طالب)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Data Preview */}
-          {parsedData.length > 0 && !showClarificationDialog && (
+          {parsedData.length > 0 && !showClarificationDialog && !showHallSelectionDialog && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -688,6 +772,14 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             إلغاء
           </Button>
           {showClarificationDialog ? (
+            <Button 
+              onClick={handleAmPmNext}
+              disabled={!amPmClarifications.every(c => c.selected) || isProcessing}
+              className="bg-primary hover:bg-primary/90"
+            >
+              التالي
+            </Button>
+          ) : showHallSelectionDialog ? (
             <Button 
               onClick={handleUpload}
               disabled={!canProceedWithUpload() || isProcessing}
