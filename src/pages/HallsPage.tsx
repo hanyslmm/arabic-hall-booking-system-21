@@ -63,16 +63,23 @@ const HallsPage = () => {
       
       // Process the data to calculate occupancy
       return data.map(hall => {
+        // Calculate total registered students across all active bookings for this hall
         const registeredStudents = hall.bookings.reduce((total, booking) => {
-          return total + (booking.student_registrations?.[0]?.count || 0);
+          // Count actual student registrations for this booking
+          const bookingStudents = booking.student_registrations?.length || 0;
+          return total + bookingStudents;
         }, 0);
+        
+        // Calculate occupancy as average across time slots
+        const activeBookings = hall.bookings.length;
+        const totalCapacity = activeBookings > 0 ? hall.capacity * activeBookings : hall.capacity;
         
         return {
           hall_id: hall.id,
           hall_name: hall.name,
           capacity: hall.capacity,
           registered_students: registeredStudents,
-          occupancy_percentage: hall.capacity > 0 ? Math.round((registeredStudents / hall.capacity) * 100) : 0
+          occupancy_percentage: totalCapacity > 0 ? Math.round((registeredStudents / totalCapacity) * 100) : 0
         };
       });
     }

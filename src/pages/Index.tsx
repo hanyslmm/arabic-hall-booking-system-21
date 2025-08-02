@@ -20,9 +20,42 @@ const Index = () => {
   const { data: occupancyData } = useQuery({
     queryKey: ['hall-actual-occupancy'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_hall_actual_occupancy_updated');
+      // Fetch halls with their bookings and student registrations
+      const { data, error } = await supabase
+        .from('halls')
+        .select(`
+          id,
+          name,
+          capacity,
+          bookings!inner(
+            id,
+            status,
+            student_registrations(count)
+          )
+        `)
+        .eq('bookings.status', 'active');
+      
       if (error) throw error;
-      return data as Array<{ hall_id: string; hall_name: string; capacity: number; registered_students: number; occupancy_percentage: number }>;
+      
+      // Calculate proper occupancy percentages
+      return data.map(hall => {
+        // Count total registered students across all active bookings
+        const registeredStudents = hall.bookings.reduce((total, booking) => {
+          return total + (booking.student_registrations?.[0]?.count || 0);
+        }, 0);
+        
+        // Calculate occupancy considering multiple time slots
+        const activeBookings = hall.bookings.length;
+        const totalCapacity = activeBookings > 0 ? hall.capacity * activeBookings : hall.capacity;
+        
+        return {
+          hall_id: hall.id,
+          hall_name: hall.name,
+          capacity: hall.capacity,
+          registered_students: registeredStudents,
+          occupancy_percentage: totalCapacity > 0 ? Math.round((registeredStudents / totalCapacity) * 100) : 0
+        };
+      });
     },
     enabled: !!user,
     staleTime: STALE_TIME.LONG,
