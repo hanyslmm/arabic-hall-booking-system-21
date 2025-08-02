@@ -358,47 +358,80 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
       for (const sheetName of workbook.SheetNames) {
         try {
           const worksheet = workbook.Sheets[sheetName];
+          
+          if (!worksheet) {
+            newErrors.push(`لا يمكن قراءة الورقة "${sheetName}"`);
+            continue;
+          }
+          
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          if (jsonData.length < 2) {
+          if (!Array.isArray(jsonData) || jsonData.length < 2) {
             newErrors.push(`الورقة "${sheetName}" فارغة أو لا تحتوي على بيانات كافية`);
             continue;
           }
 
-          const headers = jsonData[1] as string[];
+          const headers = jsonData[1] as any[];
+          
+          // Helper function to safely check if a header contains a substring
+          const headerContains = (header: any, searchTerms: string[]): boolean => {
+            if (!header || typeof header !== 'string') return false;
+            const headerStr = header.toString().toLowerCase();
+            return searchTerms.some(term => headerStr.includes(term.toLowerCase()));
+          };
+
           const nameColumn = headers.findIndex(h => 
-            h && (h.includes('Name') || h.includes('الاسم') || h.includes('اسم'))
+            headerContains(h, ['Name', 'الاسم', 'اسم'])
           );
           const mobileColumn = headers.findIndex(h => 
-            h && (h.includes('Mobile') || h.includes('الجوال') || h.includes('موبايل'))
+            headerContains(h, ['Mobile', 'الجوال', 'موبايل'])
           );
 
-          if (nameColumn === -1 || mobileColumn === -1) {
-            newErrors.push(`الورقة "${sheetName}" لا تحتوي على أعمدة الاسم والموبايل المطلوبة`);
+          if (nameColumn === -1) {
+            newErrors.push(`الورقة "${sheetName}" لا تحتوي على عمود الاسم المطلوب (Name/الاسم/اسم)`);
+            continue;
+          }
+          
+          if (mobileColumn === -1) {
+            newErrors.push(`الورقة "${sheetName}" لا تحتوي على عمود الموبايل المطلوب (Mobile/الجوال/موبايل)`);
             continue;
           }
 
           const homeColumn = headers.findIndex(h => 
-            h && (h.includes('Home') || h.includes('المنزل') || h.includes('هاتف'))
+            headerContains(h, ['Home', 'المنزل', 'هاتف'])
           );
           const cityColumn = headers.findIndex(h => 
-            h && (h.includes('City') || h.includes('المدينة'))
+            headerContains(h, ['City', 'المدينة'])
           );
 
           const students: StudentDataRow[] = [];
           for (let i = 2; i < jsonData.length; i++) {
-            const row = jsonData[i] as any[];
-            if (row && row[nameColumn] && row[mobileColumn]) {
-              const mobile = normalizeMobileNumber(row[mobileColumn]);
-              if (mobile) {
-                students.push({
-                  name: row[nameColumn].toString().trim(),
-                  mobile,
-                  home: homeColumn !== -1 ? row[homeColumn]?.toString() : undefined,
-                  city: cityColumn !== -1 ? row[cityColumn]?.toString() : undefined,
-                  fees: getPaymentValue(row, headers[3] || 'C')
-                });
+            try {
+              const row = jsonData[i] as any[];
+              if (!Array.isArray(row) || !row[nameColumn] || !row[mobileColumn]) {
+                continue; // Skip invalid or empty rows
               }
+              
+              const mobile = normalizeMobileNumber(row[mobileColumn]);
+              if (!mobile) {
+                continue; // Skip rows with invalid mobile numbers
+              }
+              
+              const name = row[nameColumn]?.toString()?.trim();
+              if (!name) {
+                continue; // Skip rows with empty names
+              }
+              
+              students.push({
+                name,
+                mobile,
+                home: homeColumn !== -1 && row[homeColumn] ? row[homeColumn].toString().trim() : undefined,
+                city: cityColumn !== -1 && row[cityColumn] ? row[cityColumn].toString().trim() : undefined,
+                fees: getPaymentValue(row, headers[3] || 'C')
+              });
+            } catch (rowError) {
+              // Log the error but continue processing other rows
+              console.warn(`Error processing row ${i + 1} in sheet ${sheetName}:`, rowError);
             }
           }
 
@@ -437,7 +470,9 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
       }
 
     } catch (error) {
-      setErrors([`خطأ في قراءة الملف: ${error}`]);
+      console.error('File processing error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setErrors([`خطأ في قراءة الملف: ${errorMessage}. تأكد من أن الملف Excel صالح.`]);
     }
   };
 
@@ -504,7 +539,10 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
           <CardContent className="space-y-2 text-sm">
             <p>• يجب أن يحتوي الملف على ورقة منفصلة لكل مجموعة</p>
             <p>• اسم الورقة يجب أن يكون بتنسيق: معلم_أيام_وقت (مثل: B_SAT_9)</p>
-            <p>• كل ورقة يجب أن تحتوي على أعمدة: الاسم، الموبايل، المدينة</p>
+            <p>• كل ورقة يجب أن تحتوي على أعمدة: Name (الاسم)، Mobile (الموبايل)</p>
+            <p>• أعمدة اختيارية: Home (هاتف المنزل)، City (المدينة)</p>
+            <p>• الصف الأول يجب أن يحتوي على أسماء الأعمدة</p>
+            <p>• بيانات الطلاب تبدأ من الصف الثالث</p>
             <p>• إذا لم يتم تحديد AM أو PM، سيطلب منك التوضيح</p>
             <p>• سيتم حذف البيانات الموجودة للمجموعة واستبدالها بالبيانات الجديدة</p>
             <p>• الطلاب الموجودين بنفس رقم الموبايل لن يتم إنشاؤهم مرة أخرى</p>
