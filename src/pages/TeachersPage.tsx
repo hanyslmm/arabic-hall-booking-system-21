@@ -10,6 +10,7 @@ import { Plus, Edit, Trash2, GraduationCap, Download, Upload } from "lucide-reac
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
 import { TeacherCodeManager } from "@/components/teacher/TeacherCodeManager";
+import { BulkUploadModal } from "@/components/teacher/BulkUploadModal";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { getTeachers, deleteTeacher } from "@/api/teachers";
@@ -201,39 +202,16 @@ const TeachersPage = () => {
               <span className="font-semibold">{teachers?.length || 0} معلم</span>
             </div>
             {canManage && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={exportToCSV}
-                  disabled={!teachers || teachers.length === 0}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  تصدير CSV
-                </Button>
-                <label className="cursor-pointer">
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={() => document.getElementById('import-csv')?.click()}
-                  >
-                    <Upload className="h-4 w-4" />
-                    استيراد CSV
+              <div className="flex gap-2">
+                <BulkUploadModal>
+                  <Button variant="outline">
+                    <Upload className="h-4 w-4 mr-2" />
+                    رفع ملف Excel
                   </Button>
-                  <input
-                    id="import-csv"
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportCSV}
-                    className="hidden"
-                  />
-                </label>
-                <Button
-                  onClick={() => setShowAddTeacher(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  إضافة معلم جديد
+                </BulkUploadModal>
+                <Button onClick={() => setShowAddTeacher(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  إضافة معلم
                 </Button>
               </div>
             )}

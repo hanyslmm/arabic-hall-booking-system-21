@@ -242,14 +242,19 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
             )}
           </div>
 
-          {/* Number of Students */}
+          {/* Expected Number of Students */}
           <div className="space-y-2">
-            <Label htmlFor="number_of_students">عدد الطلاب</Label>
+            <Label htmlFor="number_of_students">العدد المتوقع للطلاب</Label>
             <Input
               type="number"
               min="1"
               {...form.register('number_of_students', { valueAsNumber: true })}
             />
+            {form.watch('hall_id') && halls && (
+              <p className="text-sm text-muted-foreground">
+                سعة القاعة: {halls.find(h => h.id === form.watch('hall_id'))?.capacity} طالب
+              </p>
+            )}
             {form.formState.errors.number_of_students && (
               <p className="text-sm text-destructive">{form.formState.errors.number_of_students.message}</p>
             )}

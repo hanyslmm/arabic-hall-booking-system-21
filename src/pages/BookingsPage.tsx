@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { queryKeys } from "@/utils/queryKeys";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +15,20 @@ import { formatTimeAmPm } from "@/utils/dateUtils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { EditBookingModal } from "@/components/booking/EditBookingModal";
+import { useMutation } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 
 interface Booking {
   id: string;
@@ -44,6 +59,8 @@ const BookingsPage = () => {
   const navigate = useNavigate();
   const [selectedHall, setSelectedHall] = useState<string>('all');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch halls for filter
   const { data: halls } = useQuery({
@@ -110,6 +127,31 @@ const BookingsPage = () => {
       return bookingsWithCounts as (Booking & { actual_student_count: number })[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  // Delete booking mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+      if (error) throw error;
+      return bookingId;
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم حذف المجموعة بنجاح",
+        description: "تم حذف المجموعة وجميع البيانات المرتبطة بها",
+      });
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ في حذف المجموعة",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Memoize expensive calculations
@@ -341,6 +383,36 @@ const BookingsPage = () => {
                                 bookingId={booking.id} 
                                 booking={booking} 
                               />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={deleteMutation.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>حذف المجموعة</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      هل أنت متأكد من حذف مجموعة "{booking.class_code}"؟ 
+                                      سيتم حذف جميع البيانات المرتبطة بها بما في ذلك تسجيلات الطلاب والمدفوعات.
+                                      هذا الإجراء لا يمكن التراجع عنه.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteMutation.mutate(booking.id)}
+                                      className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                      حذف المجموعة
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         )}
