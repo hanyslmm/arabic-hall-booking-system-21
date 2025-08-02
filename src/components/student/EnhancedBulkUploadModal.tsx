@@ -276,24 +276,48 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
           errorList.push(`Sheet "${sheetName}" is empty or contains no valid data`);
           continue;
         }
+        
+        // Debug: Log the first row to see the structure
+        if (jsonData.length > 0) {
+          console.log(`Sheet ${sheetName} first row:`, jsonData[0]);
+          console.log(`Sheet ${sheetName} keys:`, Object.keys(jsonData[0]));
+        }
 
         const students: StudentDataRow[] = [];
 
         jsonData.forEach((row: any, index: number) => {
           try {
+            // Find name field with flexible naming
+            const nameField = row.Name || row.name || row.الاسم || row.اسم || 
+                             Object.values(row)[1]; // Fallback to second column (index 1)
+            
             // Skip rows without names
-            if (!row || !row.Name || typeof row.Name !== 'string' && typeof row.Name !== 'number') {
+            if (!nameField || (typeof nameField !== 'string' && typeof nameField !== 'number')) {
               return;
             }
 
-            const name = row.Name.toString().trim();
+            const name = nameField.toString().trim();
             if (!name) {
               return;
             }
 
-            const mobile = normalizeMobileNumber(row.Mobile);
-            const home = normalizeMobileNumber(row.Home);
-            const city = row.City?.toString().trim() || '';
+            // Find mobile field with flexible naming
+            const mobileField = row.Mobile || row.mobile || row.الموبايل || row.موبايل || row.جوال ||
+                               Object.values(row)[2]; // Fallback to third column (index 2)
+            
+            const mobile = normalizeMobileNumber(mobileField);
+            
+            // Find home field with flexible naming
+            const homeField = row.Home || row.home || row.المنزل || row.هاتف ||
+                             Object.values(row)[3]; // Fallback to fourth column (index 3)
+            
+            const home = normalizeMobileNumber(homeField);
+            
+            // Find city field with flexible naming
+            const cityField = row.City || row.city || row.المدينة ||
+                             Object.values(row)[4]; // Fallback to fifth column (index 4)
+            
+            const city = cityField?.toString().trim() || '';
             const payment = getPaymentValue(row, 'Dars'); // Use "Dars" column for payment
 
             // Validate mobile numbers

@@ -343,6 +343,18 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   };
 
   const getPaymentValue = (row: any, primaryColumn: string): number => {
+    // For array format (using column indices)
+    if (Array.isArray(row)) {
+      // Try column H (index 7) for "Dars" based on your Excel structure
+      const darsValue = row[7];
+      if (darsValue !== undefined && darsValue !== null && darsValue !== '') {
+        const num = Number(darsValue.toString().replace(/\D/g, ''));
+        return isNaN(num) ? 0 : Math.max(0, num);
+      }
+      return 0;
+    }
+    
+    // For object format (fallback)
     const value = row[primaryColumn] || row['الاجور'] || row['الرسوم'] || row['المبلغ'] || 0;
     return typeof value === 'number' ? value : parseFloat(value) || 0;
   };
@@ -371,41 +383,38 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             continue;
           }
 
-          const headers = jsonData[1] as any[];
+          console.log(`Processing sheet: ${sheetName}`);
+          console.log(`First few rows:`, jsonData.slice(0, 3));
           
-          // Helper function to safely check if a header contains a substring
-          const headerContains = (header: any, searchTerms: string[]): boolean => {
-            if (!header || typeof header !== 'string') return false;
-            const headerStr = header.toString().toLowerCase();
-            return searchTerms.some(term => headerStr.includes(term.toLowerCase()));
-          };
-
-          const nameColumn = headers.findIndex(h => 
-            headerContains(h, ['Name', 'الاسم', 'اسم'])
-          );
-          const mobileColumn = headers.findIndex(h => 
-            headerContains(h, ['Mobile', 'الجوال', 'موبايل'])
-          );
-
-          if (nameColumn === -1) {
-            newErrors.push(`الورقة "${sheetName}" لا تحتوي على عمود الاسم المطلوب (Name/الاسم/اسم)`);
-            continue;
+          // Always use fixed column positions based on your Excel structure
+          // A=0(index), B=1(Name), C=2(Mobile), D=3(Home), E=4(City), etc.
+          const nameColumn = 1;  // Column B
+          const mobileColumn = 2; // Column C  
+          const homeColumn = 3;   // Column D
+          const cityColumn = 4;   // Column E
+          
+          // Find the first row with actual data (skip empty rows)
+          let dataStartRow = 1; // Start from row 2 (index 1)
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i] as any[];
+            if (row && row[nameColumn] && row[nameColumn].toString().trim()) {
+              dataStartRow = i;
+              break;
+            }
           }
           
-          if (mobileColumn === -1) {
-            newErrors.push(`الورقة "${sheetName}" لا تحتوي على عمود الموبايل المطلوب (Mobile/الجوال/موبايل)`);
+          console.log(`Data starts at row: ${dataStartRow + 1} (index ${dataStartRow})`);
+          
+          // Validate that we have enough columns
+          const firstDataRow = jsonData[dataStartRow] as any[];
+          if (!firstDataRow || firstDataRow.length < 3) {
+            newErrors.push(`الورقة "${sheetName}" لا تحتوي على أعمدة كافية`);
             continue;
           }
-
-          const homeColumn = headers.findIndex(h => 
-            headerContains(h, ['Home', 'المنزل', 'هاتف'])
-          );
-          const cityColumn = headers.findIndex(h => 
-            headerContains(h, ['City', 'المدينة'])
-          );
 
           const students: StudentDataRow[] = [];
-          for (let i = 2; i < jsonData.length; i++) {
+          // Process data starting from the identified data start row
+          for (let i = dataStartRow; i < jsonData.length; i++) {
             try {
               const row = jsonData[i] as any[];
               if (!Array.isArray(row) || !row[nameColumn] || !row[mobileColumn]) {
@@ -422,13 +431,13 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                 continue; // Skip rows with empty names
               }
               
-              students.push({
-                name,
-                mobile,
-                home: homeColumn !== -1 && row[homeColumn] ? row[homeColumn].toString().trim() : undefined,
-                city: cityColumn !== -1 && row[cityColumn] ? row[cityColumn].toString().trim() : undefined,
-                fees: getPaymentValue(row, headers[3] || 'C')
-              });
+                              students.push({
+                  name,
+                  mobile,
+                  home: row[homeColumn] ? row[homeColumn].toString().trim() : undefined,
+                  city: row[cityColumn] ? row[cityColumn].toString().trim() : undefined,
+                  fees: getPaymentValue(row, 'Dars') // Look for payment in "Dars" column or column H (index 7)
+                });
             } catch (rowError) {
               // Log the error but continue processing other rows
               console.warn(`Error processing row ${i + 1} in sheet ${sheetName}:`, rowError);
