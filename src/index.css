@@ -165,6 +165,60 @@
       transform: translateX(0);
     }
   }
+
+  /* Enhanced navigation animations */
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* Smooth scrolling for all elements */
+  * {
+    scroll-behavior: smooth;
+  }
+
+  /* Enhanced burger menu animations */
+  .burger-menu-enter {
+    animation: fadeInScale 0.2s ease-out;
+  }
+
+  .sidebar-enter {
+    animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Improved touch targets for mobile */
+  @media (max-width: 768px) {
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Better focus visibility */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Smooth backdrop blur transition */
+  .backdrop-blur-sm {
+    transition: backdrop-filter 0.3s ease-out;
+  }
 }
 
 @layer components {

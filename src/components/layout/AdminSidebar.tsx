@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
@@ -17,9 +17,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigation } from "@/hooks/useNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AdminSidebarProps {
   children: React.ReactNode;
@@ -172,33 +174,19 @@ const LogoutButton = () => {
       size="sm"
       onClick={handleSignOut}
       disabled={isLoading}
-      className="w-full flex items-center gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10"
+      className="w-full flex items-center gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10 h-9"
     >
       <LogOut className="h-4 w-4" />
-      <span>{isLoading ? "جاري الخروج..." : "تسجيل الخروج"}</span>
+      <span className="text-sm">{isLoading ? "جاري الخروج..." : "تسجيل الخروج"}</span>
     </Button>
   );
 };
 
 export function AdminSidebar({ children }: AdminSidebarProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, openSidebar, closeSidebar } = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
   const { profile } = useAuth();
-
-  // Detect swipe from left edge
-  useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      if (touch.clientX < 20) {
-        // Touch started near left edge
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener('touchstart', handleTouchStart, { passive: false });
-    return () => document.removeEventListener('touchstart', handleTouchStart);
-  }, []);
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
@@ -231,52 +219,68 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Mobile backdrop */}
+      {/* Fixed Burger Menu Button - Always visible in top-right */}
+      <div className="fixed top-4 right-4 z-[60] lg:right-6">
+        <Button
+          variant="default"
+          size="sm"
+          onClick={openSidebar}
+          className="h-10 w-10 p-0 rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-200 hover:scale-105 burger-menu-enter lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">فتح القائمة</span>
+        </Button>
+      </div>
+
+      {/* Mobile backdrop with improved touch handling */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
+          onTouchStart={(e) => {
+            if (e.target === e.currentTarget) {
+              closeSidebar();
+            }
+          }}
         >
-          <div className="absolute inset-0 bg-black opacity-50"></div>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* Enhanced Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-72 transform bg-card border-l sidebar-transition lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "translate-x-full"
+          "fixed inset-y-0 right-0 z-50 w-80 sm:w-72 transform bg-card/95 backdrop-blur-md border-l shadow-2xl transition-all duration-300 ease-out lg:static lg:translate-x-0 lg:w-72 lg:bg-card lg:shadow-none",
+          sidebarOpen ? "translate-x-0 sidebar-enter" : "translate-x-full"
         )}
         style={{ direction: 'rtl' }}
       >
-        {/* Sidebar Header */}
-        <div className="flex h-16 items-center justify-between px-4 border-b">
+        {/* Sidebar Header - More compact on mobile */}
+        <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 border-b bg-card/90">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-4 w-4" />
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">نادي العلوم</span>
-              <span className="truncate text-xs text-muted-foreground">
-                نظام إدارة القاعات
-              </span>
+              <span className="truncate font-semibold text-sm sm:text-base">نادي العلوم</span>
+              <span className="truncate text-xs text-muted-foreground hidden sm:block">لوحة التحكم الإدارية</span>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden"
+            onClick={closeSidebar}
+            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive lg:hidden"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Sidebar Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Sidebar Content with improved scrolling */}
+        <ScrollArea className="flex-1 px-3 sm:px-4 py-4 h-[calc(100vh-14rem)] sm:h-[calc(100vh-16rem)]">
           {navigation.map((group) => (
             <div key={group.title} className="mb-6">
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+              <h3 className="mb-2 text-xs sm:text-sm font-semibold text-muted-foreground px-2">
                 {group.title}
               </h3>
               <nav className="space-y-1">
@@ -287,37 +291,37 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
                       key={item.title}
                       onClick={() => {
                         navigate(item.url);
-                        setSidebarOpen(false);
+                        closeSidebar();
                       }}
                       className={cn(
-                        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-right transition-colors",
+                        "flex w-full items-center gap-3 rounded-lg px-3 py-3 sm:py-2 text-sm text-right transition-all duration-200",
                         isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? "bg-primary text-primary-foreground shadow-sm scale-[0.98]"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-[0.98]"
                       )}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium">{item.title}</span>
                     </button>
                   );
                 })}
               </nav>
             </div>
           ))}
-        </div>
+        </ScrollArea>
 
-        {/* Sidebar Footer */}
-        <div className="border-t p-4">
+        {/* Sidebar Footer - More compact */}
+        <div className="border-t p-3 sm:p-4 bg-card/90">
           <div className="flex items-center gap-2 mb-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-muted">
+            <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+              <AvatarFallback className="bg-muted text-xs sm:text-sm">
                 {profile?.full_name
                   ? profile.full_name.charAt(0).toUpperCase()
                   : profile?.email?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">
+              <span className="truncate font-semibold text-sm">
                 {profile?.full_name || profile?.email || "مستخدم"}
               </span>
               <div className="flex items-center gap-1">
@@ -331,24 +335,18 @@ export function AdminSidebar({ children }: AdminSidebarProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:mr-72">
-        {/* Top Header */}
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden"
-          >
-            <Menu className="h-4 w-4" />
-            <span className="sr-only">فتح القائمة</span>
-          </Button>
+        {/* Top Header - More minimal */}
+        <header className="flex h-14 sm:h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4">
           <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-lg font-semibold">لوحة التحكم الإدارية</h1>
-            <NotificationBell />
+            <h1 className="text-lg sm:text-xl font-bold text-primary">Science Club</h1>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <div className="w-16 lg:w-0"></div> {/* Spacer for fixed burger menu on mobile */}
+            </div>
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Page Content with improved scrolling */}
         <main className="flex-1 overflow-auto p-4">{children}</main>
       </div>
     </div>
