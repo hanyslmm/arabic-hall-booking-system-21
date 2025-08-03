@@ -225,7 +225,7 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
         const registration = await studentRegistrationsApi.create({
           student_id: student.id,
           booking_id: targetBooking.id,
-          total_fees: studentData.payment,
+          total_fees: targetBooking.class_fees || 0, // Use booking's class fees, not individual payment
           notes: `Bulk upload from ${classData.sheetName}`
         });
 
@@ -235,6 +235,7 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
           await paymentsApi.create({
             student_registration_id: registration.id,
             amount: studentData.payment,
+            payment_date: new Date().toISOString().split('T')[0],
             payment_method: 'cash',
             notes: `Bulk upload payment from ${classData.sheetName}`
           });

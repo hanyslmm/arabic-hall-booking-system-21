@@ -186,7 +186,7 @@ export default function ClassManagementPage() {
               await paymentsApi.create({
                 student_registration_id: existingRegistration.id,
                 amount: studentData.payment,
-                payment_date: format(new Date(), 'yyyy-MM-dd'),
+                payment_date: new Date().toISOString().split('T')[0],
                 payment_method: 'cash',
                 notes: `دفعة شهر ${paymentMonth}`,
               });
@@ -228,7 +228,7 @@ export default function ClassManagementPage() {
               await paymentsApi.create({
                 student_registration_id: registration.id,
                 amount: studentData.payment,
-                payment_date: format(new Date(), 'yyyy-MM-dd'),
+                payment_date: new Date().toISOString().split('T')[0],
                 payment_method: 'cash',
                 notes: `دفعة شهر ${paymentMonth}`,
               });
