@@ -176,23 +176,35 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
         throw new Error(`Teacher not found: ${classData.teacherName}`);
       }
 
-      // Find matching booking for this teacher, day, and time
+      // Generate class code from sheet name (this is our unique identifier)
+      const parsedSheetInfo = parseSheetName(classData.sheetName);
+      const classCode = `${classData.sheetName}_${parsedSheetInfo?.amPm || (classData.isPM ? 'PM' : 'AM')}`;
+
+      // Find existing booking by class_code first (this is the most reliable way)
       const bookings = await bookingsApi.getAll();
-      let targetBooking = bookings.find(b => 
-        b.teacher_id === teacher.id &&
-        b.days_of_week.includes(classData.dayOfWeek) &&
-        b.start_time === formatTimeForDB(classData.time)
-      );
+      let targetBooking = bookings.find(b => b.class_code === classCode);
 
-      // If no booking exists, create one using the selected hall
-      if (!targetBooking) {
-        const hallSelection = selectedHalls.find(h => h.sheetName === classData.sheetName);
-        const selectedHall = hallSelection ? halls.find(h => h.id === hallSelection.selectedHallId) : halls[0];
-        
-        if (!selectedHall) {
-          throw new Error(`No hall selected for ${classData.sheetName}`);
-        }
+      // Get hall selection for this class
+      const hallSelection = selectedHalls.find(h => h.sheetName === classData.sheetName);
+      const selectedHall = hallSelection ? halls.find(h => h.id === hallSelection.selectedHallId) : halls[0];
+      
+      if (!selectedHall) {
+        throw new Error(`No hall selected for ${classData.sheetName}`);
+      }
 
+      // If booking exists, update it with new information
+      if (targetBooking) {
+        // Update booking with potentially new teacher, time, hall, etc.
+        targetBooking = await bookingsApi.update(targetBooking.id, {
+          teacher_id: teacher.id,
+          hall_id: selectedHall.id,
+          number_of_students: classData.students.length,
+          start_time: formatTimeForDB(classData.time),
+          days_of_week: [classData.dayOfWeek],
+          class_code: classCode,
+          status: 'active' as const
+        });
+      } else {
         // Create new booking
         const { bookingsApi: bookingApi } = await import('@/api/bookings');
         targetBooking = await bookingApi.create({
@@ -203,41 +215,51 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
           start_time: formatTimeForDB(classData.time),
           start_date: new Date().toISOString().split('T')[0],
           days_of_week: [classData.dayOfWeek],
-          class_code: `${classData.sheetName}_${classData.amPm}`,
+          class_code: classCode,
           status: 'active' as const
         });
       }
 
-      // Clear existing registrations for this booking
+      // Clear ALL existing registrations and payments for this class_code
+      // This ensures we remove old incorrect data when re-uploading
       const existingRegistrations = await studentRegistrationsApi.getAll();
-      const toDelete = existingRegistrations.filter(reg => reg.booking_id === targetBooking.id);
+      const registrationsToDelete = existingRegistrations.filter(reg => reg.booking_id === targetBooking.id);
       
-      for (const reg of toDelete) {
+      // Delete payments first (due to foreign key constraints)
+      const { paymentsApi } = await import('@/api/students');
+      
+      for (const reg of registrationsToDelete) {
+        // Delete all payments for this registration
+        const paymentsForRegistration = await paymentsApi.getByRegistration(reg.id);
+        for (const payment of paymentsForRegistration) {
+          await paymentsApi.delete(payment.id);
+        }
+        
+        // Then delete the registration
         await studentRegistrationsApi.delete(reg.id);
       }
 
-      // Process students
+      // Process students with new data
       for (const studentData of classData.students) {
-        // Find or create student
+        // Find or create student (preserving existing student profiles)
         let student = await findOrCreateStudent(studentData);
         
-        // Create registration
+        // Create new registration
         const registration = await studentRegistrationsApi.create({
           student_id: student.id,
           booking_id: targetBooking.id,
           total_fees: targetBooking.class_fees || 0, // Use booking's class fees, not individual payment
-          notes: `Bulk upload from ${classData.sheetName}`
+          notes: `Bulk upload from ${classData.sheetName} - ${new Date().toISOString().split('T')[0]}`
         });
 
         // Create payment record if payment > 0
         if (studentData.payment > 0) {
-          const { paymentsApi } = await import('@/api/students');
           await paymentsApi.create({
             student_registration_id: registration.id,
             amount: studentData.payment,
             payment_date: new Date().toISOString().split('T')[0],
             payment_method: 'cash',
-            notes: `Bulk upload payment from ${classData.sheetName}`
+            notes: `Bulk upload payment from ${classData.sheetName} - ${new Date().toISOString().split('T')[0]}`
           });
         }
       }
