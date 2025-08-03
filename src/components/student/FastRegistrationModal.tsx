@@ -151,6 +151,7 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
             return paymentsApi.create({
               student_registration_id: registration.id,
               amount: paidAmount,
+              payment_date: new Date().toISOString().split('T')[0],
               payment_method: 'cash',
               notes: 'دفع سريع عند التسجيل'
             });
