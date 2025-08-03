@@ -4,15 +4,27 @@ export type UserProfile = {
   id: string;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
   user_role: 'owner' | 'manager' | 'space_manager';
   created_at: string;
+  username?: string | null;
 };
 
 export type CreateUserData = {
-  email: string;
+  username: string;
   password: string;
-  full_name: string;
+  email?: string;
+  full_name?: string;
+  phone?: string;
   user_role: 'owner' | 'manager' | 'space_manager';
+};
+
+export type UpdateUserData = {
+  full_name?: string;
+  phone?: string;
+  email?: string;
+  user_role?: 'owner' | 'manager' | 'space_manager';
+  password?: string;
 };
 
 export const getUsers = async (): Promise<UserProfile[]> => {
@@ -27,10 +39,12 @@ export const getUsers = async (): Promise<UserProfile[]> => {
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
   // Create user with Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: userData.email,
+    email: userData.email || `${userData.username}@local.app`,
     password: userData.password,
     user_metadata: {
-      full_name: userData.full_name,
+      username: userData.username,
+      full_name: userData.full_name || userData.username,
+      phone: userData.phone,
       user_role: userData.user_role,
     },
   });
@@ -53,9 +67,11 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
       .from("profiles")
       .insert([{
         id: authData.user.id,
-        email: userData.email,
-        full_name: userData.full_name,
+        email: userData.email || `${userData.username}@local.app`,
+        full_name: userData.full_name || userData.username,
+        phone: userData.phone,
         user_role: userData.user_role,
+        username: userData.username,
       }])
       .select()
       .single();
@@ -65,6 +81,22 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
   }
 
   return profile as UserProfile;
+};
+
+export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: userData.full_name,
+      phone: userData.phone,
+      email: userData.email,
+      user_role: userData.user_role,
+    })
+    .eq("id", userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as UserProfile;
 };
 
 export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager') => {

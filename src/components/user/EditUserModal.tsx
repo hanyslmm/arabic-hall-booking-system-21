@@ -5,16 +5,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile } from "@/api/users";
+import { User, Lock, Mail, Phone, Shield, Edit, Key } from "lucide-react";
 
 const editUserSchema = z.object({
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل").optional().or(z.literal("")),
+  full_name: z.string().optional(),
+  email: z.string().email("يرجى إدخال بريد إلكتروني صحيح").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  password: z.string().min(3, "كلمة المرور يجب أن تكون 3 أحرف على الأقل").optional().or(z.literal("")),
   user_role: z.enum(["owner", "manager", "space_manager"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),
@@ -35,6 +41,9 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
   const form = useForm<EditUserFormData>({
     resolver: zodResolver(editUserSchema),
     defaultValues: { 
+      full_name: user?.full_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
       password: "", 
       user_role: user?.user_role || "space_manager"
     },
@@ -44,6 +53,9 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
   React.useEffect(() => {
     if (user) {
       form.reset({
+        full_name: user.full_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
         password: "",
         user_role: user.user_role || "space_manager"
       });
@@ -57,6 +69,9 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
       const updateData: any = {
         userId: user.id,
         user_role: data.user_role,
+        full_name: data.full_name || undefined,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
       };
 
       if (data.password && data.password.trim() !== "") {
@@ -107,54 +122,169 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl text-center">تعديل المستخدم</DialogTitle>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Edit className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <DialogTitle className="text-2xl">تعديل المستخدم</DialogTitle>
+              <DialogDescription className="text-base">
+                تحديث بيانات المستخدم والصلاحيات
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
+        
         {user && (
-          <div className="mb-4 p-3 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">المستخدم:</p>
-            <p className="font-medium">{user.full_name || user.email}</p>
-            <p className="text-sm text-muted-foreground">الدور الحالي: {getRoleDisplayName(user.user_role || 'space_manager')}</p>
+          <div className="p-4 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12">
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {user.full_name
+                    ? user.full_name.charAt(0).toUpperCase()
+                    : user.email?.charAt(0).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-semibold text-lg">{user.full_name || user.email}</p>
+                <p className="text-sm text-muted-foreground">
+                  الدور الحالي: {getRoleDisplayName(user.user_role || 'space_manager')}
+                </p>
+              </div>
+            </div>
           </div>
         )}
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="user_role">الدور الجديد</Label>
-            <Select 
-              onValueChange={value => form.setValue("user_role", value as any)} 
-              value={form.watch("user_role") || "space_manager"}
+        
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* User Information Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <User className="w-4 h-4" />
+              معلومات المستخدم
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  الاسم الكامل
+                </Label>
+                <Input 
+                  id="full_name" 
+                  placeholder="أدخل الاسم الكامل" 
+                  {...form.register("full_name")} 
+                  className="h-11"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    البريد الإلكتروني
+                  </Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="example@domain.com" 
+                    {...form.register("email")} 
+                    className="h-11"
+                  />
+                  {form.formState.errors.email && (
+                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    رقم الهاتف
+                  </Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="01xxxxxxxxx" 
+                    {...form.register("phone")} 
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Security Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Shield className="w-4 h-4" />
+              الأمان والصلاحيات
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="user_role" className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  الدور
+                </Label>
+                <Select 
+                  onValueChange={value => form.setValue("user_role", value as any)} 
+                  value={form.watch("user_role") || "space_manager"}
+                >
+                  <SelectTrigger id="user_role" className="h-11">
+                    <SelectValue placeholder="اختر الدور" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="space_manager">مدير قاعات</SelectItem>
+                    <SelectItem value="manager">مدير</SelectItem>
+                    <SelectItem value="owner">مالك</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.user_role && (
+                  <p className="text-sm text-destructive">{form.formState.errors.user_role.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <Key className="w-4 h-4" />
+                  كلمة المرور الجديدة
+                </Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="اتركها فارغة لعدم التغيير" 
+                  {...form.register("password")} 
+                  className="h-11"
+                />
+                {form.formState.errors.password && (
+                  <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  اتركها فارغة إذا كنت لا تريد تغيير كلمة المرور
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
+            <Button 
+              type="submit" 
+              className="flex-1 h-11" 
+              disabled={updateUserMutation.isPending}
             >
-              <SelectTrigger id="user_role">
-                <SelectValue placeholder="اختر الدور" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="space_manager">مدير قاعات</SelectItem>
-                <SelectItem value="manager">مدير</SelectItem>
-                <SelectItem value="owner">مالك</SelectItem>
-              </SelectContent>
-            </Select>
-            {form.formState.errors.user_role && (
-              <p className="text-sm text-destructive">{form.formState.errors.user_role.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">كلمة المرور الجديدة (اختياري)</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              placeholder="اتركها فارغة إذا كنت لا تريد تغييرها" 
-              {...form.register("password")} 
-            />
-            {form.formState.errors.password && (
-              <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
-            )}
-          </div>
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1" disabled={updateUserMutation.isPending}>
-              {updateUserMutation.isPending ? "جاري التحديث..." : "تحديث"}
+              {updateUserMutation.isPending ? "جاري التحديث..." : "تحديث المستخدم"}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 h-11"
+            >
               إلغاء
             </Button>
           </div>
