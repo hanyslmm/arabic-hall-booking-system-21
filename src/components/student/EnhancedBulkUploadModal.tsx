@@ -325,6 +325,16 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
         if (jsonData.length > 0) {
           console.log(`Sheet ${sheetName} first row:`, jsonData[0]);
           console.log(`Sheet ${sheetName} keys:`, Object.keys(jsonData[0]));
+          
+          // Check for payment columns specifically
+          const paymentColumns = Object.keys(jsonData[0]).filter(key => 
+            key.toLowerCase().includes('dars') || 
+            key.includes('الرسوم') || 
+            key.includes('رسوم') ||
+            key.toLowerCase().includes('payment') ||
+            key.includes('مدفوع')
+          );
+          console.log(`Sheet ${sheetName} potential payment columns:`, paymentColumns);
         }
 
         const students: StudentDataRow[] = [];
@@ -454,14 +464,57 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
 
   const getPaymentValue = (row: any, primaryColumn: string): number => {
     // Check the primary column first, then fallbacks
-    const possibleColumns = [primaryColumn, 'Payment', 'payment', 'المدفوع', 'مدفوع'];
+    const possibleColumns = [
+      primaryColumn, 
+      'Payment', 
+      'payment', 
+      'المدفوع', 
+      'مدفوع',
+      'الرسوم',
+      'رسوم',
+      'Fee',
+      'Fees',
+      'fees',
+      'Amount',
+      'amount'
+    ];
     
+    // Also check for columns that contain these keywords
+    const allColumns = Object.keys(row);
+    const matchingColumns = allColumns.filter(col => {
+      const colLower = col.toLowerCase();
+      return possibleColumns.some(possible => 
+        colLower.includes(possible.toLowerCase()) || 
+        possible.toLowerCase().includes(colLower)
+      );
+    });
+    
+    // Check exact matches first
     for (const col of possibleColumns) {
       if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
         const num = Number(row[col].toString().replace(/\D/g, ''));
-        return isNaN(num) ? 0 : Math.max(0, num);
+        if (!isNaN(num) && num > 0) {
+          console.log(`Found payment in column "${col}": ${num}`);
+          return Math.max(0, num);
+        }
       }
     }
+    
+    // Then check partial matches
+    for (const col of matchingColumns) {
+      if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
+        const num = Number(row[col].toString().replace(/\D/g, ''));
+        if (!isNaN(num) && num > 0) {
+          console.log(`Found payment in matching column "${col}": ${num}`);
+          return Math.max(0, num);
+        }
+      }
+    }
+    
+    // Debug: Log all available columns if no payment found
+    console.log(`No payment found for row. Available columns:`, Object.keys(row));
+    console.log(`Row data:`, row);
+    
     return 0;
   };
 
@@ -521,7 +574,7 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
               <li>• B=باسم، SAT=السبت، 1=الساعة الواحدة، PM/AM=مساءً/صباحاً</li>
               <li>• استخدم PM للفترة المسائية و AM للفترة الصباحية</li>
               <li>• أعمدة مطلوبة: Name (الاسم)، Mobile (الموبايل)</li>
-              <li>• أعمدة اختيارية: Home (رقم ولي الأمر)، City (المدينة)، Dars (المدفوعات)</li>
+              <li>• أعمدة اختيارية: Home (رقم ولي الأمر)، City (المدينة)، Dars أو الرسوم (المدفوعات)</li>
               <li>• يجب أن تكون أسماء الأعمدة في الصف الأول</li>
               <li>• بيانات الطلاب تبدأ من الصف الثاني</li>
             </ul>

@@ -38,6 +38,7 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
         'Home': '01098765432',
         'City': 'القاهرة',
         'Class': 'الفصل الأول',
+        'الرسوم': defaultClassFees,
         'Payment': defaultClassFees
       }
     ];
@@ -103,14 +104,45 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
     // Check multiple possible column names for payment
     const possiblePaymentColumns = [
       'Payment', 'payment', 'المدفوع', 'مدفوع', 'الدفع', 'دفع', 
-      'Amount', 'amount', 'Fee', 'fee', 'Fees', 'fees'
+      'Amount', 'amount', 'Fee', 'fee', 'Fees', 'fees',
+      'الرسوم', 'رسوم', 'Dars', 'dars', 'DARS'
     ];
     
+    // Also check for columns that contain these keywords
+    const allColumns = Object.keys(row);
+    const matchingColumns = allColumns.filter(col => {
+      const colLower = col.toLowerCase();
+      return possiblePaymentColumns.some(possible => 
+        colLower.includes(possible.toLowerCase()) || 
+        possible.toLowerCase().includes(colLower)
+      );
+    });
+    
+    // Check exact matches first
     for (const col of possiblePaymentColumns) {
       if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
-        return convertToNumber(row[col]);
+        const value = convertToNumber(row[col]);
+        if (value > 0) {
+          console.log(`Found payment in column "${col}": ${value}`);
+          return value;
+        }
       }
     }
+    
+    // Then check partial matches
+    for (const col of matchingColumns) {
+      if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
+        const value = convertToNumber(row[col]);
+        if (value > 0) {
+          console.log(`Found payment in matching column "${col}": ${value}`);
+          return value;
+        }
+      }
+    }
+    
+    // Debug: Log all available columns if no payment found
+    console.log(`No payment found for row. Available columns:`, Object.keys(row));
+    console.log(`Row data:`, row);
     
     return 0;
   };
@@ -209,7 +241,7 @@ export function BulkUploadModal({ isOpen, onClose, onUpload, defaultClassFees = 
             <div>
               <h3 className="font-medium">تحميل نموذج Excel</h3>
               <p className="text-sm text-muted-foreground">
-                حمل النموذج وأدخل بيانات الطلاب: الاسم، الموبايل، رقم ولي الأمر، المدينة، الفصل، المدفوع
+                حمل النموذج وأدخل بيانات الطلاب: الاسم، الموبايل، رقم ولي الأمر، المدينة، الفصل، الرسوم/المدفوع
               </p>
             </div>
             <Button onClick={downloadTemplate} variant="outline">
