@@ -48,7 +48,7 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    if (profileError || (profile?.role !== 'ADMIN' && profile?.user_role !== 'owner')) {
+    if (profileError || (profile?.role !== 'ADMIN' && profile?.user_role !== 'owner' && profile?.user_role !== 'manager')) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -56,7 +56,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, password, user_role } = await req.json();
+    const { userId, password, user_role, full_name, email, phone } = await req.json();
 
     if (!userId) {
       return new Response(
@@ -76,10 +76,13 @@ serve(async (req) => {
       }
     }
 
-    // Update user using admin client
+    // Update user using admin client (for password and email changes)
     const updateData: any = {};
-    if (password) {
+    if (password && password.trim() !== '') {
       updateData.password = password;
+    }
+    if (email && email.trim() !== '') {
+      updateData.email = email;
     }
 
     let updatedUser = null;
@@ -99,17 +102,23 @@ serve(async (req) => {
       updatedUser = authUser.user;
     }
 
-    // Update the user's profile with the specified role if provided
-    if (user_role) {
+    // Update the user's profile with all provided fields
+    const profileUpdateData: any = {};
+    if (user_role !== undefined) profileUpdateData.user_role = user_role;
+    if (full_name !== undefined) profileUpdateData.full_name = full_name;
+    if (email !== undefined) profileUpdateData.email = email;
+    if (phone !== undefined) profileUpdateData.phone = phone;
+
+    if (Object.keys(profileUpdateData).length > 0) {
       const { error: profileUpdateError } = await supabaseClient
         .from('profiles')
-        .update({ user_role: user_role })
+        .update(profileUpdateData)
         .eq('id', userId);
 
       if (profileUpdateError) {
         console.error('Error updating profile:', profileUpdateError);
         return new Response(
-          JSON.stringify({ error: 'Failed to update user role', details: profileUpdateError.message }),
+          JSON.stringify({ error: 'Failed to update user profile', details: profileUpdateError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -121,6 +130,14 @@ serve(async (req) => {
       .select('*')
       .eq('id', userId)
       .single();
+
+    if (fetchError) {
+      console.error('Error fetching updated profile:', fetchError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch updated profile', details: fetchError.message }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ 
