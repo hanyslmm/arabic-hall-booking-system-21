@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Upload, AlertCircle, CheckCircle, Clock, X, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +36,7 @@ interface StudentDataRow {
   home?: string;
   city?: string;
   fees?: number;
+  darsPayment?: number; // Payment amount from "dars" column
 }
 
 interface ProcessingProgress {
@@ -56,6 +58,13 @@ interface HallSelection {
   selectedHallId?: string;
 }
 
+type UploadMode = 'delete' | 'append';
+
+interface UploadModeSelection {
+  mode: UploadMode;
+  showDialog: boolean;
+}
+
 export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -67,6 +76,8 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   const [showClarificationDialog, setShowClarificationDialog] = useState(false);
   const [hallSelections, setHallSelections] = useState<HallSelection[]>([]);
   const [showHallSelectionDialog, setShowHallSelectionDialog] = useState(false);
+  const [uploadMode, setUploadMode] = useState<UploadMode>('append');
+  const [showUploadModeDialog, setShowUploadModeDialog] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -91,7 +102,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (data: { parsedData: ParsedClassData[], clarifications: AmPmClarification[], hallSelections: HallSelection[] }) => {
+    mutationFn: async (data: { parsedData: ParsedClassData[], clarifications: AmPmClarification[], hallSelections: HallSelection[], mode: UploadMode }) => {
       setIsProcessing(true);
       const totalSteps = data.parsedData.reduce((sum, classData) => sum + classData.students.length, 0);
       let processedSteps = 0;
@@ -166,19 +177,37 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
           if (existingBookings && existingBookings.length > 0) {
             booking = existingBookings[0];
             
-            // Clear existing registrations for this booking
-            await supabase
-              .from('student_registrations')
-              .delete()
-              .eq('booking_id', booking.id);
+            // Handle delete mode - clear existing data but keep student basic info
+            if (data.mode === 'delete') {
+              // Get existing registrations to clean up related data
+              const { data: existingRegistrations } = await supabase
+                .from('student_registrations')
+                .select('id')
+                .eq('booking_id', booking.id);
 
-            // Also clear payment records for these registrations
-            await supabase
-              .from('payment_records')
-              .delete()
-              .in('student_registration_id', 
-                existingBookings.map(b => b.id)
-              );
+              if (existingRegistrations && existingRegistrations.length > 0) {
+                const registrationIds = existingRegistrations.map(r => r.id);
+                
+                // Delete payment records first (due to foreign key constraints)
+                await supabase
+                  .from('payment_records')
+                  .delete()
+                  .in('student_registration_id', registrationIds);
+
+                // Delete attendance records
+                await supabase
+                  .from('attendance_records')
+                  .delete()
+                  .in('student_registration_id', registrationIds);
+
+                // Delete student registrations
+                await supabase
+                  .from('student_registrations')
+                  .delete()
+                  .eq('booking_id', booking.id);
+              }
+            }
+            // For append mode, we don't delete existing data
           } else {
             // Create new booking if not exists
             const hallSelection = data.hallSelections.find(h => h.classCode === classCode);
@@ -268,20 +297,86 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                 }
               }
 
-              // Create student registration
-              const { data: registration, error: regError } = await supabase
-                .from('student_registrations')
-                .insert({
-                  student_id: student.id,
-                  booking_id: booking.id,
-                  total_fees: studentData.fees || booking.class_fees || 0,
-                  payment_status: 'pending'
-                })
-                .select()
-                .single();
+              // Check if student is already registered in this class (for append mode)
+              let registration;
+              if (data.mode === 'append') {
+                const { data: existingRegistration } = await supabase
+                  .from('student_registrations')
+                  .select('*')
+                  .eq('student_id', student.id)
+                  .eq('booking_id', booking.id)
+                  .single();
 
-              if (regError) {
-                errors.push(`خطأ في تسجيل الطالب ${studentData.name}: ${regError.message}`);
+                if (existingRegistration) {
+                  registration = existingRegistration;
+                  // Update existing registration if needed
+                  const { error: updateError } = await supabase
+                    .from('student_registrations')
+                    .update({
+                      total_fees: booking.class_fees || 0, // Use class fees, not from Excel
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', registration.id);
+
+                  if (updateError) {
+                    errors.push(`خطأ في تحديث تسجيل الطالب ${studentData.name}: ${updateError.message}`);
+                  }
+                } else {
+                  // Create new registration for append mode
+                  const { data: newRegistration, error: regError } = await supabase
+                    .from('student_registrations')
+                    .insert({
+                      student_id: student.id,
+                      booking_id: booking.id,
+                      total_fees: booking.class_fees || 0, // Use class fees, not from Excel
+                      payment_status: 'pending'
+                    })
+                    .select()
+                    .single();
+
+                  if (regError) {
+                    errors.push(`خطأ في تسجيل الطالب ${studentData.name}: ${regError.message}`);
+                    processedSteps++;
+                    continue;
+                  }
+                  registration = newRegistration;
+                }
+              } else {
+                // Create new registration for delete mode (fresh start)
+                const { data: newRegistration, error: regError } = await supabase
+                  .from('student_registrations')
+                  .insert({
+                    student_id: student.id,
+                    booking_id: booking.id,
+                    total_fees: booking.class_fees || 0, // Use class fees, not from Excel
+                    payment_status: 'pending'
+                  })
+                  .select()
+                  .single();
+
+                if (regError) {
+                  errors.push(`خطأ في تسجيل الطالب ${studentData.name}: ${regError.message}`);
+                  processedSteps++;
+                  continue;
+                }
+                registration = newRegistration;
+              }
+
+              // Create payment record if "dars" payment amount is provided
+              if (studentData.darsPayment && studentData.darsPayment > 0 && registration) {
+                const { error: paymentError } = await supabase
+                  .from('payment_records')
+                  .insert({
+                    student_registration_id: registration.id,
+                    amount: studentData.darsPayment,
+                    payment_date: new Date().toISOString().split('T')[0],
+                    payment_method: 'cash',
+                    notes: 'مستورد من ملف Excel - عمود Dars'
+                  });
+
+                if (paymentError) {
+                  errors.push(`خطأ في إضافة دفعة للطالب ${studentData.name}: ${paymentError.message}`);
+                }
               }
 
               processedSteps++;
@@ -355,21 +450,35 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     return mobile.toString().replace(/\D/g, '');
   };
 
-  const getPaymentValue = (row: any, primaryColumn: string): number => {
+  const getDarsPaymentValue = (row: any): number => {
     // For array format (using column indices)
     if (Array.isArray(row)) {
-      // Try column H (index 7) for "Dars" based on your Excel structure
-      const darsValue = row[7];
-      if (darsValue !== undefined && darsValue !== null && darsValue !== '') {
-        const num = Number(darsValue.toString().replace(/\D/g, ''));
-        return isNaN(num) ? 0 : Math.max(0, num);
+      // Check multiple possible columns for "dars" payment
+      // Try columns from index 5 onwards (after name, mobile, home, city)
+      for (let i = 5; i < row.length; i++) {
+        const cellValue = row[i];
+        if (cellValue !== undefined && cellValue !== null && cellValue !== '') {
+          const num = Number(cellValue.toString().replace(/\D/g, ''));
+          if (!isNaN(num) && num > 0) {
+            return num;
+          }
+        }
       }
       return 0;
     }
     
-    // For object format (fallback)
-    const value = row[primaryColumn] || row['الاجور'] || row['الرسوم'] || row['المبلغ'] || 0;
-    return typeof value === 'number' ? value : parseFloat(value) || 0;
+    // For object format - look for "dars" key (case insensitive)
+    for (const key in row) {
+      if (key.toLowerCase().includes('dars')) {
+        const value = row[key];
+        if (value !== undefined && value !== null && value !== '') {
+          const num = Number(value.toString().replace(/\D/g, ''));
+          return isNaN(num) ? 0 : Math.max(0, num);
+        }
+      }
+    }
+    
+    return 0;
   };
 
   const processFile = async (file: File) => {
@@ -449,7 +558,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                   mobile,
                   home: row[homeColumn] ? row[homeColumn].toString().trim() : undefined,
                   city: row[cityColumn] ? row[cityColumn].toString().trim() : undefined,
-                  fees: getPaymentValue(row, 'Dars') // Look for payment in "Dars" column or column H (index 7)
+                  darsPayment: getDarsPaymentValue(row) // Extract payment from "dars" column
                 });
             } catch (rowError) {
               // Log the error but continue processing other rows
@@ -500,6 +609,9 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
         setShowClarificationDialog(true);
       } else if (hallSelectionsNeeded.length > 0) {
         setShowHallSelectionDialog(true);
+      } else {
+        // Show upload mode selection dialog if no other dialogs are needed
+        setShowUploadModeDialog(true);
       }
 
     } catch (error) {
@@ -537,6 +649,11 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     );
   };
 
+  const handleUploadModeSelection = (mode: UploadMode) => {
+    setUploadMode(mode);
+    setShowUploadModeDialog(false);
+  };
+
   const canProceedWithUpload = () => {
     return parsedData.length > 0 && 
            amPmClarifications.every(c => c.selected) && 
@@ -548,7 +665,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     if (canProceedWithUpload()) {
       setShowClarificationDialog(false);
       setShowHallSelectionDialog(false);
-      uploadMutation.mutate({ parsedData, clarifications: amPmClarifications, hallSelections });
+      uploadMutation.mutate({ parsedData, clarifications: amPmClarifications, hallSelections, mode: uploadMode });
     }
   };
 
@@ -557,7 +674,16 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
       setShowClarificationDialog(false);
       if (hallSelections.length > 0) {
         setShowHallSelectionDialog(true);
+      } else {
+        setShowUploadModeDialog(true);
       }
+    }
+  };
+
+  const handleHallSelectionNext = () => {
+    if (hallSelections.every(h => h.selectedHallId)) {
+      setShowHallSelectionDialog(false);
+      setShowUploadModeDialog(true);
     }
   };
 
@@ -571,6 +697,8 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     setShowClarificationDialog(false);
     setHallSelections([]);
     setShowHallSelectionDialog(false);
+    setUploadMode('append');
+    setShowUploadModeDialog(false);
     setOpen(false);
   };
 
@@ -597,12 +725,13 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             <p>• اسم الورقة يجب أن يكون بتنسيق: B_SAT_1_PM أو B_SAT_1_AM</p>
             <p>• B=المعلم، SAT=اليوم، 1=الساعة، PM/AM=مساءً/صباحاً</p>
             <p>• كل ورقة يجب أن تحتوي على أعمدة: Name (الاسم)، Mobile (الموبايل)</p>
-            <p>• أعمدة اختيارية: Home (هاتف المنزل)، City (المدينة)</p>
+            <p>• أعمدة اختيارية: Home (هاتف المنزل)، City (المدينة)، Dars (المدفوعات)</p>
             <p>• الصف الأول يجب أن يحتوي على أسماء الأعمدة</p>
             <p>• بيانات الطلاب تبدأ من الصف الثالث</p>
             <p>• إذا لم يتم تحديد AM أو PM، سيطلب منك التوضيح</p>
-            <p>• سيتم حذف البيانات الموجودة للمجموعة واستبدالها بالبيانات الجديدة</p>
+            <p>• يمكنك اختيار حذف البيانات الموجودة أو الإضافة إليها</p>
             <p>• الطلاب الموجودين بنفس رقم الموبايل لن يتم إنشاؤهم مرة أخرى</p>
+            <p>• عمود "Dars" يستخدم لإضافة مدفوعات جديدة، أما الرسوم فتبقى كما هي محددة في المجموعة</p>
           </CardContent>
         </Card>
 
@@ -738,8 +867,62 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             </Card>
           )}
 
+          {/* Upload Mode Selection Dialog */}
+          {showUploadModeDialog && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  اختيار طريقة الرفع
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  كيف تريد التعامل مع البيانات الموجودة للمجموعات؟
+                </p>
+                <RadioGroup value={uploadMode} onValueChange={(value: UploadMode) => setUploadMode(value)}>
+                  <div className="flex items-center space-x-2 space-x-reverse p-3 border rounded">
+                    <RadioGroupItem value="delete" id="delete" />
+                    <Label htmlFor="delete" className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <div>
+                          <div className="font-medium">حذف البيانات الموجودة أولاً</div>
+                          <div className="text-sm text-muted-foreground">
+                            سيتم حذف جميع تسجيلات الطلاب والمدفوعات والحضور للمجموعات المحددة، مع الاحتفاظ ببيانات الطلاب الأساسية (الاسم، الموبايل، الرقم التسلسلي)
+                          </div>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 space-x-reverse p-3 border rounded">
+                    <RadioGroupItem value="append" id="append" />
+                    <Label htmlFor="append" className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4 text-green-500" />
+                        <div>
+                          <div className="font-medium">إضافة إلى البيانات الموجودة</div>
+                          <div className="text-sm text-muted-foreground">
+                            سيتم إضافة الطلاب الجدد وتحديث المدفوعات للطلاب الموجودين بالفعل
+                          </div>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>ملاحظة مهمة:</strong> الرسوم (class fees) تبقى كما هي محددة في إعدادات المجموعة ولن يتم تغييرها من ملف Excel. 
+                    أما عمود "Dars" في Excel فسيتم استخدامه لإضافة مدفوعات جديدة للطلاب.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Data Preview */}
-          {parsedData.length > 0 && !showClarificationDialog && !showHallSelectionDialog && (
+          {parsedData.length > 0 && !showClarificationDialog && !showHallSelectionDialog && !showUploadModeDialog && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -781,12 +964,21 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             </Button>
           ) : showHallSelectionDialog ? (
             <Button 
-              onClick={handleUpload}
-              disabled={!canProceedWithUpload() || isProcessing}
+              onClick={handleHallSelectionNext}
+              disabled={!hallSelections.every(h => h.selectedHallId) || isProcessing}
               className="bg-primary hover:bg-primary/90"
             >
-              <Upload className="h-4 w-4 mr-2" />
-              رفع البيانات
+              التالي
+            </Button>
+          ) : showUploadModeDialog ? (
+            <Button 
+              onClick={() => {
+                setShowUploadModeDialog(false);
+              }}
+              disabled={isProcessing}
+              className="bg-primary hover:bg-primary/90"
+            >
+              التالي
             </Button>
           ) : (
             parsedData.length > 0 && !isProcessing && errors.length === 0 && (
