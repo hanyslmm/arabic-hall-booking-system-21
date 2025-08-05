@@ -394,7 +394,23 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
                              Object.values(row)[4]; // Fallback to fifth column (index 4)
             
             const city = cityField?.toString().trim() || '';
-            const payment = getPaymentValue(row, 'Dars'); // Use "Dars" column for payment
+            
+            // Try to find the payment column more intelligently
+            const paymentColumnCandidates = Object.keys(row).filter(key => {
+              const keyLower = key.toLowerCase();
+              return keyLower.includes('dars') || 
+                     keyLower.includes('الرسوم') || 
+                     keyLower.includes('رسوم') ||
+                     keyLower.includes('مدفوع') ||
+                     keyLower.includes('payment') ||
+                     keyLower.includes('fee') ||
+                     keyLower.includes('amount');
+            });
+            
+            console.log(`Row ${index + 2} payment column candidates:`, paymentColumnCandidates);
+            console.log(`Row ${index + 2} data:`, row);
+            
+            const payment = getPaymentValue(row, paymentColumnCandidates[0] || 'Dars');
 
             // Validate mobile numbers
             const mobileRegex = /^01[0-9]{9}$/;
@@ -498,7 +514,9 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
       'Fees',
       'fees',
       'Amount',
-      'amount'
+      'amount',
+      'Dars',
+      'dars'
     ];
     
     // Also check for columns that contain these keywords
@@ -511,13 +529,42 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
       );
     });
     
+    // Helper function to extract number from value
+    const extractNumber = (value: any): number => {
+      if (value === undefined || value === null || value === '') {
+        return 0;
+      }
+      
+      const str = value.toString();
+      console.log(`Extracting number from: "${str}"`);
+      
+      // Handle cases where the value is already a number
+      if (typeof value === 'number' && !isNaN(value)) {
+        console.log(`Direct number: ${value}`);
+        return Math.max(0, value);
+      }
+      
+      // Extract all digits from the string
+      const digits = str.replace(/\D/g, '');
+      console.log(`Extracted digits: "${digits}"`);
+      
+      if (digits === '') {
+        return 0;
+      }
+      
+      const num = Number(digits);
+      console.log(`Parsed number: ${num}`);
+      
+      return isNaN(num) ? 0 : Math.max(0, num);
+    };
+    
     // Check exact matches first
     for (const col of possibleColumns) {
       if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
-        const num = Number(row[col].toString().replace(/\D/g, ''));
-        if (!isNaN(num) && num > 0) {
-          console.log(`Found payment in column "${col}": ${num}`);
-          return Math.max(0, num);
+        const num = extractNumber(row[col]);
+        if (num > 0) {
+          console.log(`Found payment in exact column "${col}": ${num} (original value: "${row[col]}")`);
+          return num;
         }
       }
     }
@@ -525,17 +572,19 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
     // Then check partial matches
     for (const col of matchingColumns) {
       if (row[col] !== undefined && row[col] !== null && row[col] !== '') {
-        const num = Number(row[col].toString().replace(/\D/g, ''));
-        if (!isNaN(num) && num > 0) {
-          console.log(`Found payment in matching column "${col}": ${num}`);
-          return Math.max(0, num);
+        const num = extractNumber(row[col]);
+        if (num > 0) {
+          console.log(`Found payment in matching column "${col}": ${num} (original value: "${row[col]}")`);
+          return num;
         }
       }
     }
     
-    // Debug: Log all available columns if no payment found
-    console.log(`No payment found for row. Available columns:`, Object.keys(row));
-    console.log(`Row data:`, row);
+    // Debug: Log all available columns and their values if no payment found
+    console.log(`No payment found for row. Available columns and values:`);
+    Object.keys(row).forEach(key => {
+      console.log(`  "${key}": "${row[key]}" (type: ${typeof row[key]})`);
+    });
     
     return 0;
   };
