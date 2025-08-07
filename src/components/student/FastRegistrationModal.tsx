@@ -12,7 +12,7 @@ import { studentsApi, studentRegistrationsApi, paymentsApi, Student } from "@/ap
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Scan, DollarSign, Calendar, Users, Camera, X, CreditCard } from "lucide-react";
-import BarcodeScannerComponent from "react-qr-barcode-scanner";
+import { BarcodeScanner } from "@alzera/react-scanner";
 import { formatTimeAmPm } from "@/utils/dateUtils";
 
 interface FastRegistrationModalProps {
@@ -527,14 +527,10 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
 
               {scannerActive && (
                 <div className="border-2 border-dashed border-primary rounded-lg p-2 h-32 bg-background/50">
-                  <BarcodeScannerComponent
-                    width="100%"
-                    height={110}
-                    delay={300}
-                    facingMode="environment"
-                    onUpdate={(err, result) => {
-                      if (result) {
-                        handleBarcodeScan(result.getText());
+                  <BarcodeScanner
+                    onScan={(data) => {
+                      if (data) {
+                        handleBarcodeScan(data);
                         // Visual feedback for successful scan
                         const scanArea = document.querySelector('.border-dashed');
                         if (scanArea) {
@@ -545,6 +541,12 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
                         }
                       }
                     }}
+                    onError={(error) => {
+                      console.error('Scanner error:', error);
+                    }}
+                    style={{ width: '100%', height: '110px' }}
+                    aspectRatio="16/9"
+                    delay={300}
                   />
                   <div className="text-center text-xs text-muted-foreground mt-1">
                     وجه الكاميرا نحو الباركود
