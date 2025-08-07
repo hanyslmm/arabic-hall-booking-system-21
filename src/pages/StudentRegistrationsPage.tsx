@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchIcon, CreditCard, Users, Clock } from 'lucide-react';
 import { studentRegistrationsApi } from '@/api/students';
-import { ResponsiveTable } from '@/components/common/ResponsiveTable';
 import { useTableData } from '@/hooks/useTableData';
 import { PaginatedTable } from '@/components/common/PaginatedTable';
 import { FastReceptionistModal } from '@/components/receptionist/FastReceptionistModal';
@@ -51,43 +50,31 @@ export default function StudentRegistrationsPage() {
 
       <PaginatedTable
         data={tableData.paginatedData}
-        totalItems={tableData.pagination.total}
-        pagination={tableData.pagination}
-        onPageChange={tableData.goToPage}
-        onPageSizeChange={tableData.changePageSize}
-        loading={isLoading}
-      >
-        <ResponsiveTable
-          data={tableData.paginatedData}
-          columns={[
-            {
-              key: 'student_id',
-              label: 'رقم الطالب',
-              priority: 'high' as const,
-              mobileShow: true,
-              render: (value: string) => <Badge variant="outline">{value.slice(-8)}</Badge>
-            },
-            {
-              key: 'total_fees',
-              label: 'الرسوم',
-              priority: 'high' as const,
-              render: (value: number) => `${value} LE`
-            },
-            {
-              key: 'payment_status',
-              label: 'حالة الدفع',
-              priority: 'high' as const,
-              mobileShow: true,
-              render: (value: string) => {
-                const variants = { paid: 'default', partial: 'secondary', pending: 'destructive' };
-                return <Badge variant={variants[value as keyof typeof variants] || 'outline'}>{value}</Badge>;
-              }
+        columns={[
+          {
+            key: 'student_id',
+            header: 'رقم الطالب',
+            render: (item: any) => <Badge variant="outline">{item.student_id?.slice(-8)}</Badge>
+          },
+          {
+            key: 'total_fees',
+            header: 'الرسوم',
+            render: (item: any) => `${item.total_fees} LE`
+          },
+          {
+            key: 'payment_status',
+            header: 'حالة الدفع',
+            render: (item: any) => {
+              const variants = { paid: 'default', partial: 'secondary', pending: 'destructive' } as const;
+              const variant = variants[item.payment_status as keyof typeof variants] || 'outline';
+              return <Badge variant={variant}>{item.payment_status}</Badge>;
             }
-          ]}
-          loading={isLoading}
-          emptyMessage="لا توجد تسجيلات"
-        />
-      </PaginatedTable>
+          }
+        ]}
+        getRowKey={(item: any) => item.student_id || item.id}
+        isLoading={isLoading}
+        emptyMessage="لا توجد تسجيلات"
+      />
 
       <FastReceptionistModal isOpen={showFastModal} onClose={() => setShowFastModal(false)} />
     </div>
