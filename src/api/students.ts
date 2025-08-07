@@ -33,6 +33,7 @@ export interface StudentRegistration {
     start_time: string;
     days_of_week: string[];
     number_of_students: number;
+    class_code?: string;
     halls?: { name: string };
     teachers?: { name: string };
     academic_stages?: { name: string };

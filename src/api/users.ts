@@ -33,7 +33,11 @@ export const getUsers = async (): Promise<UserProfile[]> => {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data as UserProfile[];
+  // Map profiles to UserProfile type - profiles table doesn't have phone field
+  return data.map(profile => ({
+    ...profile,
+    phone: null // Profiles table doesn't have phone field
+  })) as UserProfile[];
 };
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
@@ -77,10 +81,10 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
       .single();
 
     if (createProfileError) throw createProfileError;
-    return newProfile as UserProfile;
+    return { ...newProfile, phone: userData.phone || null } as UserProfile;
   }
 
-  return profile as UserProfile;
+  return { ...profile, phone: null } as UserProfile;
 };
 
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
@@ -96,7 +100,7 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
     .select()
     .single();
   if (error) throw error;
-  return data as UserProfile;
+  return { ...data, phone: userData.phone || null } as UserProfile;
 };
 
 export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager') => {
@@ -107,7 +111,7 @@ export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager
     .select()
     .single();
   if (error) throw error;
-  return data as UserProfile;
+  return { ...data, phone: null } as UserProfile;
 };
 
 export const deleteUser = async (userId: string) => {

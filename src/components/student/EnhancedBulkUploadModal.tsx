@@ -214,8 +214,10 @@ export function EnhancedBulkUploadModal({ isOpen, onClose }: EnhancedBulkUploadM
           number_of_students: classData.students.length,
           start_time: formatTimeForDB(classData.time),
           start_date: new Date().toISOString().split('T')[0],
+          end_date: null,
           days_of_week: [classData.dayOfWeek],
           class_code: classCode,
+          class_fees: 0,
           status: 'active' as const
         });
       }
