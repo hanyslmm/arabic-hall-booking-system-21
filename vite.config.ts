@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   preview: {
     host: "::",
     port: 8080,
-    allowedHosts: ["arabic-hall-booking-system.onrender.com"]
+    allowedHosts: "all"
   },
   plugins: [
     react(),
