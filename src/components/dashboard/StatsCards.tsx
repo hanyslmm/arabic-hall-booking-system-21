@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, GraduationCap, Building, Activity } from "lucide-react";
+import { Users, Calendar, GraduationCap, Building, Activity, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 
@@ -53,6 +53,25 @@ export const StatsCards = ({
     }
   });
 
+  // Current month earnings from payment_records
+  const { data: monthlyEarnings } = useQuery({
+    queryKey: ['monthly-earnings'],
+    queryFn: async () => {
+      const now = new Date();
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+
+      const { data, error } = await supabase
+        .from('payment_records')
+        .select('amount,payment_date')
+        .gte('payment_date', startDate)
+        .lte('payment_date', endDate);
+
+      if (error) throw error;
+      return (data || []).reduce((sum: number, r: { amount: number }) => sum + (r.amount || 0), 0);
+    }
+  });
+
   const statsData = [
     {
       title: "إجمالي القاعات",
@@ -88,6 +107,13 @@ export const StatsCards = ({
       icon: Activity,
       color: "text-orange-600",
       onClick: () => navigate('/halls')
+    },
+    {
+      title: "إيرادات هذا الشهر",
+      value: `${Number(monthlyEarnings || 0).toLocaleString()} LE`,
+      icon: TrendingUp,
+      color: "text-green-600",
+      onClick: () => navigate('/reports')
     },
     {
       title: "إشغال الفترات الزمنية",

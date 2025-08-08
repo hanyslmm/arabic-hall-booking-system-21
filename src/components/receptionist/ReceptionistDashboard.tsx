@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { studentRegistrationsApi } from '@/api/students';
 import { hallsApi } from '@/utils/refactored-api';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 export function ReceptionistDashboard() {
   const [showFastModal, setShowFastModal] = useState(false);
@@ -43,6 +44,25 @@ export function ReceptionistDashboard() {
   const { data: halls } = useQuery({
     queryKey: ['halls-occupancy'],
     queryFn: hallsApi.getAll
+  });
+
+  // Current month earnings (sum of payment_records.amount for this month)
+  const { data: monthlyEarnings } = useQuery({
+    queryKey: ['monthly-earnings'],
+    queryFn: async () => {
+      const now = new Date();
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+
+      const { data, error } = await supabase
+        .from('payment_records')
+        .select('amount,payment_date')
+        .gte('payment_date', startDate)
+        .lte('payment_date', endDate);
+
+      if (error) throw error;
+      return (data || []).reduce((sum: number, r: { amount: number }) => sum + (r.amount || 0), 0);
+    }
   });
 
   const quickActions = [
@@ -76,6 +96,8 @@ export function ReceptionistDashboard() {
     }
   ];
 
+  const todayRegistrationsCount = Math.min(todayRegistrations?.length || 0, 1000);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -104,7 +126,7 @@ export function ReceptionistDashboard() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayRegistrations?.length || 0}</div>
+            <div className="text-2xl font-bold">{todayRegistrationsCount}</div>
             <p className="text-xs text-muted-foreground">
               تسجيل جديد اليوم
             </p>
@@ -141,17 +163,15 @@ export function ReceptionistDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط الدفع</CardTitle>
+            <CardTitle className="text-sm font-medium">إيرادات هذا الشهر</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {pendingPayments?.length 
-                ? Math.round(pendingPayments.reduce((sum, reg) => sum + reg.paid_amount, 0) / pendingPayments.length)
-                : 0} LE
+              {Number(monthlyEarnings || 0).toLocaleString()} LE
             </div>
             <p className="text-xs text-muted-foreground">
-              متوسط المدفوع
+              إجمالي المدفوع خلال الشهر
             </p>
           </CardContent>
         </Card>
