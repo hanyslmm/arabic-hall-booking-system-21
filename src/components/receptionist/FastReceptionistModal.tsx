@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, CreditCard, Clock, Phone, MapPin, Hash } from 'lucide-react';
+import { Search, UserPlus, CreditCard, Clock, Phone, MapPin, Hash, Scan } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentsApi, studentRegistrationsApi, paymentsApi } from '@/api/students';
 import { format } from 'date-fns';
-
+import { Scanner } from '@alzera/react-scanner';
 interface FastReceptionistModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,8 +47,8 @@ export function FastReceptionistModal({ isOpen, onClose }: FastReceptionistModal
   const [selectedRegistrationId, setSelectedRegistrationId] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
+const queryClient = useQueryClient();
+  const [showScanner, setShowScanner] = useState(false);
   // Search students by serial or mobile
   const { data: searchResults, isLoading: searching } = useQuery({
     queryKey: ['student-search', searchTerm],
@@ -160,15 +160,56 @@ export function FastReceptionistModal({ isOpen, onClose }: FastReceptionistModal
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="search">الرقم التسلسلي أو رقم الموبايل</Label>
-                <Input
-                  ref={searchInputRef}
-                  id="search"
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="ادخل الرقم التسلسلي أو الموبايل..."
-                  className="text-lg"
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={searchInputRef}
+                    id="search"
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const term = searchTerm.trim();
+                        const results = (searchResults as any[]) || [];
+                        const exact = results.find((s: any) => s.serial_number === term || s.mobile_phone === term);
+                        if (exact) {
+                          handleStudentSelect(exact);
+                        } else if (results.length === 1) {
+                          handleStudentSelect(results[0]);
+                        }
+                      }
+                    }}
+                    placeholder="ادخل الرقم التسلسلي أو الموبايل..."
+                    className="text-lg flex-1"
+                  />
+                  <Button type="button" variant={showScanner ? 'secondary' : 'outline'} onClick={() => setShowScanner(v => !v)} className="whitespace-nowrap">
+                    <Scan className="h-4 w-4 ml-2" />
+                    {showScanner ? 'إيقاف الماسح' : 'تشغيل الماسح'}
+                  </Button>
+                </div>
               </div>
+
+              {showScanner && (
+                <div className="rounded-md border p-2 bg-muted/30">
+                  <Scanner 
+                    onScan={(d: string | null) => {
+                      const v = (d || '').trim();
+                      if (!v) return;
+                      setShowScanner(false);
+                      handleSearch(v);
+                      // Try to auto-select if result appears
+                      setTimeout(() => {
+                        const results = (searchResults as any[]) || [];
+                        const exact = results.find((s: any) => s.serial_number === v || s.mobile_phone === v);
+                        if (exact) handleStudentSelect(exact);
+                      }, 400);
+                    }}
+                    decoderOptions={{ formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e'] }}
+                    aspectRatio="4/3"
+                    className="w-full rounded-md overflow-hidden"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">يمكنك أيضاً استخدام قارئ الباركود المتصل كلوحة مفاتيح؛ سيملأ الحقل تلقائياً.</p>
+                </div>
+              )}
 
               {/* Search Results */}
               {searching && (

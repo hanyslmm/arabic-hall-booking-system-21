@@ -108,7 +108,7 @@ export const Navbar = ({
   return (
     <>
       {/* Fixed Burger Menu Button - Always visible in top-right */}
-      <div className="fixed top-4 right-4 z-[60] lg:right-6">
+      <div className="fixed top-4 right-4 z-30 lg:right-6">
         <Button
           variant="default"
           size="sm"
