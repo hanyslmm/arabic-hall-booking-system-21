@@ -21,18 +21,26 @@ export default function LoginPage() {
       
       // If it doesn't contain @, it's likely a username, so we need to find the corresponding email
       if (!username.includes('@')) {
-        // First try to find the user by username in profiles
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('full_name', username)
-          .single();
-        
-        if (!profileError && profileData?.email) {
-          loginEmail = profileData.email;
+        const normalized = username.trim().toLowerCase();
+        // Handle well-known system usernames explicitly
+        if (normalized === 'admin') {
+          loginEmail = 'admin@system.local';
+        } else if (normalized === 'sc_manager' || normalized === 'sc-manager' || normalized === 'scmanager') {
+          loginEmail = 'sc_manager@system.local';
         } else {
-          // If no profile found with username, try the generated email format
-          loginEmail = `${username}@local.app`;
+          // First try to find the user by username in profiles
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('full_name', username)
+            .single();
+          
+          if (!profileError && profileData?.email) {
+            loginEmail = profileData.email;
+          } else {
+            // If no profile found with username, try the generated email format
+            loginEmail = `${username}@local.app`;
+          }
         }
       }
 
