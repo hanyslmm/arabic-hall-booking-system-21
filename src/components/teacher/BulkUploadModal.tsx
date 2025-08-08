@@ -450,7 +450,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
     return mobile.toString().replace(/\D/g, '');
   };
 
-  const getDarsPaymentValue = (row: any): number => {
+  const getDarsPaymentValue = (row: any, darsColumnIndexes?: number[]): number => {
     // Accept any valid numeric payment amount from Dars-related columns; return 0 for blanks/non-numeric
     const parseNumeric = (val: any): number => {
       if (val === undefined || val === null) return 0;
@@ -463,9 +463,20 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
       return isNaN(num) ? 0 : Math.max(0, num);
     };
 
+    // If we have explicit Dars columns detected from headers, only read from those
+    if (Array.isArray(row) && Array.isArray(darsColumnIndexes) && darsColumnIndexes.length > 0) {
+      for (const idx of darsColumnIndexes) {
+        const value = row[idx];
+        const num = parseNumeric(value);
+        if (num > 0) return num;
+      }
+      return 0;
+    }
+
     if (Array.isArray(row)) {
-      // Try columns from index 5 onwards (after name, mobile, home, city)
-      for (let i = 5; i < row.length; i++) {
+      // Fallback (legacy): try to read from columns after the fixed identity columns,
+      // but this is a last resort if we failed to detect headers
+      for (let i = 8; i < row.length; i++) { // typically Dars starts after month/date blocks; skip early metadata columns
         const value = row[i];
         if (value !== undefined && value !== null && value !== '') {
           const num = parseNumeric(value);
@@ -520,6 +531,25 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
           const homeColumn = 3;   // Column D
           const cityColumn = 4;   // Column E
           
+          // Detect Dars columns by scanning the first few header rows
+          const darsHeaderKeywords = ['dars', 'الرسوم', 'رسوم', 'payment', 'paid', 'المدفوع', 'مدفوع', 'fee', 'fees', 'amount', 'المبلغ', 'مبلغ'];
+          const isDarsHeader = (val: any): boolean => {
+            if (val === undefined || val === null) return false;
+            const t = val.toString().trim().toLowerCase();
+            if (!t) return false;
+            return darsHeaderKeywords.some(k => t.includes(k));
+          };
+          let darsColumnIndexes: number[] = [];
+          const headerScanRows = Math.min(5, jsonData.length);
+          for (let r = 0; r < headerScanRows; r++) {
+            const headerRow = jsonData[r] as any[];
+            if (!Array.isArray(headerRow)) continue;
+            headerRow.forEach((cell, idx) => {
+              if (isDarsHeader(cell)) darsColumnIndexes.push(idx);
+            });
+          }
+          darsColumnIndexes = Array.from(new Set(darsColumnIndexes));
+          
           // Find the first row with actual data (skip empty rows)
           let dataStartRow = 1; // Start from row 2 (index 1)
           for (let i = 1; i < jsonData.length; i++) {
@@ -558,13 +588,13 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                 continue; // Skip rows with empty names
               }
               
-                              students.push({
-                  name,
-                  mobile,
-                  home: row[homeColumn] ? row[homeColumn].toString().trim() : undefined,
-                  city: row[cityColumn] ? row[cityColumn].toString().trim() : undefined,
-                  darsPayment: getDarsPaymentValue(row) // Extract payment from "dars" column
-                });
+              students.push({
+                name,
+                mobile,
+                home: row[homeColumn] ? row[homeColumn].toString().trim() : undefined,
+                city: row[cityColumn] ? row[cityColumn].toString().trim() : undefined,
+                darsPayment: getDarsPaymentValue(row, darsColumnIndexes) // Extract payment only from detected Dars columns
+              });
             } catch (rowError) {
               // Log the error but continue processing other rows
               console.warn(`Error processing row ${i + 1} in sheet ${sheetName}:`, rowError);
