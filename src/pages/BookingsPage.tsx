@@ -503,7 +503,7 @@ const BookingsPage = () => {
           emptyIcon={<Users className="h-16 w-16 mx-auto text-muted-foreground" />}
           getRowKey={(booking) => booking.id}
           expandedContent={renderExpandedBookingContent}
-          itemsPerPage={10}
+          itemsPerPage={50}
         />
       </main>
     </div>

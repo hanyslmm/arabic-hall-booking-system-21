@@ -143,7 +143,7 @@ const HallsPage = () => {
         isAdmin={isAdmin}
       />
       
-      <main className="container mx-auto p-4 space-y-6">
+      <main className="container mx-auto p-4 pt-20 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">إدارة القاعات</h1>

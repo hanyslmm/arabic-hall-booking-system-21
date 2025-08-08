@@ -14,11 +14,11 @@ import { EditStudentModal } from "@/components/student/EditStudentModal";
 import { BulkUploadModal } from "@/components/student/BulkUploadModal";
 import { EnhancedBulkUploadModal } from "@/components/student/EnhancedBulkUploadModal";
 import { studentsApi, Student } from "@/api/students";
-import { Plus, Search, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar } from "lucide-react";
+import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
-
+import { Scanner } from '@alzera/react-scanner';
 const StudentsPage = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
@@ -27,6 +27,7 @@ const StudentsPage = () => {
   const [showEnhancedBulkUpload, setShowEnhancedBulkUpload] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
 
   const { data: students = [], isLoading, error } = useQuery({
     queryKey: ["students"],
@@ -276,7 +277,7 @@ const StudentsPage = () => {
         userName={profile?.full_name || profile?.email || undefined}
       />
       
-      <main className="container mx-auto p-4 space-y-6">
+      <main className="container mx-auto p-4 pt-20 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -327,29 +328,59 @@ const StudentsPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
-              <Input
-                placeholder="رقم الهاتف أو الرقم التسلسلي..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleSearch}
-                disabled={searchMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                <Search className="h-4 w-4" />
-                بحث
-              </Button>
-              {searchTerm && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  placeholder="رقم الهاتف أو الرقم التسلسلي..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="flex-1 min-w-[220px]"
+                />
                 <Button
-                  onClick={resetSearch}
+                  onClick={() => setShowScanner((v) => !v)}
                   variant="outline"
+                  className="flex items-center gap-2 shrink-0"
                 >
-                  إلغاء البحث
+                  <Scan className="h-4 w-4" />
+                  مسح
                 </Button>
+                <Button
+                  onClick={handleSearch}
+                  disabled={searchMutation.isPending}
+                  className="flex items-center gap-2 shrink-0"
+                >
+                  <Search className="h-4 w-4" />
+                  بحث
+                </Button>
+                {searchTerm && (
+                  <Button
+                    onClick={resetSearch}
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    إلغاء البحث
+                  </Button>
+                )}
+              </div>
+              {showScanner && (
+                <div className="rounded-md border p-2 bg-muted/30">
+                  <Scanner
+                    onScan={(d: string | null) => {
+                      const v = (d || '').trim();
+                      if (!v) return;
+                      setSearchTerm(v);
+                      setShowScanner(false);
+                      setTimeout(() => handleSearch(), 0);
+                    }}
+                    decoderOptions={{ formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e'] }}
+                    aspectRatio="4/3"
+                    className="w-full rounded-md overflow-hidden"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    يمكن استخدام ماسح الكاميرا أو قارئ الباركود المتصل كلوحة مفاتيح.
+                  </p>
+                </div>
               )}
             </div>
           </CardContent>
