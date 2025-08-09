@@ -64,8 +64,11 @@ export default function UsersPage() {
   }
 
   // Check if user has permission to access users page
-  if (!user || (!isOwner && !isAdmin)) {
+  if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (!isOwner && !isAdmin) {
+    return <Navigate to="/" replace />;
   }
 
   const handleEditUser = (user: UserProfile) => {

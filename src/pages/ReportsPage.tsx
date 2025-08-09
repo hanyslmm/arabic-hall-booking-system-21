@@ -44,8 +44,11 @@ export function ReportsPage() {
     );
   }
 
-  if (!user || !hasAdminAccess) {
+  if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (!hasAdminAccess) {
+    return <Navigate to="/" replace />;
   }
 
   // Fetch dashboard statistics
