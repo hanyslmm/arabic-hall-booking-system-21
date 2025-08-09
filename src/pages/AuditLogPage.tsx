@@ -36,8 +36,11 @@ export function AuditLogPage() {
     );
   }
 
-  if (!user || !hasAdminAccess) {
+  if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (!hasAdminAccess) {
+    return <Navigate to="/" replace />;
   }
 
   // Fetch audit logs with actor names

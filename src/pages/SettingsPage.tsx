@@ -11,14 +11,29 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 
 export function SettingsPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [duration, setDuration] = useState("");
 
+  // Handle auth loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-lg">جاري التحميل...</div>
+        </div>
+      </div>
+    );
+  }
+
   // Check if user is admin
-  if (!user || (profile?.user_role !== 'owner' && profile?.user_role !== 'manager')) {
+  if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (profile?.user_role !== 'owner' && profile?.user_role !== 'manager') {
+    return <Navigate to="/" replace />;
   }
 
   // Fetch settings
