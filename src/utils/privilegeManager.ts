@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type UserRole = 'owner' | 'manager' | 'space_manager' | 'read_only';
+export type UserRole = 'owner' | 'manager' | 'space_manager' | 'read_only' | 'teacher';
 
 export interface UserProfile {
   id: string;
@@ -350,6 +350,9 @@ export const getRoleDisplayName = (userRole: UserRole): string => {
   if (userRole === 'space_manager') {
     return 'مدير المساحة';
   }
+  if (userRole === 'teacher') {
+    return 'معلم';
+  }
   if (userRole === 'read_only') {
     return 'قراءة فقط';
   }
@@ -368,6 +371,10 @@ export const canPerformAdminActions = (userRole: UserRole): boolean => {
  */
 export const isReadOnlyUser = (userRole: UserRole): boolean => {
   return userRole === 'read_only';
+};
+
+export const isTeacher = (userRole: UserRole): boolean => {
+  return userRole === 'teacher';
 };
 
 // Legacy functions for backward compatibility

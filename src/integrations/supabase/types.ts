@@ -737,6 +737,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_booking_fee: {
+        Args: { p_booking_id: string }
+        Returns: undefined
+      }
+      apply_teacher_default_fee: {
+        Args: { p_teacher_id: string; p_fee: number }
+        Returns: undefined
+      }
       authenticate_admin: {
         Args: { p_username: string; p_password: string }
         Returns: {
@@ -802,6 +810,21 @@ export type Database = {
           occupancy_percentage: number
         }[]
       }
+      get_payments_sum: {
+        Args: { start_date: string; end_date: string }
+        Returns: number
+      }
+      get_teacher_statistics: {
+        Args: { p_teacher_id: string }
+        Returns: {
+          total_students: number
+          total_classes: number
+          total_earnings: number
+          monthly_earnings: number
+          pending_payments: number
+          attendance_rate: number
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -821,6 +844,10 @@ export type Database = {
           city: string
           created_at: string
         }[]
+      }
+      set_booking_custom_fee: {
+        Args: { p_booking_id: string; p_fee: number }
+        Returns: undefined
       }
     }
     Enums: {

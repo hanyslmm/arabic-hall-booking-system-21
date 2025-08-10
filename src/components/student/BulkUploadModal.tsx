@@ -219,7 +219,8 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
           days_of_week: [classData.dayOfWeek],
           class_code: classCode,
           class_fees: 0,
-          status: 'active' as const
+          status: 'active' as const,
+          is_custom_fee: false
         });
       }
 
@@ -592,7 +593,15 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
       return allowedKeywords.some((k) => h.includes(k));
     };
 
-    const extractNumber = (value: any): number => parseNumeric(value);
+    const extractNumber = (value: any): number => {
+      if (value === undefined || value === null) return 0;
+      if (typeof value === 'number') return isNaN(value) ? 0 : Math.max(0, value);
+      const cleaned = value.toString().trim();
+      if (cleaned === '') return 0;
+      const normalized = cleaned.replace(/[^0-9.,-]/g, '').replace(/,/g, '.');
+      const num = parseFloat(normalized);
+      return isNaN(num) ? 0 : Math.max(0, num);
+    };
 
     // 1) Check the provided primary column if it looks like a payment column
     if (primaryColumn && row[primaryColumn] !== undefined && isAllowedHeader(primaryColumn)) {

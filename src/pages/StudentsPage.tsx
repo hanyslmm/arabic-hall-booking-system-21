@@ -37,10 +37,10 @@ const StudentsPage = () => {
     queryFn: async () => {
       return await studentsApi.getPaginated({ page, pageSize: PAGE_SIZE, searchTerm: debouncedSearch || undefined });
     },
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
-  const students = data?.data || [];
-  const total = data?.total || 0;
+  const students = (data as any)?.data || [];
+  const total = (data as any)?.total || 0;
 
   const searchMutation = useMutation({
     mutationFn: studentsApi.search,

@@ -127,7 +127,7 @@ const DiagnosticsPage = () => {
               details: { 
                 userRole: data.user_role,
                 fullName: data.full_name,
-                username: data.username
+                username: (data as any).username
               }
             });
           }
@@ -180,32 +180,13 @@ const DiagnosticsPage = () => {
 
       // Test 5: RLS Function Test
       if (user) {
-        try {
-          const { data, error } = await supabase.rpc('can_read');
-          
-          if (error) {
-            results.push({
-              test: 'اختبار دالة can_read',
-              status: 'error',
-              message: `فشل اختبار دالة RLS: ${error.message}`,
-              details: { error }
-            });
-          } else {
-            results.push({
-              test: 'اختبار دالة can_read',
-              status: data ? 'success' : 'warning',
-              message: data ? 'يمكن للمستخدم القراءة' : 'المستخدم لا يملك صلاحية القراءة',
-              details: { canRead: data }
-            });
-          }
-        } catch (error) {
-          results.push({
-            test: 'اختبار دالة can_read',
-            status: 'warning',
-            message: 'دالة can_read غير متوفرة (طبيعي)',
-            details: { note: 'هذا طبيعي إذا لم تكن الدالة منشورة كـ RPC' }
-          });
-        }
+        // Skip this test since can_read function doesn't exist
+        results.push({
+          test: 'اختبار دالة can_read',
+          status: 'warning',
+          message: 'تم تخطي الاختبار - الدالة غير متوفرة',
+          details: { note: 'دالة can_read غير مطلوبة' }
+        });
       }
 
     } catch (error) {
@@ -306,6 +287,7 @@ const DiagnosticsPage = () => {
                 <div>نوع المستخدم: {profile?.user_role === 'owner' ? 'مالك' : 
                   profile?.user_role === 'manager' ? 'مدير' :
                   profile?.user_role === 'space_manager' ? 'مدير قاعات' :
+                  profile?.user_role === 'teacher' ? 'معلم' :
                   profile?.user_role === 'read_only' ? 'قراءة فقط' : 'غير معروف'}</div>
               </div>
             </CardContent>

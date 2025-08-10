@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect } from "react";
 
 interface NavbarProps {
-  userRole?: 'owner' | 'manager' | 'space_manager' | 'read_only';
+  userRole?: 'owner' | 'manager' | 'space_manager' | 'read_only' | 'teacher';
   userName?: string;
   isAdmin?: boolean;
 }
@@ -58,6 +58,8 @@ export const Navbar = ({
         return <Badge variant="secondary" className="text-xs">مدير</Badge>;
       case 'space_manager':
         return <Badge variant="outline" className="text-xs">مدير قاعات</Badge>;
+      case 'teacher':
+        return <Badge variant="secondary" className="text-xs">معلم</Badge>;
       case 'read_only':
         return <Badge variant="outline" className="text-xs">قراءة فقط</Badge>;
       default:

@@ -671,8 +671,6 @@ export default function ClassManagementPage() {
         <BulkUploadModal
           isOpen={isBulkUploadOpen}
           onClose={() => setIsBulkUploadOpen(false)}
-          onUpload={(students) => bulkStudentMutation.mutate(students)}
-          defaultClassFees={booking?.class_fees || 0}
         />
       </div>
     </div>

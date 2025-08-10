@@ -5,7 +5,7 @@ export type UserProfile = {
   email: string | null;
   full_name: string | null;
   phone: string | null;
-  user_role: 'owner' | 'manager' | 'space_manager';
+  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
   created_at: string;
   username?: string | null;
 };
@@ -16,14 +16,14 @@ export type CreateUserData = {
   email?: string;
   full_name?: string;
   phone?: string;
-  user_role: 'owner' | 'manager' | 'space_manager';
+  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
 };
 
 export type UpdateUserData = {
   full_name?: string;
   phone?: string;
   email?: string;
-  user_role?: 'owner' | 'manager' | 'space_manager';
+  user_role?: 'owner' | 'manager' | 'space_manager' | 'teacher';
   password?: string;
 };
 
@@ -103,7 +103,7 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
   return { ...data, phone: userData.phone || null } as UserProfile;
 };
 
-export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager') => {
+export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager' | 'teacher') => {
   const { data, error } = await supabase
     .from("profiles")
     .update({ user_role: newRole })
