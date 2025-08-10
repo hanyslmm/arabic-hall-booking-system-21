@@ -119,6 +119,7 @@ export type Database = {
           end_date: string | null
           hall_id: string
           id: string
+          is_custom_fee: boolean | null
           number_of_students: number
           start_date: string
           start_time: string
@@ -136,6 +137,7 @@ export type Database = {
           end_date?: string | null
           hall_id: string
           id?: string
+          is_custom_fee?: boolean | null
           number_of_students: number
           start_date: string
           start_time: string
@@ -153,6 +155,7 @@ export type Database = {
           end_date?: string | null
           hall_id?: string
           id?: string
+          is_custom_fee?: boolean | null
           number_of_students?: number
           start_date?: string
           start_time?: string
@@ -371,8 +374,10 @@ export type Database = {
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          teacher_id: string | null
           updated_at: string
           user_role: Database["public"]["Enums"]["user_role"] | null
+          username: string | null
         }
         Insert: {
           created_at?: string
@@ -380,8 +385,10 @@ export type Database = {
           full_name?: string | null
           id: string
           role?: Database["public"]["Enums"]["app_role"]
+          teacher_id?: string | null
           updated_at?: string
           user_role?: Database["public"]["Enums"]["user_role"] | null
+          username?: string | null
         }
         Update: {
           created_at?: string
@@ -389,10 +396,20 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          teacher_id?: string | null
           updated_at?: string
           user_role?: Database["public"]["Enums"]["user_role"] | null
+          username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -580,6 +597,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          default_class_fee: number | null
           id: string
           mobile_phone: string | null
           name: string
@@ -590,6 +608,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          default_class_fee?: number | null
           id?: string
           mobile_phone?: string | null
           name: string
@@ -600,6 +619,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          default_class_fee?: number | null
           id?: string
           mobile_phone?: string | null
           name?: string
@@ -806,7 +826,7 @@ export type Database = {
     Enums: {
       app_role: "USER" | "ADMIN"
       booking_status: "active" | "cancelled" | "completed"
-      user_role: "owner" | "manager" | "space_manager"
+      user_role: "owner" | "manager" | "space_manager" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -936,7 +956,7 @@ export const Constants = {
     Enums: {
       app_role: ["USER", "ADMIN"],
       booking_status: ["active", "cancelled", "completed"],
-      user_role: ["owner", "manager", "space_manager"],
+      user_role: ["owner", "manager", "space_manager", "teacher"],
     },
   },
 } as const
