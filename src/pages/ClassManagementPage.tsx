@@ -503,7 +503,7 @@ export default function ClassManagementPage() {
               <Users className="h-5 w-5" />
               إدارة الطلاب
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <Button onClick={() => setIsAttendanceReportOpen(true)} variant="outline">
                 <FileText className="h-4 w-4 ml-2" />
                 تقرير الحضور
