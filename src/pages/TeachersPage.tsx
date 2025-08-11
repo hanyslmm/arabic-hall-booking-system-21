@@ -4,11 +4,12 @@ import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, GraduationCap, Upload, Phone, BookOpen, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, GraduationCap, Upload, Phone, BookOpen, Calendar, UserPlus } from "lucide-react";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { EditTeacherModal } from "@/components/teacher/EditTeacherModal";
 import { TeacherCodeManager } from "@/components/teacher/TeacherCodeManager";
 import { BulkUploadModal } from "@/components/teacher/BulkUploadModal";
+import { TeacherAccountManager } from "@/components/teacher/TeacherAccountManager";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { getTeachers, deleteTeacher, updateTeacher, applyTeacherDefaultFee } from "@/api/teachers";
@@ -41,6 +42,7 @@ const TeachersPage = () => {
   const [confirmDeleteTeacher, setConfirmDeleteTeacher] = useState<Teacher | null>(null);
   const [feeModalTeacher, setFeeModalTeacher] = useState<Teacher | null>(null);
   const [newDefaultFee, setNewDefaultFee] = useState<number>(0);
+  const [showTeacherAccountManager, setShowTeacherAccountManager] = useState(false);
   const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -354,6 +356,10 @@ const TeachersPage = () => {
                     رفع ملف Excel
                   </Button>
                 </BulkUploadModal>
+                <Button variant="outline" onClick={() => setShowTeacherAccountManager(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  إنشاء حساب معلم
+                </Button>
                 <Button onClick={() => setShowAddTeacher(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   إضافة معلم
@@ -389,6 +395,10 @@ const TeachersPage = () => {
               isOpen={showEditTeacher}
               onClose={() => setShowEditTeacher(false)}
               teacher={selectedTeacher}
+            />
+            <TeacherAccountManager
+              isOpen={showTeacherAccountManager}
+              onClose={() => setShowTeacherAccountManager(false)}
             />
           </>
         )}
