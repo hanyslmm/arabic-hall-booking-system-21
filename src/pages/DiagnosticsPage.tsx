@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { 
   CheckCircle, 
   XCircle, 
@@ -231,31 +231,20 @@ const DiagnosticsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-      />
-      
-      <main className="container mx-auto p-4 pt-20 space-y-6">
+    <UnifiedLayout>
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">تشخيص النظام</h1>
-            <p className="text-muted-foreground mt-2">
-              فحص حالة الاتصال والمصادقة والصلاحيات
-            </p>
+            <p className="text-muted-foreground mt-2">أدوات للتحقق من الصحة العامة للنظام</p>
           </div>
-          
-          <Button 
-            onClick={runDiagnostics} 
-            disabled={isRunning}
-            className="flex items-center gap-2"
-          >
+          <Button onClick={runDiagnostics} disabled={isRunning} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${isRunning ? 'animate-spin' : ''}`} />
-            {isRunning ? 'جاري الفحص...' : 'إعادة الفحص'}
+            إعادة التشغيل
           </Button>
         </div>
-
+        
+        {/* Panels remain unchanged below */}
         {/* Current State Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
@@ -361,8 +350,8 @@ const DiagnosticsPage = () => {
             </div>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 

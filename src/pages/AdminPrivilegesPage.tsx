@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { UserPrivilegeManager } from "@/components/admin/UserPrivilegeManager";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +8,8 @@ const AdminPrivilegesPage = () => {
   const { profile, isAdmin } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-        isAdmin={isAdmin}
-      />
-      
-      <main className="container mx-auto p-4 space-y-8">
+    <UnifiedLayout>
+      <div className="space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
             <Shield className="h-8 w-8" />
@@ -26,7 +20,7 @@ const AdminPrivilegesPage = () => {
           </p>
         </div>
         
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl">
           <UserPrivilegeManager />
           
           <Card className="mt-8">
@@ -61,8 +55,8 @@ const AdminPrivilegesPage = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 

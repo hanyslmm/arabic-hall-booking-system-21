@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { Navbar } from "@/components/layout/Navbar";
+// Removed internal Navbar; outer layout provides it
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -44,32 +44,20 @@ const TeacherDashboard = () => {
 
   if (profile?.user_role !== 'teacher') {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-        />
-        <div className="container mx-auto p-4 pt-20">
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-destructive">غير مصرح لك بالوصول لهذه الصفحة</p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="p-4">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-destructive">غير مصرح لك بالوصول لهذه الصفحة</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (statsLoading || bookingsLoading || registrationsLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-        />
-        <div className="container mx-auto p-4 pt-20">
-          <LoadingSpinner />
-        </div>
+      <div className="p-4">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -106,13 +94,7 @@ const TeacherDashboard = () => {
   const paymentRate = totalRegistrations > 0 ? (paidRegistrationsThisMonth / totalRegistrations) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-      />
-      
-      <main className="container mx-auto p-4 pt-20 space-y-6">
+    <div className="p-4 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
@@ -155,9 +137,9 @@ const TeacherDashboard = () => {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify_between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                {isCurrentMonth ? "الأرباح الشهرية" : `أرباح ${getMonthName(selectedMonth)} ${selectedYear}`}
+                {isCurrentMonth ? "الايراد الشهري" : `ايراد ${getMonthName(selectedMonth)} ${selectedYear}`}
               </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -166,17 +148,6 @@ const TeacherDashboard = () => {
               <p className="text-xs text-muted-foreground">
                 {isCurrentMonth ? "هذا الشهر" : "للشهر المحدد"}
               </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الأرباح</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_earnings.toLocaleString()} ج.م</div>
-              <p className="text-xs text-muted-foreground">منذ البداية</p>
             </CardContent>
           </Card>
 
@@ -297,7 +268,6 @@ const TeacherDashboard = () => {
             )}
           </CardContent>
         </Card>
-      </main>
     </div>
   );
 };

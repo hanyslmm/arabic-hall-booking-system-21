@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Navbar } from '@/components/layout/Navbar';
+import { UnifiedLayout } from '@/components/layout/UnifiedLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload, Trash2, Edit, Filter } from 'lucide-react';
 import { bookingsApi } from '@/api/bookings';
@@ -307,19 +307,26 @@ export default function ClassManagementPage() {
   }) || [];
 
   if (isLoadingBooking || isLoadingRegistrations) {
-    return <LoadingSpinner />;
+    return (
+      <UnifiedLayout>
+        <div className="py-8">
+          <div className="text-center">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </UnifiedLayout>
+    );
   }
 
   if (!booking) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto py-8 pt-20">
+      <UnifiedLayout>
+        <div className="py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-destructive">الحجز غير موجود</h1>
           </div>
         </div>
-      </div>
+      </UnifiedLayout>
     );
   }
 
@@ -331,10 +338,8 @@ export default function ClassManagementPage() {
   const totalFees = registrations?.reduce((sum, reg) => sum + (reg.total_fees || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <div className="container mx-auto py-8 pt-20">
+    <UnifiedLayout>
+      <div className="py-8">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" onClick={() => navigate('/bookings')}>
             <ArrowLeft className="h-4 w-4 ml-2" />
@@ -673,6 +678,6 @@ export default function ClassManagementPage() {
           onClose={() => setIsBulkUploadOpen(false)}
         />
       </div>
-    </div>
+    </UnifiedLayout>
   );
 }
