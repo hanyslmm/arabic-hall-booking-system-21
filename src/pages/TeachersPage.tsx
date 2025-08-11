@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -328,47 +328,23 @@ const TeachersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-        isAdmin={isAdmin}
-      />
-      
-      <main className="container mx-auto p-4 pt-20 space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <UnifiedLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">إدارة المعلمين</h1>
-            <p className="text-muted-foreground mt-2">
-              عرض وإدارة المعلمين في النظام
-            </p>
+            <p className="text-muted-foreground mt-2">عرض وإدارة بيانات المعلمين</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              <span className="font-semibold">{teachers?.length || 0} معلم</span>
-            </div>
-            {canManage && (
-              <div className="flex gap-2">
-                <BulkUploadModal>
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    رفع ملف Excel
-                  </Button>
-                </BulkUploadModal>
-                <Button variant="outline" onClick={() => setShowTeacherAccountManager(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  إنشاء حساب معلم
-                </Button>
-                <Button onClick={() => setShowAddTeacher(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  إضافة معلم
-                </Button>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setShowAddTeacher(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              إضافة معلم
+            </Button>
+            <BulkUploadModal />
           </div>
         </div>
 
+        {/* Table and actions remain unchanged */}
         <MobileResponsiveTable
           data={teachers || []}
           columns={teacherColumns}
@@ -464,8 +440,8 @@ const TeachersPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 

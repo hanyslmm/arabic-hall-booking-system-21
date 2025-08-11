@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { queryKeys } from "@/utils/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
 interface Booking {
   id: string;
@@ -259,14 +260,19 @@ const BookingsPage = () => {
     setLoadingTimedOut(false);
   }, [isLoading, isFetching]);
 
+  if (isLoading) {
+    return (
+      <UnifiedLayout>
+        <div className="p-4">
+          <LoadingSpinner />
+        </div>
+      </UnifiedLayout>
+    );
+  }
+
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-          isAdmin={isAdmin}
-        />
+      <UnifiedLayout>
         <div className="container mx-auto py-8 space-y-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-destructive mb-4">خطأ في تحميل البيانات</h1>
@@ -336,7 +342,7 @@ const BookingsPage = () => {
             </Card>
           )}
         </div>
-      </div>
+      </UnifiedLayout>
     );
   }
 
@@ -583,14 +589,8 @@ const BookingsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-        isAdmin={isAdmin}
-      />
-      
-      <main className="container mx-auto p-4 pt-20 space-y-6">
+    <UnifiedLayout>
+      <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-primary">{profile?.user_role === 'teacher' ? 'مراقبة المجموعات' : 'إدارة المجموعات'}</h1>
@@ -686,8 +686,8 @@ const BookingsPage = () => {
             itemsPerPage={50}
           />
         )}
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 

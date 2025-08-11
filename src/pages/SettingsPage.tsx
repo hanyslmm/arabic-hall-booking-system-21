@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -19,12 +19,11 @@ export function SettingsPage() {
   // Handle auth loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <UnifiedLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-lg">جاري التحميل...</div>
         </div>
-      </div>
+      </UnifiedLayout>
     );
   }
 
@@ -105,20 +104,17 @@ export function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <UnifiedLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-lg">جاري التحميل...</div>
         </div>
-      </div>
+      </UnifiedLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+    <UnifiedLayout>
+      <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">إعدادات النظام</h1>
           
           <Card>
@@ -153,8 +149,7 @@ export function SettingsPage() {
               </form>
             </CardContent>
           </Card>
-        </div>
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,76 +216,49 @@ const StudentsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-        />
-        <div className="container mx-auto p-4 pt-20">
+      <UnifiedLayout>
+        <div className="p-4">
           <LoadingSpinner />
         </div>
-      </div>
+      </UnifiedLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar 
-          userRole={profile?.user_role} 
-          userName={profile?.full_name || profile?.email || undefined}
-        />
-        <div className="container mx-auto p-4 pt-20">
+      <UnifiedLayout>
+        <div className="p-4">
           <Card>
             <CardContent className="p-6">
               <p className="text-destructive">خطأ في تحميل بيانات الطلاب</p>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </UnifiedLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-      />
-      
-      <main className="container mx-auto p-4 pt-20 space-y-6">
+    <UnifiedLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-              <Users className="h-8 w-8" />
+              <Users className="w-8 h-8" />
               إدارة الطلاب
             </h1>
             <p className="text-muted-foreground mt-2">
-              إدارة معلومات الطلاب والتسجيلات
+              إدارة بيانات الطلاب وعرض المعلومات التفصيلية
             </p>
           </div>
-          
-          {canManageStudents && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button
-                onClick={() => setShowBulkUpload(true)}
-                variant="default"
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                رفع جداول المعلمين
-              </Button>
-              
-              <Button
-                onClick={() => setShowAddStudent(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                إضافة طالب جديد
-              </Button>
-            </div>
-          )}
+          <div className="flex gap-2">
+            <Button onClick={() => setShowAddStudent(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              إضافة طالب
+            </Button>
+            <BulkUploadModal />
+          </div>
         </div>
 
         {/* Search */}
@@ -420,8 +393,8 @@ const StudentsPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 

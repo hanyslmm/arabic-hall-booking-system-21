@@ -4,7 +4,7 @@ import { BookingForm } from "@/components/booking/BookingForm";
 import { AddTeacherModal } from "@/components/teacher/AddTeacherModal";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 
 const BookingPage = () => {
@@ -12,13 +12,8 @@ const BookingPage = () => {
   const { profile } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-      />
-      
-      <main className="container mx-auto p-4 space-y-6">
+    <UnifiedLayout>
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">حجز قاعة جديد</h1>
@@ -42,8 +37,8 @@ const BookingPage = () => {
           isOpen={showAddTeacher}
           onClose={() => setShowAddTeacher(false)}
         />
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 

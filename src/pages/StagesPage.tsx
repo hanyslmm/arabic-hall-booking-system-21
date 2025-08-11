@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/layout/Navbar";
+import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,14 +67,8 @@ const StagesPage = () => {
   const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        userRole={profile?.user_role} 
-        userName={profile?.full_name || profile?.email || undefined}
-        isAdmin={isAdmin}
-      />
-      
-      <main className="container mx-auto p-4 space-y-6">
+    <UnifiedLayout>
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary">المراحل الدراسية</h1>
@@ -172,8 +166,8 @@ const StagesPage = () => {
             onClose={() => setShowAddStage(false)}
           />
         )}
-      </main>
-    </div>
+      </div>
+    </UnifiedLayout>
   );
 };
 
