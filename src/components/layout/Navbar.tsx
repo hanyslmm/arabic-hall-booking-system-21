@@ -69,7 +69,9 @@ export const Navbar = ({
 
   const canManageBookings = userRole === 'owner' || userRole === 'manager';
   const isOwnerOrAdmin = userRole === 'owner' || userRole === 'manager';
+  const isResourceManager = isOwnerOrAdmin || userRole === 'space_manager';
 
+  // Build navigation based on role to avoid exposing admin features to teachers
   const navigation = [
     {
       title: "الإحصائيات",
@@ -81,7 +83,12 @@ export const Navbar = ({
       title: "إدارة الحجوزات",
       items: [
         { title: "جميع الحجوزات", url: "/bookings", icon: Calendar, description: "عرض وإدارة الحجوزات" },
-        { title: "حجز جديد", url: "/booking", icon: Calendar, description: "إنشاء حجز جديد" },
+        // إنشاء حجز جديد للمسؤولين فقط
+        ...(
+          isOwnerOrAdmin
+            ? [{ title: "حجز جديد", url: "/booking", icon: Calendar, description: "إنشاء حجز جديد" }]
+            : []
+        ),
       ],
     },
     {
@@ -89,34 +96,48 @@ export const Navbar = ({
       items: [
         { title: "الطلاب", url: "/students", icon: Users, description: "إدارة بيانات الطلاب" },
         { title: "تسجيل الطلاب", url: "/student-registrations", icon: Users, description: "تسجيل الطلاب الجدد" },
-        { title: "إدارة المجموعة", url: "/bookings", icon: GraduationCap, description: "إدارة الحضور والدفعات" },
       ],
     },
-    {
-      title: "إدارة الموارد",
-      items: [
-        { title: "القاعات", url: "/halls", icon: Building2, description: "إدارة القاعات والمساحات" },
-        { title: "المعلمين", url: "/teachers", icon: GraduationCap, description: "إدارة بيانات المعلمين" },
-        { title: "المواد الدراسية", url: "/subjects", icon: BookOpen, description: "إدارة المواد الدراسية" },
-        { title: "المراحل التعليمية", url: "/stages", icon: GraduationCap, description: "إدارة المراحل الدراسية" },
-      ],
-    },
-    {
-      title: "التقارير المالية",
-      items: [
-        { title: "التقارير", url: "/reports", icon: BookOpen, description: "عرض التقارير المالية" },
-        { title: "تقارير المجموعات", url: "/class-financial-reports", icon: BookOpen, description: "التقارير المالية للمجموعات" },
-      ],
-    },
-    {
-      title: "إدارة النظام",
-      items: [
-        { title: "المستخدمين", url: "/users", icon: Users, description: "إدارة المستخدمين والأذونات" },
-        { title: "سجل التدقيق", url: "/audit-logs", icon: Shield, description: "عرض سجل أنشطة المستخدمين" },
-        { title: "صلاحيات المدراء", url: "/admin-privileges", icon: Settings, description: "إدارة صلاحيات المدراء" },
-        { title: "الإعدادات", url: "/settings", icon: Settings, description: "إعدادات النظام العامة" },
-      ],
-    },
+    // إدارة الموارد (القاعات/المعلمين/المواد/المراحل) للمسؤولين ومدير القاعات فقط
+    ...(
+      isResourceManager
+        ? [{
+            title: "إدارة الموارد",
+            items: [
+              { title: "القاعات", url: "/halls", icon: Building2, description: "إدارة القاعات والمساحات" },
+              { title: "المعلمين", url: "/teachers", icon: GraduationCap, description: "إدارة بيانات المعلمين" },
+              { title: "المواد الدراسية", url: "/subjects", icon: BookOpen, description: "إدارة المواد الدراسية" },
+              { title: "المراحل التعليمية", url: "/stages", icon: GraduationCap, description: "إدارة المراحل الدراسية" },
+            ],
+          }]
+        : []
+    ),
+    // التقارير المالية للمسؤولين فقط
+    ...(
+      isOwnerOrAdmin
+        ? [{
+            title: "التقارير المالية",
+            items: [
+              { title: "التقارير", url: "/reports", icon: BookOpen, description: "عرض التقارير المالية" },
+              { title: "تقارير المجموعات", url: "/class-financial-reports", icon: BookOpen, description: "التقارير المالية للمجموعات" },
+            ],
+          }]
+        : []
+    ),
+    // إدارة النظام (المستخدمين/السجل/الصلاحيات/الإعدادات) للمسؤولين فقط
+    ...(
+      isOwnerOrAdmin
+        ? [{
+            title: "إدارة النظام",
+            items: [
+              { title: "المستخدمين", url: "/users", icon: Users, description: "إدارة المستخدمين والأذونات" },
+              { title: "سجل التدقيق", url: "/audit-logs", icon: Shield, description: "عرض سجل أنشطة المستخدمين" },
+              { title: "صلاحيات المدراء", url: "/admin-privileges", icon: Settings, description: "إدارة صلاحيات المدراء" },
+              { title: "الإعدادات", url: "/settings", icon: Settings, description: "إعدادات النظام العامة" },
+            ],
+          }]
+        : []
+    ),
   ];
 
   return (
