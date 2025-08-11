@@ -55,8 +55,8 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const { userId, password, user_role, full_name, email, phone } = await req.json();
+// Parse request body
+const { userId, password, user_role, full_name, email, phone, teacher_id } = await req.json();
 
     if (!userId) {
       return new Response(
@@ -65,16 +65,16 @@ serve(async (req) => {
       );
     }
 
-    // Validate user_role if provided
-    if (user_role) {
-      const validRoles = ['owner', 'manager', 'space_manager', 'read_only'];
-      if (!validRoles.includes(user_role)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid user_role. Must be one of: owner, manager, space_manager, read_only' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
+// Validate user_role if provided
+if (user_role) {
+  const validRoles = ['owner', 'manager', 'space_manager', 'read_only', 'teacher'];
+  if (!validRoles.includes(user_role)) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid user_role. Must be one of: owner, manager, space_manager, read_only, teacher' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
 
     // Update user using admin client (for password and email changes)
     const updateData: any = {};
@@ -104,10 +104,11 @@ serve(async (req) => {
 
     // Update the user's profile with all provided fields
     const profileUpdateData: any = {};
-    if (user_role !== undefined) profileUpdateData.user_role = user_role;
-    if (full_name !== undefined) profileUpdateData.full_name = full_name;
-    if (email !== undefined) profileUpdateData.email = email;
-    if (phone !== undefined) profileUpdateData.phone = phone;
+if (user_role !== undefined) profileUpdateData.user_role = user_role;
+if (full_name !== undefined) profileUpdateData.full_name = full_name;
+if (email !== undefined) profileUpdateData.email = email;
+if (phone !== undefined) profileUpdateData.phone = phone;
+if (teacher_id !== undefined) profileUpdateData.teacher_id = (user_role === 'teacher') ? teacher_id : null;
 
     if (Object.keys(profileUpdateData).length > 0) {
       const { error: profileUpdateError } = await supabaseClient

@@ -55,8 +55,8 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const { username, password, user_role, full_name, email, phone } = await req.json();
+// Parse request body
+const { username, password, user_role, full_name, email, phone, teacher_id } = await req.json();
 
     if (!username || !password || !user_role) {
       return new Response(
@@ -65,14 +65,14 @@ serve(async (req) => {
       );
     }
 
-    // Validate user_role
-    const validRoles = ['owner', 'manager', 'space_manager', 'read_only'];
-    if (!validRoles.includes(user_role)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid user_role. Must be one of: owner, manager, space_manager, read_only' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+// Validate user_role
+const validRoles = ['owner', 'manager', 'space_manager', 'read_only', 'teacher'];
+if (!validRoles.includes(user_role)) {
+  return new Response(
+    JSON.stringify({ error: 'Invalid user_role. Must be one of: owner, manager, space_manager, read_only, teacher' }),
+    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
 
     // Use provided email or generate one based on username
     const userEmail = email || `${username}@local.app`;
@@ -99,30 +99,32 @@ serve(async (req) => {
 
     // Update the user's profile with the specified user_role and additional info
     if (newUser.user) {
-      const { error: profileUpdateError } = await supabaseClient
-        .from('profiles')
-        .update({ 
-          user_role: user_role,
-          full_name: full_name || username,
-          email: userEmail,
-          phone: phone || null,
-          username: username
-        })
-        .eq('id', newUser.user.id);
+const { error: profileUpdateError } = await supabaseClient
+  .from('profiles')
+  .update({ 
+    user_role: user_role,
+    full_name: full_name || username,
+    email: userEmail,
+    phone: phone || null,
+    username: username,
+    teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
+  })
+  .eq('id', newUser.user.id);
 
       if (profileUpdateError) {
         console.error('Error updating profile:', profileUpdateError);
         // Try to insert if update failed (profile might not exist)
         const { error: insertError } = await supabaseClient
           .from('profiles')
-          .insert({
-            id: newUser.user.id,
-            user_role: user_role,
-            full_name: full_name || username,
-            email: userEmail,
-            phone: phone || null,
-            username: username
-          });
+.insert({
+  id: newUser.user.id,
+  user_role: user_role,
+  full_name: full_name || username,
+  email: userEmail,
+  phone: phone || null,
+  username: username,
+  teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
+});
         
         if (insertError) {
           console.error('Error inserting profile:', insertError);

@@ -121,18 +121,22 @@ export const Navbar = ({
 
   return (
     <>
-      {/* Fixed Burger Menu Button - visible only on small screens */}
-      <div className="fixed top-4 right-4 z-30 lg:right-6 lg:hidden">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={openSidebar}
-          className="h-10 w-10 p-0 rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-200 hover:scale-105 burger-menu-enter"
-        >
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">فتح القائمة</span>
-        </Button>
-      </div>
+{/* Fixed Burger Menu Button - visible only on small screens */}
+<div className="fixed top-4 right-4 z-30 lg:right-6 lg:hidden">
+  <Button
+    variant="default"
+    size="sm"
+    onClick={openSidebar}
+    className="h-10 w-10 p-0 rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-200 hover:scale-105 burger-menu-enter"
+  >
+    <Menu className="h-5 w-5" />
+    <span className="sr-only">فتح القائمة</span>
+  </Button>
+</div>
+{/* Fixed Brand on mobile to avoid overlap with burger */}
+<div className="fixed top-4 left-4 z-30 lg:hidden">
+  <div className="px-3 py-1 rounded-lg bg-primary/10 text-primary font-bold text-base">Science Club</div>
+</div>
 
       {/* Mobile backdrop with improved touch handling */}
       {sidebarOpen && (
@@ -270,9 +274,9 @@ export const Navbar = ({
       {/* Top Navigation Bar - More minimal */}
       <nav className="border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-4 space-x-reverse">
-            <h1 className="text-lg sm:text-xl font-bold text-primary">Science Club</h1>
-          </div>
+<div className="flex items-center space-x-4 space-x-reverse">
+  <h1 className="hidden lg:block text-lg sm:text-xl font-bold text-primary">Science Club</h1>
+</div>
           <div className="w-16 lg:w-0"></div> {/* Spacer for fixed burger menu on mobile */}
         </div>
       </nav>

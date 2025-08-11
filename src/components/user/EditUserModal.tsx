@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,10 @@ const editUserSchema = z.object({
   user_role: z.enum(["owner", "manager", "space_manager", "teacher"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),
+  teacher_id: z.string().optional()
+}).refine((data) => data.user_role !== 'teacher' || !!data.teacher_id, {
+  message: 'يرجى اختيار المعلم لهذا الحساب',
+  path: ['teacher_id']
 });
 
 type EditUserFormData = z.infer<typeof editUserSchema>;
@@ -40,13 +44,14 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
 
   const form = useForm<EditUserFormData>({
     resolver: zodResolver(editUserSchema),
-    defaultValues: { 
-      full_name: user?.full_name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      password: "", 
-      user_role: user?.user_role || "space_manager"
-    },
+defaultValues: { 
+  full_name: user?.full_name || "",
+  email: user?.email || "",
+  phone: user?.phone || "",
+  password: "", 
+  user_role: user?.user_role || "space_manager",
+  teacher_id: (user as any)?.teacher_id || ""
+},
   });
 
   // Update form when user changes
@@ -56,23 +61,38 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
         full_name: user.full_name || "",
         email: user.email || "",
         phone: user.phone || "",
-        password: "",
-        user_role: user.user_role || "space_manager"
+password: "",
+user_role: user.user_role || "space_manager",
+teacher_id: (user as any).teacher_id || ""
       });
     }
-  }, [user, form]);
+}, [user, form]);
+
+// Load teachers for selection
+const { data: teachers = [] } = useQuery({
+  queryKey: ['edit-modal-teachers'],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from('teachers')
+      .select('id, name, teacher_code')
+      .order('name');
+    if (error) throw error;
+    return data;
+  }
+});
 
   const updateUserMutation = useMutation({
     mutationFn: async (data: EditUserFormData) => {
       if (!user) throw new Error('No user selected');
 
-      const updateData: any = {
-        userId: user.id,
-        user_role: data.user_role,
-        full_name: data.full_name || undefined,
-        email: data.email || undefined,
-        phone: data.phone || undefined,
-      };
+const updateData: any = {
+  userId: user.id,
+  user_role: data.user_role,
+  full_name: data.full_name || undefined,
+  email: data.email || undefined,
+  phone: data.phone || undefined,
+  teacher_id: data.user_role === 'teacher' ? data.teacher_id : null,
+};
 
       if (data.password && data.password.trim() !== "") {
         updateData.password = data.password;
@@ -235,11 +255,12 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
                   <SelectTrigger id="user_role" className="h-11">
                     <SelectValue placeholder="اختر الدور" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="space_manager">مدير قاعات</SelectItem>
-                    <SelectItem value="manager">مدير</SelectItem>
-                    <SelectItem value="owner">مالك</SelectItem>
-                  </SelectContent>
+<SelectContent>
+  <SelectItem value="space_manager">مدير قاعات</SelectItem>
+  <SelectItem value="manager">مدير</SelectItem>
+  <SelectItem value="owner">مالك</SelectItem>
+  <SelectItem value="teacher">معلم</SelectItem>
+</SelectContent>
                 </Select>
                 {form.formState.errors.user_role && (
                   <p className="text-sm text-destructive">{form.formState.errors.user_role.message}</p>
@@ -266,9 +287,27 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
                 </p>
               </div>
             </div>
-          </div>
+</div>
 
-          <Separator />
+{/* Teacher mapping */}
+{form.watch('user_role') === 'teacher' && (
+  <div className="space-y-2">
+    <Label htmlFor="teacher_id" className="flex items-center gap-2">
+      <User className="w-4 h-4" />
+      اختر المعلم (بالاسم/الكود)
+    </Label>
+    <Select value={form.watch('teacher_id') || ''} onValueChange={(val) => form.setValue('teacher_id', val)}>
+      <SelectTrigger id="teacher_id" className="h-11">
+        <SelectValue placeholder="اختر المعلم" />
+      </SelectTrigger>
+      <SelectContent>
+        {(teachers as any[]).map((t: any) => (
+          <SelectItem key={t.id} value={t.id}>{t.name} {t.teacher_code ? `(${t.teacher_code})` : ''}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">

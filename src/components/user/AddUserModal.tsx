@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,13 @@ const userSchema = z.object({
   full_name: z.string().optional(),
   email: z.string().email("يرجى إدخال بريد إلكتروني صحيح").optional().or(z.literal("")),
   phone: z.string().optional(),
-  user_role: z.enum(["owner", "manager", "space_manager"], {
+  user_role: z.enum(["owner", "manager", "space_manager", "teacher"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),
+  teacher_id: z.string().optional()
+}).refine((data) => data.user_role !== 'teacher' || !!data.teacher_id, {
+  message: 'يرجى اختيار المعلم لهذا الحساب',
+  path: ['teacher_id']
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -36,36 +40,50 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: { 
+defaultValues: { 
       username: "", 
       password: "", 
       full_name: "",
       email: "",
       phone: "",
-      user_role: undefined 
+      user_role: undefined,
+      teacher_id: ""
     },
   });
 
-  const addUserMutation = useMutation({
-    mutationFn: async (data: UserFormData) => {
-      // Call the Edge Function to create user
-      const response = await supabase.functions.invoke('create-user', {
-        body: {
-          username: data.username,
-          password: data.password,
-          full_name: data.full_name || undefined,
-          email: data.email || undefined,
-          phone: data.phone || undefined,
-          role: data.user_role,
-        },
-      });
+  const { data: teachers = [] } = useQuery({
+    queryKey: ['modal-teachers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('teachers')
+        .select('id, name, teacher_code')
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to create user');
-      }
+const addUserMutation = useMutation({
+  mutationFn: async (data: UserFormData) => {
+    // Call the Edge Function to create user
+    const response = await supabase.functions.invoke('create-user', {
+body: {
+  username: data.username,
+  password: data.password,
+  full_name: data.full_name || undefined,
+  email: data.email || undefined,
+  phone: data.phone || undefined,
+  user_role: data.user_role,
+  teacher_id: data.user_role === 'teacher' ? data.teacher_id : undefined,
+},
+    });
 
-      return response.data;
-    },
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to create user');
+    }
+
+    return response.data;
+  },
     onSuccess: () => {
       toast({
         title: "تم إضافة المستخدم بنجاح",
@@ -157,17 +175,41 @@ export const AddUserModal = ({ isOpen, onClose }: AddUserModalProps) => {
                 <SelectTrigger id="user_role" className="h-11">
                   <SelectValue placeholder="اختر الدور" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="space_manager">مدير قاعات</SelectItem>
-                  <SelectItem value="manager">مدير</SelectItem>
-                  <SelectItem value="owner">مالك</SelectItem>
-                </SelectContent>
+<SelectContent>
+  <SelectItem value="space_manager">مدير قاعات</SelectItem>
+  <SelectItem value="manager">مدير</SelectItem>
+  <SelectItem value="owner">مالك</SelectItem>
+  <SelectItem value="teacher">معلم</SelectItem>
+</SelectContent>
               </Select>
               {form.formState.errors.user_role && (
                 <p className="text-sm text-destructive">{form.formState.errors.user_role.message}</p>
               )}
-            </div>
-          </div>
+</div>
+
+{form.watch("user_role") === 'teacher' && (
+  <div className="space-y-2">
+    <Label htmlFor="teacher_id" className="flex items-center gap-2">
+      <User className="w-4 h-4" />
+      اختر المعلم (بالاسم/الكود)
+    </Label>
+    <Select value={form.watch('teacher_id') || ''} onValueChange={val => form.setValue('teacher_id', val)}>
+      <SelectTrigger id="teacher_id" className="h-11">
+        <SelectValue placeholder="اختر المعلم" />
+      </SelectTrigger>
+      <SelectContent>
+        {teachers.map((t: any) => (
+          <SelectItem key={t.id} value={t.id}>{t.name} {t.teacher_code ? `(${t.teacher_code})` : ''}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {form.formState.errors.teacher_id && (
+      <p className="text-sm text-destructive">{form.formState.errors.teacher_id.message as string}</p>
+    )}
+  </div>
+)}
+
+</div>
 
           <Separator />
 

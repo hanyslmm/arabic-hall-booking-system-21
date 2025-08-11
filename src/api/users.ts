@@ -5,9 +5,10 @@ export type UserProfile = {
   email: string | null;
   full_name: string | null;
   phone: string | null;
-  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
-  created_at: string;
-  username?: string | null;
+user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
+created_at: string;
+username?: string | null;
+teacher_id?: string | null;
 };
 
 export type CreateUserData = {
@@ -33,11 +34,11 @@ export const getUsers = async (): Promise<UserProfile[]> => {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  // Map profiles to UserProfile type - profiles table doesn't have phone field
-  return data.map(profile => ({
-    ...profile,
-    phone: null // Profiles table doesn't have phone field
-  })) as UserProfile[];
+// Map profiles to UserProfile type - profiles table doesn't have phone field
+return data.map((profile: any) => ({
+  ...profile,
+  phone: null
+})) as UserProfile[];
 };
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
@@ -94,7 +95,8 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
       full_name: userData.full_name,
       phone: userData.phone,
       email: userData.email,
-      user_role: userData.user_role,
+user_role: userData.user_role,
+teacher_id: (userData as any).teacher_id,
     })
     .eq("id", userId)
     .select()
