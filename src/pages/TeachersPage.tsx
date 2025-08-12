@@ -340,7 +340,12 @@ const TeachersPage = () => {
               <UserPlus className="h-4 w-4" />
               إضافة معلم
             </Button>
-            <BulkUploadModal />
+            <BulkUploadModal>
+              <Button variant="outline" className="gap-2">
+                <Upload className="h-4 w-4" />
+                استيراد CSV
+              </Button>
+            </BulkUploadModal>
           </div>
         </div>
 

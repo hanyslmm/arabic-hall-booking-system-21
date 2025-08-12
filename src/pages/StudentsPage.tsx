@@ -271,7 +271,10 @@ const StudentsPage = () => {
               <Plus className="h-4 w-4" />
               إضافة طالب
             </Button>
-            <BulkUploadModal />
+            <Button onClick={() => setShowBulkUpload(true)} variant="outline" className="gap-2">
+              <Upload className="h-4 w-4" />
+              رفع CSV
+            </Button>
           </div>
         </div>
 

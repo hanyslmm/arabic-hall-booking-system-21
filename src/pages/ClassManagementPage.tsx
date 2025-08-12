@@ -21,7 +21,7 @@ import { studentsApi } from '@/api/students';
 import { BulkUploadModal } from '@/components/student/BulkUploadModal';
 import { format } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-import { studentRegistrationsApi } from '@/api/students';
+// removed duplicate import of studentRegistrationsApi
 
 interface AttendanceRecord {
   student_registration_id: string;

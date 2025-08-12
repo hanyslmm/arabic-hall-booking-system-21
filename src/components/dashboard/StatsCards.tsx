@@ -23,7 +23,7 @@ const StatsCards = () => {
   const teachers = results[1].data || [];
   const bookings = results[2].data || [];
 
-  const totalRevenue = bookings.reduce((acc, booking) => acc + (booking.custom_fee ?? 0), 0);
+  const totalRevenue = bookings.reduce((acc, booking) => acc + Number((booking as any).class_fees || 0), 0);
   
   const today = new Date().toISOString().split('T')[0];
   const todaysBookings = bookings.filter(b => (b as any).start_time?.startsWith?.(today) || (b as any).start_date === today).length;

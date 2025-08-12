@@ -24,7 +24,7 @@ const TeacherDashboard = () => {
   // Get teacher statistics
   const { data: statistics, isLoading: statsLoading } = useQuery({
     queryKey: ['teacher-statistics', profile?.teacher_id, selectedMonth, selectedYear],
-    queryFn: () => teacherAuthApi.getStatistics(profile?.teacher_id!, selectedMonth, selectedYear),
+    queryFn: () => teacherAuthApi.getStatistics(profile?.teacher_id!),
     enabled: !!profile?.teacher_id && profile?.user_role === 'teacher'
   });
 

@@ -203,20 +203,7 @@ const queryClient = useQueryClient();
     setSearchTerm('');
   };
 
-  const handlePayment = () => {
-    if (!selectedRegistrationId || !paymentAmount) {
-      toast({ title: 'يرجى اختيار التسجيل وإدخال المبلغ', variant: 'destructive' });
-      return;
-    }
-
-    const amount = parseFloat(paymentAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast({ title: 'يرجى إدخال مبلغ صحيح', variant: 'destructive' });
-      return;
-    }
-
-    paymentMutation.mutate({ registrationId: selectedRegistrationId, amount });
-  };
+  // Removed quick payment handler (unused); payments are handled per registration via checkboxes above
 
   const formatTime = (timeStr: string) => {
     return format(new Date(`2000-01-01T${timeStr}`), 'h:mm a');

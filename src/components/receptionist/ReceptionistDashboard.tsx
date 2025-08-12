@@ -308,7 +308,7 @@ export function ReceptionistDashboard() {
       <FastReceptionistModal 
         isOpen={showFastModal} 
         onClose={() => setShowFastModal(false)} 
-        studentId={fastModalStudentId}
+        initialStudentId={fastModalStudentId}
       />
     </div>
   );

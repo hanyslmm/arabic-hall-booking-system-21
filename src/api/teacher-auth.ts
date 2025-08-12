@@ -23,39 +23,20 @@ export interface TeacherProfile {
 }
 
 export const teacherAuthApi = {
-  // Get teacher statistics with optional month/year parameters
-  getStatistics: async (teacherId: string, month?: number, year?: number): Promise<TeacherStatistics> => {
-    const { data, error } = await supabase.rpc('get_teacher_statistics_by_month', {
-      p_teacher_id: teacherId,
-      p_month: month || new Date().getMonth() + 1,
-      p_year: year || new Date().getFullYear()
+  // Get teacher statistics
+  getStatistics: async (teacherId: string): Promise<TeacherStatistics> => {
+    const { data, error } = await supabase.rpc('get_teacher_statistics', {
+      p_teacher_id: teacherId
     });
-    
-    if (error) {
-      // Fallback to original function if new one doesn't exist yet
-      console.warn('New function not available, using fallback:', error);
-      const { data: fallbackData, error: fallbackError } = await supabase.rpc('get_teacher_statistics', {
-        p_teacher_id: teacherId
-      });
-      if (fallbackError) throw fallbackError;
-      const fallbackResult = fallbackData[0];
-      return {
-        total_students: Number(fallbackResult?.total_students || 0),
-        total_classes: Number(fallbackResult?.total_classes || 0),
-        total_earnings: Number(fallbackResult?.total_earnings || 0),
-        monthly_earnings: Number(fallbackResult?.monthly_earnings || 0),
-        pending_payments: Number(fallbackResult?.pending_payments || 0),
-        attendance_rate: Number(fallbackResult?.attendance_rate || 85)
-      };
-    }
-    
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
     return {
-      total_students: Number(data[0]?.total_students || 0),
-      total_classes: Number(data[0]?.total_classes || 0),
-      total_earnings: Number(data[0]?.total_earnings || 0),
-      monthly_earnings: Number(data[0]?.monthly_earnings || 0),
-      pending_payments: Number(data[0]?.pending_payments || 0),
-      attendance_rate: Number(data[0]?.attendance_rate || 85)
+      total_students: Number(row?.total_students || 0),
+      total_classes: Number(row?.total_classes || 0),
+      total_earnings: Number(row?.total_earnings || 0),
+      monthly_earnings: Number(row?.monthly_earnings || 0),
+      pending_payments: Number(row?.pending_payments || 0),
+      attendance_rate: Number(row?.attendance_rate || 85)
     };
   },
 
