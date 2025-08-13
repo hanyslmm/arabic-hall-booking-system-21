@@ -760,6 +760,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_user_admin_status: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       copy_default_categories_for_user: {
         Args: { target_user_id: string }
         Returns: undefined
