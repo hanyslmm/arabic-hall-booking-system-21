@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,7 @@ import DiagnosticsPage from "./pages/DiagnosticsPage";
 import { ReceptionistDashboard } from "./components/receptionist/ReceptionistDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import { AdminDashboard } from "./components/dashboard/AdminDashboard";
+import { AdminLayout } from "./components/layout/AdminLayout";
 import { ReactNode, Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -158,15 +159,24 @@ const App = () => {
               <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
               <Route path="/audit-logs" element={<ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
               <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
-                         <Route path="/style-showcase" element={<ProtectedRoute><UnifiedLayout><StyleShowcase /></UnifiedLayout></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+              <Route path="/style-showcase" element={<ProtectedRoute><UnifiedLayout><StyleShowcase /></UnifiedLayout></ProtectedRoute>} />
+
+              {/* Admin Routes */}
+              {role === 'admin' && (
+                <Route path="/admin" element={<ProtectedRoute><AdminLayout><Outlet /></AdminLayout></ProtectedRoute>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="privileges" element={<AdminPrivilegesPage />} />
+                </Route>
+              )}
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
 }
 
 export default App;
