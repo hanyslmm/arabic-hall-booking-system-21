@@ -45,7 +45,7 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
     },
     ...(
       // Show resource management for admins, owners, and space managers (but not teachers)
-      (isOwnerOrAdmin || userRole === 'space_manager' || userRole === 'read_only') && !isTeacher
+      (isOwnerOrAdmin || userRole === 'space_manager') && !isTeacher
         ? [{
             title: "إدارة الموارد",
             items: [
@@ -97,8 +97,6 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
     appSubtitle = "لوحة المعلم";
   } else if (userRole === 'space_manager') {
     appSubtitle = "لوحة مدير القاعات";
-  } else if (userRole === 'read_only') {
-    appSubtitle = "لوحة المشاهدة";
   }
 
   return (

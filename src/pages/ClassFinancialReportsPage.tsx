@@ -128,7 +128,10 @@ export default function ClassFinancialReportsPage() {
             <CardTitle>مقارنة الإيرادات حسب الصف</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer>
+            <ChartContainer config={{
+              paid: { label: 'المدفوع', color: '#22c55e' },
+              remaining: { label: 'المتبقي', color: '#f59e0b' },
+            }}>
               <BarChart width={800} height={300} data={barData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" hide />
