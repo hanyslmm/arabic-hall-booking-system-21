@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               detail: {
                 title: "Admin Access Restored",
                 description: "Your admin privileges have been automatically restored.",
-                variant: "success"
+                variant: "default"
               }
             });
             window.dispatchEvent(event);

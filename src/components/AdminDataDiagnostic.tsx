@@ -12,7 +12,7 @@ import {
   XCircle, 
   AlertTriangle, 
   RefreshCw, 
-  Database, 
+  Database as DatabaseIcon, 
   Shield, 
   Users, 
   Settings,
@@ -20,6 +20,7 @@ import {
   EyeOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { Database as SupabaseDatabase } from "@/integrations/supabase/types";
 
 interface DiagnosticResult {
   name: string;
@@ -114,7 +115,7 @@ export const AdminDataDiagnostic = () => {
       // Test 4: Admin permissions
       if (session?.user) {
         // Try the new function first, then fall back to the legacy one
-        let adminCheckFunctionUsed = 'check_user_admin_status';
+        let adminCheckFunctionUsed: 'check_user_admin_status' | 'check_is_admin' = 'check_user_admin_status';
         let adminResult: boolean | null = null;
         let primaryError: any = null;
         let fallbackError: any = null;
@@ -122,8 +123,8 @@ export const AdminDataDiagnostic = () => {
         const { data: adminTestV2, error: adminErrorV2 } = await supabase.rpc('check_user_admin_status');
         if (adminErrorV2) {
           primaryError = adminErrorV2;
-          adminCheckFunctionUsed = 'is_admin_user';
-          const { data: adminTestLegacy, error: adminErrorLegacy } = await supabase.rpc('is_admin_user');
+          adminCheckFunctionUsed = 'check_is_admin';
+          const { data: adminTestLegacy, error: adminErrorLegacy } = await supabase.rpc('check_is_admin');
           if (adminErrorLegacy) {
             fallbackError = adminErrorLegacy;
           } else {
@@ -151,7 +152,16 @@ export const AdminDataDiagnostic = () => {
       }
 
       // Test 5: Data access tests (expanded to cover critical tables)
-      const tables = ['bookings', 'students', 'teachers', 'halls', 'subjects', 'student_registrations', 'payment_records', 'attendance_records'];
+      const tables: (keyof SupabaseDatabase["public"]["Tables"])[] = [
+        'bookings',
+        'students',
+        'teachers',
+        'halls',
+        'subjects',
+        'student_registrations',
+        'payment_records',
+        'attendance_records'
+      ];
       
       for (const table of tables) {
         try {
@@ -266,7 +276,7 @@ export const AdminDataDiagnostic = () => {
       toast({
         title: "Admin Role Fixed",
         description: "Your admin privileges have been restored.",
-        variant: "success"
+        variant: "default"
       });
 
       // Refresh the page to update auth state
@@ -325,7 +335,7 @@ export const AdminDataDiagnostic = () => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Database className="h-5 w-5" />
+                     <DatabaseIcon className="h-5 w-5" />
           System Diagnostic
         </CardTitle>
       </CardHeader>
