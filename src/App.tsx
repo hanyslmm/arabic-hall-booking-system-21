@@ -125,12 +125,15 @@ function ToastEventListener() {
 }
 
 const App = () => {
-  // Check if Supabase is configured
-  if (!isSupabaseConfigured) {
-    return <ConfigurationCheck />;
-  }
-
-  return (
+   // Check if Supabase is configured
+   if (!isSupabaseConfigured) {
+     return <ConfigurationCheck />;
+   }
+ 
+   const { profile } = useAuth();
+   const role = profile?.user_role;
+ 
+   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
