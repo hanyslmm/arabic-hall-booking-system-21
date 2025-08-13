@@ -1,33 +1,15 @@
 import { useAuth } from "@/hooks/useAuth";
-
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
-import StatsCards from "@/components/dashboard/StatsCards";
-import { MonthSelector } from "@/components/dashboard/MonthSelector";
-import { HallsGrid } from "@/components/dashboard/HallsGrid";
+import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { FastReceptionistModal } from "@/components/receptionist/FastReceptionistModal";
 
 const Index = () => {
   const { user, loading, profile } = useAuth();
   const [hasError, setHasError] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [isFastReceptionistOpen, setIsFastReceptionistOpen] = useState(false);
   
   console.log('Index component rendering...', { user: !!user, loading });
-
-  // Local permission helper to align with `can('create:registrations')`
-  const can = (permission: string) => {
-    if (permission === 'create:registrations') {
-      // Allow all non-teacher roles (consistent with registrations page)
-      return profile?.user_role !== 'teacher';
-    }
-    return false;
-  };
 
   useEffect(() => {
     // Add error boundary logic
@@ -41,10 +23,6 @@ const Index = () => {
     return () => window.removeEventListener('error', handleError);
   }, []);
 
-  const handleMonthChange = (month: number, year: number) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-  };
 
   if (hasError) {
     return (
@@ -97,32 +75,7 @@ const Index = () => {
   
   return (
     <UnifiedLayout>
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl font-bold">لوحة التحكم</h1>
-          {can('create:registrations') && (
-            <Button onClick={() => setIsFastReceptionistOpen(true)}>
-              <Plus className="ml-2 h-4 w-4" />
-              تسجيل سريع
-            </Button>
-          )}
-        </div>
-
-        <MonthSelector 
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          onMonthChange={handleMonthChange}
-        />
-
-        <StatsCards />
-
-        <HallsGrid />
-
-        <FastReceptionistModal 
-          isOpen={isFastReceptionistOpen} 
-          onClose={() => setIsFastReceptionistOpen(false)} 
-        />
-      </div>
+      <AdminDashboard />
     </UnifiedLayout>
   );
 };
