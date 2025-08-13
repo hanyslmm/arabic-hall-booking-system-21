@@ -756,6 +756,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       copy_default_categories_for_user: {
         Args: { target_user_id: string }
         Returns: undefined
