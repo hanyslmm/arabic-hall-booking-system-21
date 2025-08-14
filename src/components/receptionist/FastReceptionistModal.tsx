@@ -47,6 +47,7 @@ export function FastReceptionistModal({ isOpen, onClose, initialStudentId }: Fas
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [selectedForAttendance, setSelectedForAttendance] = useState<Record<string, boolean>>({});
   const [markPaid, setMarkPaid] = useState<Record<string, boolean>>({});
+  const [ultraFastMode, setUltraFastMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 const queryClient = useQueryClient();
@@ -165,13 +166,20 @@ const queryClient = useQueryClient();
         }
       }
     }));
-    // Reset for next student
-    setSelectedStudent(null);
-    setSearchTerm('');
-    setSelectedForAttendance({});
-    setMarkPaid({});
-    setTimeout(() => searchInputRef.current?.focus(), 100);
-  }, [registrations, selectedStudent, selectedForAttendance, markPaid, attendanceMutation, paymentMutation, toast]);
+    
+    // In ultra fast mode, automatically proceed to next student without manual reset
+    if (ultraFastMode) {
+      setSelectedStudent(null);
+      setSearchTerm('');
+      setSelectedForAttendance({});
+      setMarkPaid({});
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+      toast({ title: 'تمت المعالجة بنجاح', description: 'جاهز للطالب التالي' });
+    } else {
+      // Normal mode - show success and stay on current student
+      toast({ title: 'تم التسجيل بنجاح', description: 'تم تسجيل الحضور والدفعات' });
+    }
+  }, [registrations, selectedStudent, selectedForAttendance, markPaid, ultraFastMode, attendanceMutation, paymentMutation, toast]);
 
   // Hit Enter to confirm
   useEffect(() => {
@@ -227,10 +235,20 @@ const queryClient = useQueryClient();
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Clock className="h-5 w-5 text-primary" />
-            التسجيل السريع - الاستقبال
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Clock className="h-5 w-5 text-primary" />
+              التسجيل السريع - الاستقبال
+            </DialogTitle>
+            <Button
+              variant={ultraFastMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUltraFastMode(!ultraFastMode)}
+              className="whitespace-nowrap"
+            >
+              {ultraFastMode ? "إيقاف" : "تفعيل"} التسجيل فائق السرعة
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

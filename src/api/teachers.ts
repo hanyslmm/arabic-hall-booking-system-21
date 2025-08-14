@@ -9,8 +9,7 @@ export const getTeachers = async (): Promise<Teacher[]> => {
       subjects:subject_id(name),
       teacher_academic_stages(
         academic_stages(name)
-      ),
-      profiles!inner(id)
+      )
     `)
     .order("name");
   
