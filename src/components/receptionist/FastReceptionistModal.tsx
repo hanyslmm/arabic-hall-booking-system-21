@@ -11,6 +11,7 @@ import { Search, UserPlus, CreditCard, Clock, Phone, MapPin, Hash, Scan } from '
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentsApi, studentRegistrationsApi, paymentsApi } from '@/api/students';
 import { attendanceApi } from '@/api/students';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Scanner } from '@alzera/react-scanner';
 interface FastReceptionistModalProps {
@@ -48,9 +49,11 @@ export function FastReceptionistModal({ isOpen, onClose, initialStudentId }: Fas
   const [selectedForAttendance, setSelectedForAttendance] = useState<Record<string, boolean>>({});
   const [markPaid, setMarkPaid] = useState<Record<string, boolean>>({});
   const [ultraFastMode, setUltraFastMode] = useState(false);
+  const [searchByNameMobile, setSearchByNameMobile] = useState(false);
+  const [autoProcessed, setAutoProcessed] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const [showScanner, setShowScanner] = useState(false);
 
   const today = new Date();
@@ -76,11 +79,26 @@ const queryClient = useQueryClient();
     preload();
     return () => { cancelled = true; };
   }, [isOpen, initialStudentId, selectedStudent]);
-  // Search students by serial or mobile
+  // Search students - prioritize serial number, optionally include name/mobile
   const { data: searchResults, isLoading: searching } = useQuery({
-    queryKey: ['student-search', searchTerm],
-    queryFn: () => searchTerm.length >= 3 ? studentsApi.search(searchTerm) : [],
-    enabled: searchTerm.length >= 3
+    queryKey: ['student-search', searchTerm, searchByNameMobile],
+    queryFn: async () => {
+      if (searchTerm.length < 1) return [];
+      
+      if (!searchByNameMobile) {
+        // Serial number only search - exact match
+        const { data, error } = await supabase
+          .from('students')
+          .select('*')
+          .eq('serial_number', searchTerm)
+          .limit(1);
+        return data || [];
+      } else {
+        // Flexible search by serial, name, or mobile
+        return searchTerm.length >= 3 ? studentsApi.search(searchTerm) : [];
+      }
+    },
+    enabled: searchTerm.length >= 1
   });
 
   // Get student registrations when student is selected
@@ -155,44 +173,101 @@ const queryClient = useQueryClient();
       toast({ title: 'لا توجد دروس محددة لليوم', variant: 'destructive' });
       return;
     }
-    // Mark attendance for selected
-    await Promise.all(selectedIds.map(id => attendanceMutation.mutateAsync(id)));
-    // Create full payments where requested
-    await Promise.all(regs.map(async (r) => {
-      if (markPaid[r.id] && !(r as any)._paidThisMonth) {
-        const amount = Number(r.total_fees || 0);
-        if (amount > 0) {
-          await paymentMutation.mutateAsync({ registrationId: r.id, amount });
-        }
-      }
-    }));
     
-    // In ultra fast mode, automatically proceed to next student without manual reset
-    if (ultraFastMode) {
-      setSelectedStudent(null);
-      setSearchTerm('');
-      setSelectedForAttendance({});
-      setMarkPaid({});
-      setTimeout(() => searchInputRef.current?.focus(), 100);
-      toast({ title: 'تمت المعالجة بنجاح', description: 'جاهز للطالب التالي' });
-    } else {
-      // Normal mode - show success and stay on current student
+    try {
+      // Mark attendance for selected
+      await Promise.all(selectedIds.map(id => attendanceMutation.mutateAsync(id)));
+      
+      // Create full payments where requested
+      await Promise.all(regs.map(async (r) => {
+        if (markPaid[r.id] && !(r as any)._paidThisMonth) {
+          const amount = Number(r.total_fees || 0);
+          if (amount > 0) {
+            await paymentMutation.mutateAsync({ registrationId: r.id, amount });
+          }
+        }
+      }));
+      
+      setAutoProcessed(true);
       toast({ title: 'تم التسجيل بنجاح', description: 'تم تسجيل الحضور والدفعات' });
+      
+      // In ultra fast mode, keep result displayed for review
+      if (!ultraFastMode) {
+        // Normal mode - reset immediately
+        setTimeout(() => handleReset(), 1000);
+      }
+    } catch (error) {
+      toast({ title: 'خطأ في المعالجة', description: String(error), variant: 'destructive' });
     }
   }, [registrations, selectedStudent, selectedForAttendance, markPaid, ultraFastMode, attendanceMutation, paymentMutation, toast]);
 
-  // Hit Enter to confirm
+  const handleReset = useCallback(() => {
+    setSelectedStudent(null);
+    setSearchTerm('');
+    setSelectedForAttendance({});
+    setMarkPaid({});
+    setAutoProcessed(false);
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  }, []);
+
+  const autoProcessStudent = useCallback(async (student: any) => {
+    if (!ultraFastMode) return;
+    
+    setSelectedStudent(student);
+    setSearchTerm('');
+    
+    // Wait for registrations to load
+    setTimeout(async () => {
+      const regs = await studentRegistrationsApi.getByStudentWithPayments(student.id);
+      if (!regs) return;
+      
+      // Auto-select today's classes and mark unpaid ones for payment
+      const sel: Record<string, boolean> = {};
+      const paid: Record<string, boolean> = {};
+      
+      regs.forEach((reg: any) => {
+        const isToday = (reg.booking?.days_of_week || []).includes(todayWeekday);
+        sel[reg.id] = isToday;
+        
+        // Check if paid this month
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const paidThisMonth = (reg.payment_records || []).some((p: any) => {
+          const d = new Date(p.payment_date);
+          return d >= monthStart && d < monthEnd;
+        }) || (reg.payment_status === 'paid');
+        
+        paid[reg.id] = !paidThisMonth; // Auto-mark for payment if not paid
+        (reg as any)._paidThisMonth = paidThisMonth;
+      });
+      
+      setSelectedForAttendance(sel);
+      setMarkPaid(paid);
+      
+      // Auto-process immediately
+      if (Object.values(sel).some(Boolean)) {
+        setTimeout(() => handleConfirm(), 500);
+      }
+    }, 300);
+  }, [ultraFastMode, todayWeekday, handleConfirm]);
+
+  // Hit Enter to confirm or in ultra-fast mode to auto-process
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleConfirm();
+        if (selectedStudent && !autoProcessed) {
+          handleConfirm();
+        } else if (autoProcessed && ultraFastMode) {
+          handleReset();
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, selectedForAttendance, markPaid, registrations, handleConfirm]);
+  }, [isOpen, selectedStudent, autoProcessed, ultraFastMode, handleConfirm, handleReset]);
 
   // Auto-focus search when modal opens
   useEffect(() => {
@@ -205,11 +280,16 @@ const queryClient = useQueryClient();
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setSelectedStudent(null);
+    setAutoProcessed(false);
   };
 
   const handleStudentSelect = (student: any) => {
-    setSelectedStudent(student);
-    setSearchTerm('');
+    if (ultraFastMode) {
+      autoProcessStudent(student);
+    } else {
+      setSelectedStudent(student);
+      setSearchTerm('');
+    }
   };
 
   // Removed quick payment handler (unused); payments are handled per registration via checkboxes above
@@ -262,8 +342,10 @@ const queryClient = useQueryClient();
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="search">الرقم التسلسلي أو رقم الموبايل</Label>
-                <div className="flex items-center gap-2">
+                <Label htmlFor="search">
+                  {searchByNameMobile ? 'الرقم التسلسلي أو الاسم أو الموبايل' : 'الرقم التسلسلي'}
+                </Label>
+                <div className="flex items-center gap-2 mb-2">
                   <Input
                     ref={searchInputRef}
                     id="search"
@@ -273,7 +355,10 @@ const queryClient = useQueryClient();
                       if (e.key === 'Enter') {
                         const term = searchTerm.trim();
                         const results = (searchResults as any[]) || [];
-                        const exact = results.find((s: any) => s.serial_number === term || s.mobile_phone === term);
+                        const exact = results.find((s: any) => 
+                          s.serial_number === term || 
+                          (searchByNameMobile && (s.mobile_phone === term || s.name.includes(term)))
+                        );
                         if (exact) {
                           handleStudentSelect(exact);
                         } else if (results.length === 1) {
@@ -281,13 +366,26 @@ const queryClient = useQueryClient();
                         }
                       }
                     }}
-                    placeholder="ادخل الرقم التسلسلي أو الموبايل..."
+                    placeholder={searchByNameMobile ? "ادخل الرقم التسلسلي أو الاسم أو الموبايل..." : "ادخل الرقم التسلسلي..."}
                     className="text-lg flex-1"
                   />
                   <Button type="button" variant={showScanner ? 'secondary' : 'outline'} onClick={() => setShowScanner(v => !v)} className="whitespace-nowrap">
                     <Scan className="h-4 w-4 ml-2" />
                     {showScanner ? 'إيقاف الماسح' : 'تشغيل الماسح'}
                   </Button>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="search-mode"
+                    checked={searchByNameMobile}
+                    onChange={(e) => setSearchByNameMobile(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="search-mode" className="text-sm">
+                    بحث بالاسم أو الموبايل
+                  </Label>
                 </div>
               </div>
 
@@ -321,12 +419,12 @@ const queryClient = useQueryClient();
                 </div>
               )}
 
-              {searchResults && searchResults.length > 0 && (
+              {searchTerm.length >= 1 && searchResults && searchResults.length > 0 && (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {searchResults.map((student) => (
                     <Card 
                       key={student.id} 
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      className="cursor-pointer hover:bg-muted/50 transition-colors border"
                       onClick={() => handleStudentSelect(student)}
                     >
                       <CardContent className="p-3">
@@ -352,9 +450,17 @@ const queryClient = useQueryClient();
                 </div>
               )}
 
-              {searchTerm.length >= 3 && searchResults?.length === 0 && !searching && (
+              {searchTerm.length >= 1 && searchResults?.length === 0 && !searching && (
                 <div className="text-center py-4 text-muted-foreground">
                   لم يتم العثور على نتائج
+                </div>
+              )}
+              
+              {ultraFastMode && autoProcessed && (
+                <div className="text-center py-2">
+                  <Button onClick={handleReset} className="w-full">
+                    جاهز للطالب التالي (Enter)
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -456,11 +562,18 @@ const queryClient = useQueryClient();
                                   </div>
                                 </div>
  
-                                <div className="flex items-center justify-end gap-2 pt-2">
-                                  <Button size="sm" variant="default" onClick={handleConfirm}>
-                                    تأكيد (Enter)
-                                  </Button>
-                                </div>
+                                 <div className="flex items-center justify-end gap-2 pt-2">
+                                   {!ultraFastMode && (
+                                     <Button size="sm" variant="default" onClick={handleConfirm}>
+                                       تأكيد (Enter)
+                                     </Button>
+                                   )}
+                                   {autoProcessed && (
+                                     <div className="text-green-600 text-sm font-medium">
+                                       ✓ تم المعالجة تلقائياً
+                                     </div>
+                                   )}
+                                 </div>
                               </div>
                             </CardContent>
                           </Card>
