@@ -1,73 +1,98 @@
+// src/components/dashboard/StatsCards.tsx
 
-import { useQueries } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Users, Calendar, UserCheck } from 'lucide-react';
-import { Skeleton } from '../ui/skeleton';
-import { getStudents } from '@/api/students';
-import { getTeachers } from '@/api/teachers';
-import { getBookings } from '@/api/bookings';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../integrations/supabase/client'; // Adjusted path for clarity
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 
-const StatsCards = () => {
-  const results = useQueries({
-    queries: [
-      { queryKey: ['students'], queryFn: getStudents },
-      { queryKey: ['teachers'], queryFn: getTeachers },
-      { queryKey: ['bookings'], queryFn: getBookings },
-    ],
-  });
+// STEP 1: Define the props for this component.
+// It now expects to receive 'selectedMonth' from its parent.
+interface StatsCardsProps {
+  selectedMonth: Date;
+}
 
-  const isLoading = results.some(q => q.isLoading);
-  const isError = results.some(q => q.isError);
+const StatsCards = ({ selectedMonth }: StatsCardsProps) => {
+  const [stats, setStats] = useState({ totalIncome: 0, totalExpenses: 0, occupancy: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const students = results[0].data || [];
-  const teachers = results[1].data || [];
-  const bookings = results[2].data || [];
+  // STEP 2: Add 'selectedMonth' to the dependency array of useEffect.
+  // This tells React to re-run this entire function whenever selectedMonth changes.
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
 
-  const totalRevenue = bookings.reduce((acc, booking) => acc + Number((booking as any).class_fees || 0), 0);
-  
-  const today = new Date().toISOString().split('T')[0];
-  const todaysBookings = bookings.filter(b => (b as any).start_time?.startsWith?.(today) || (b as any).start_date === today).length;
+      // Format the date into 'YYYY-MM-01' to match what the database function expects.
+      const year = selectedMonth.getFullYear();
+      const month = selectedMonth.getMonth() + 1; // JS months are 0-11
+      const formattedMonth = `${year}-${month.toString().padStart(2, '0')}-01`;
 
-  const stats = [
-    { title: "إجمالي الإيرادات", value: `EGP ${totalRevenue.toLocaleString()}`, icon: DollarSign, description: "هذا الشهر" },
-    { title: "إجمالي الطلاب", value: students.length, icon: Users, description: "كل الطلاب المسجلين" },
-    { title: "إجمالي المدرسين", value: teachers.length, icon: UserCheck, description: "كل المدرسين النشطين" },
-    { title: "حجوزات اليوم", value: todaysBookings, icon: Calendar, description: "الحجوزات المجدولة اليوم" }
-  ];
+      try {
+        // STEP 3: Pass the formatted month as a parameter to the database function.
+        // This is the most important change. The query is now dynamic.
+        const { data, error } = await supabase.rpc('get_financial_summary', {
+          p_month: formattedMonth
+        });
 
-  if (isError) {
-    return <div className="text-red-500">حدث خطأ أثناء تحميل الإحصائيات.</div>;
-  }
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setStats({
+            totalIncome: data.total_income || 0,
+            totalExpenses: data.total_expenses || 0,
+            occupancy: data.occupancy_rate || 0,
+          });
+        }
+      } catch (err: any) {
+        console.error('Error fetching financial summary:', err);
+        setError('Could not load stats.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [selectedMonth]); // The dependency array is no longer empty.
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(value);
+  };
+
+  if (loading) return <div>Loading stats...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mb-6">
-      {isLoading ? (
-        Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-6 w-6" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-32 mb-1" />
-              <Skeleton className="h-4 w-40" />
-            </CardContent>
-          </Card>
-        ))
-      ) : (
-        stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))
-      )}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">اجمالي الدخل</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats.totalIncome)}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">اجمالي المصروفات</CardTitle>
+          <TrendingDown className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats.totalExpenses)}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">نسبة الاشغال</CardTitle>
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{stats.occupancy.toFixed(1)}%</div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
