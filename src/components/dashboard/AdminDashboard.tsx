@@ -60,7 +60,7 @@ export function AdminDashboard() {
         onMonthChange={handleMonthChange}
       />
 
-      <StatsCards />
+      <StatsCards selectedMonth={selectedMonth} />
 
       <HallsGrid />
 
