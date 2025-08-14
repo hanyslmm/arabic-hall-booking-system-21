@@ -1,6 +1,6 @@
 -- supabase/migrations/20250814160000_fix_financial_summary_rpc.sql
 
--- First, we drop the old function to ensure a clean replacement.
+-- First, we drop the old function to ensure a clean replacement   
 DROP FUNCTION IF EXISTS public.get_financial_summary(date);
 
 -- Now, we create the new version of the function.
