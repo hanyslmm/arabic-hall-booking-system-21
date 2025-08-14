@@ -130,9 +130,6 @@ const App = () => {
      return <ConfigurationCheck />;
    }
  
-   const { profile } = useAuth();
-   const role = profile?.user_role;
- 
    return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -164,14 +161,7 @@ const App = () => {
               <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
               <Route path="/style-showcase" element={<ProtectedRoute><UnifiedLayout><StyleShowcase /></UnifiedLayout></ProtectedRoute>} />
 
-              {/* Admin Routes */}
-              {role === 'admin' && (
-                <Route path="/admin" element={<ProtectedRoute><AdminLayout><Outlet /></AdminLayout></ProtectedRoute>}>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="privileges" element={<AdminPrivilegesPage />} />
-                </Route>
-              )}
+              {/* Admin Routes - removed since admin routes are handled in UnifiedLayout */}
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

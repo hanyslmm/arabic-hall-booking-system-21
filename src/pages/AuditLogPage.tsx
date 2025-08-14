@@ -54,10 +54,10 @@ export function AuditLogPage() {
         .select('id, full_name, email')
         .in('id', data.map(log => log.actor_user_id));
 
-      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
       
       return data.map(log => {
-        const profile = profilesMap.get(log.actor_user_id);
+        const profile = profilesMap.get(log.actor_user_id) as any;
         return {
           id: log.id,
           actor_user_id: log.actor_user_id,
