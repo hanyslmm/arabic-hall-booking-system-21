@@ -12,6 +12,10 @@ export interface HallOccupancy {
   hall_id: string;
   name: string;
   occupancy_percentage: number;
+  occupied_slots: number;
+  available_slots: number;
+  working_hours_per_day: number;
+  working_days_per_week: number;
 }
 
 export const dashboardApi = {
@@ -64,72 +68,26 @@ export const dashboardApi = {
   },
 
   /**
-   * Get hall occupancy data for the dashboard grid
+   * Get hall time slot occupancy data for the dashboard grid
    */
   async getHallOccupancy(): Promise<HallOccupancy[]> {
-    const clampPercentage = (value: number) => {
-      if (!isFinite(value) || isNaN(value)) return 0;
-      return Math.max(0, Math.min(100, Number(value)));
-    };
-
     try {
-      // Try the occupancy RPC function first
-      const { data, error } = await supabase.rpc('get_hall_actual_occupancy_updated');
+      // Use the new time slot occupancy function
+      const { data, error } = await supabase.rpc('get_hall_time_slot_occupancy');
       if (error) throw error;
       
-      if (data) {
-        return (data as any[]).map((row) => ({
-          hall_id: row.hall_id,
-          name: row.hall_name ?? row.name ?? '',
-          occupancy_percentage: clampPercentage(Number(row.occupancy_percentage ?? 0)),
-        }));
-      }
+      return (data as any[]).map((row) => ({
+        hall_id: row.hall_id,
+        name: row.hall_name,
+        occupancy_percentage: Number(row.occupancy_percentage || 0),
+        occupied_slots: Number(row.occupied_slots || 0),
+        available_slots: Number(row.available_slots || 0),
+        working_hours_per_day: Number(row.working_hours_per_day || 0),
+        working_days_per_week: Number(row.working_days_per_week || 0),
+      }));
     } catch (error) {
-      console.warn('RPC function failed, using fallback calculation:', error);
-    }
-
-    // Fallback: Calculate occupancy manually
-    try {
-      const { data, error } = await supabase
-        .from('halls')
-        .select(`
-          id,
-          name,
-          capacity,
-          bookings!inner(
-            id,
-            student_registrations(count)
-          )
-        `)
-        .eq('bookings.status', 'active');
-
-      if (error) throw error;
-
-      const getCount = (sr: any) => {
-        if (typeof sr === 'number') return sr;
-        if (Array.isArray(sr)) return Number(sr[0]?.count ?? 0);
-        if (sr && typeof sr === 'object') return Number(sr.count ?? 0);
-        return 0;
-      };
-
-      return (data || []).map((hall: any) => {
-        const activeBookings = (hall.bookings || []).length;
-        const studentsAcrossBookings = (hall.bookings || []).reduce(
-          (sum: number, booking: any) => sum + getCount(booking.student_registrations), 
-          0
-        );
-        const denom = activeBookings > 0 ? hall.capacity * activeBookings : hall.capacity;
-        const percentage = denom > 0 ? (studentsAcrossBookings / denom) * 100 : 0;
-        
-        return { 
-          hall_id: hall.id, 
-          name: hall.name, 
-          occupancy_percentage: clampPercentage(Number(percentage.toFixed(1))) 
-        };
-      });
-    } catch (error) {
-      console.error('Error calculating hall occupancy:', error);
-      throw new Error('فشل في حساب إشغال القاعات');
+      console.error('Error fetching hall time slot occupancy:', error);
+      throw new Error('فشل في حساب إشغال الفترات الزمنية للقاعات');
     }
   },
 };

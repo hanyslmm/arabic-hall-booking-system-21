@@ -15,6 +15,9 @@ export function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [duration, setDuration] = useState("");
+  const [workingHoursStart, setWorkingHoursStart] = useState("");
+  const [workingHoursEnd, setWorkingHoursEnd] = useState("");
+  const [workingDays, setWorkingDays] = useState("");
 
   // Fetch settings
   const { data: settings, isLoading } = useQuery({
@@ -60,9 +63,14 @@ export function SettingsPage() {
   useEffect(() => {
     if (settings) {
       const durationSetting = settings.find(s => s.key === 'default_booking_duration_minutes');
-      if (durationSetting) {
-        setDuration(durationSetting.value || '60');
-      }
+      const startSetting = settings.find(s => s.key === 'default_hall_working_hours_start');
+      const endSetting = settings.find(s => s.key === 'default_hall_working_hours_end');
+      const daysSetting = settings.find(s => s.key === 'default_hall_working_days');
+      
+      if (durationSetting) setDuration(durationSetting.value || '60');
+      if (startSetting) setWorkingHoursStart(startSetting.value || '08:00');
+      if (endSetting) setWorkingHoursEnd(endSetting.value || '20:00');
+      if (daysSetting) setWorkingDays(daysSetting.value || 'saturday,monday,wednesday');
     }
   }, [settings]);
 
@@ -96,9 +104,30 @@ export function SettingsPage() {
       return;
     }
 
-    updateSettingMutation.mutate({
-      key: 'default_booking_duration_minutes',
-      value: duration
+    // Update multiple settings
+    const updates = [
+      { key: 'default_booking_duration_minutes', value: duration },
+      { key: 'default_hall_working_hours_start', value: workingHoursStart },
+      { key: 'default_hall_working_hours_end', value: workingHoursEnd },
+      { key: 'default_hall_working_days', value: workingDays }
+    ];
+
+    Promise.all(
+      updates.map(update => 
+        supabase.from('settings').update({ value: update.value }).eq('key', update.key)
+      )
+    ).then(() => {
+      toast({
+        title: "إعدادات محدثة",
+        description: "تم تحديث جميع الإعدادات بنجاح",
+      });
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    }).catch(() => {
+      toast({
+        title: "خطأ",
+        description: "فشل في تحديث الإعدادات",
+        variant: "destructive",
+      });
     });
   };
 
@@ -117,38 +146,90 @@ export function SettingsPage() {
       <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">إعدادات النظام</h1>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>إعدادات الحجز</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">مدة الحجز الافتراضية (بالدقائق)</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    min="1"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="60"
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    ستستخدم هذه المدة كوقت افتراضي عند إنشاء حجز جديد
-                  </p>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>إعدادات الحجز</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">مدة الحجز الافتراضية (بالدقائق)</Label>
+                    <Input
+                      id="duration"
+                      type="number"
+                      min="1"
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                      placeholder="60"
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      ستستخدم هذه المدة كوقت افتراضي عند إنشاء حجز جديد
+                    </p>
+                  </div>
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  disabled={updateSettingMutation.isPending}
-                  className="w-full"
-                >
-                  {updateSettingMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>أوقات العمل الافتراضية للقاعات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startTime">وقت البداية</Label>
+                      <Input
+                        id="startTime"
+                        type="time"
+                        value={workingHoursStart}
+                        onChange={(e) => setWorkingHoursStart(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="endTime">وقت النهاية</Label>
+                      <Input
+                        id="endTime"
+                        type="time"
+                        value={workingHoursEnd}
+                        onChange={(e) => setWorkingHoursEnd(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="workingDays">أيام العمل</Label>
+                    <select
+                      id="workingDays"
+                      value={workingDays}
+                      onChange={(e) => setWorkingDays(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      required
+                    >
+                      <option value="saturday,monday,wednesday">السبت، الاثنين، الأربعاء</option>
+                      <option value="sunday,tuesday,thursday">الأحد، الثلاثاء، الخميس</option>
+                    </select>
+                    <p className="text-sm text-muted-foreground">
+                      ستُطبق هذه الأوقات على جميع القاعات الجديدة وحساب الفترات المتاحة
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={updateSettingMutation.isPending}
+                    className="w-full"
+                  >
+                    {updateSettingMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
       </div>
     </UnifiedLayout>
   );

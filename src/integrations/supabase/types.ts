@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -218,54 +218,6 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      entries: {
-        Row: {
-          author_id: string
-          created_at: string
-          details: string | null
-          entry_date: string
-          handler: string | null
-          id: string
-          process_area: string | null
-          process_name: string | null
-          status: string
-          system: string | null
-          title: string
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          created_at?: string
-          details?: string | null
-          entry_date: string
-          handler?: string | null
-          id?: string
-          process_area?: string | null
-          process_name?: string | null
-          status?: string
-          system?: string | null
-          title: string
-          type: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          created_at?: string
-          details?: string | null
-          entry_date?: string
-          handler?: string | null
-          id?: string
-          process_area?: string | null
-          process_name?: string | null
-          status?: string
-          system?: string | null
-          title?: string
-          type?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -742,17 +694,17 @@ export type Database = {
         Returns: undefined
       }
       apply_teacher_default_fee: {
-        Args: { p_teacher_id: string; p_fee: number }
+        Args: { p_fee: number; p_teacher_id: string }
         Returns: undefined
       }
       check_booking_conflict: {
         Args: {
-          p_hall_id: string
-          p_start_time: string
-          p_days_of_week: string[]
-          p_start_date: string
-          p_end_date?: string
           p_booking_id?: string
+          p_days_of_week: string[]
+          p_end_date?: string
+          p_hall_id: string
+          p_start_date: string
+          p_start_time: string
         }
         Returns: boolean
       }
@@ -770,9 +722,9 @@ export type Database = {
       }
       generate_class_code: {
         Args: {
-          p_teacher_id: string
           p_days_of_week: string[]
           p_start_time: string
+          p_teacher_id: string
         }
         Returns: string
       }
@@ -780,24 +732,32 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_financial_summary: {
+        Args: { p_month: string }
+        Returns: {
+          occupancy_rate: number
+          total_expenses: number
+          total_income: number
+        }[]
+      }
       get_hall_actual_occupancy: {
         Args: Record<PropertyKey, never>
         Returns: {
+          capacity: number
           hall_id: string
           hall_name: string
-          capacity: number
-          registered_students: number
           occupancy_percentage: number
+          registered_students: number
         }[]
       }
       get_hall_actual_occupancy_updated: {
         Args: Record<PropertyKey, never>
         Returns: {
+          capacity: number
           hall_id: string
           hall_name: string
-          capacity: number
-          registered_students: number
           occupancy_percentage: number
+          registered_students: number
         }[]
       }
       get_hall_occupancy_rates: {
@@ -808,19 +768,31 @@ export type Database = {
           occupancy_percentage: number
         }[]
       }
+      get_hall_time_slot_occupancy: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          available_slots: number
+          hall_id: string
+          hall_name: string
+          occupancy_percentage: number
+          occupied_slots: number
+          working_days_per_week: number
+          working_hours_per_day: number
+        }[]
+      }
       get_payments_sum: {
-        Args: { start_date: string; end_date: string }
+        Args: { end_date: string; start_date: string }
         Returns: number
       }
       get_teacher_statistics: {
         Args: { p_teacher_id: string }
         Returns: {
-          total_students: number
-          total_classes: number
-          total_earnings: number
+          attendance_rate: number
           monthly_earnings: number
           pending_payments: number
-          attendance_rate: number
+          total_classes: number
+          total_earnings: number
+          total_students: number
         }[]
       }
       get_user_role: {
@@ -834,13 +806,13 @@ export type Database = {
       search_student: {
         Args: { search_term: string }
         Returns: {
-          id: string
-          serial_number: string
-          name: string
-          mobile_phone: string
-          parent_phone: string
           city: string
           created_at: string
+          id: string
+          mobile_phone: string
+          name: string
+          parent_phone: string
+          serial_number: string
         }[]
       }
       set_booking_custom_fee: {

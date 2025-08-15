@@ -19,6 +19,10 @@ interface OccupancyData {
   hall_id: string;
   name: string;
   occupancy_percentage: number;
+  occupied_slots: number;
+  available_slots: number;
+  working_hours_per_day: number;
+  working_days_per_week: number;
 }
 
 interface HallsGridProps {
@@ -48,11 +52,15 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
     return 'سعة صغيرة';
   };
 
-  const getOccupancyForHall = (hallId: string): number => {
+  const getOccupancyForHall = (hallId: string) => {
     const hallOccupancy = occupancyData?.find(item => item.hall_id === hallId);
-    const raw = Number(hallOccupancy?.occupancy_percentage || 0);
-    const clamped = Math.max(0, Math.min(100, isFinite(raw) ? raw : 0));
-    return Number(clamped.toFixed(1));
+    return {
+      percentage: Number(hallOccupancy?.occupancy_percentage || 0),
+      occupied_slots: Number(hallOccupancy?.occupied_slots || 0),
+      available_slots: Number(hallOccupancy?.available_slots || 0),
+      working_hours_per_day: Number(hallOccupancy?.working_hours_per_day || 0),
+      working_days_per_week: Number(hallOccupancy?.working_days_per_week || 0),
+    };
   };
 
   const getOccupancyColor = (percentage: number): string => {
@@ -126,12 +134,19 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
                     {getCapacityLabel(hall.capacity)}
                   </div>
 
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Activity className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">نسبة الاشغال:</span>
-                    <span className={`font-semibold ${getOccupancyColor(getOccupancyForHall(hall.id))}`}>
-                      {getOccupancyForHall(hall.id)}%
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Activity className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">نسبة إشغال الفترات:</span>
+                      <span className={`font-semibold ${getOccupancyColor(getOccupancyForHall(hall.id).percentage)}`}>
+                        {getOccupancyForHall(hall.id).percentage}%
+                      </span>
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>المحجوز: {getOccupancyForHall(hall.id).occupied_slots} من {getOccupancyForHall(hall.id).available_slots} فترة</div>
+                      <div>ساعات العمل: {getOccupancyForHall(hall.id).working_hours_per_day} ساعة/يوم × {getOccupancyForHall(hall.id).working_days_per_week} أيام</div>
+                    </div>
                   </div>
                   
                   <p className="text-xs text-muted-foreground mt-2">
