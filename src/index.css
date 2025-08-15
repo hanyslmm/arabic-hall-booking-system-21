@@ -449,14 +449,15 @@
   /* Enhanced card variants */
   .card-elevated {
     background: var(--gradient-card);
-    box-shadow: var(--shadow-card);
-    border: 1px solid hsl(var(--border));
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px 0 hsl(var(--shadow) / 0.1), 0 1px 2px -1px hsl(var(--shadow) / 0.1);
+    border: 1px solid hsl(var(--border) / 0.5);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .card-elevated:hover {
-    box-shadow: var(--shadow-elegant);
-    transform: translateY(-4px);
+    box-shadow: 0 4px 6px -1px hsl(var(--shadow) / 0.1), 0 2px 4px -2px hsl(var(--shadow) / 0.1);
+    border-color: hsl(var(--border) / 0.8);
+    transform: translateY(-1px);
   }
 
   .card-hero {

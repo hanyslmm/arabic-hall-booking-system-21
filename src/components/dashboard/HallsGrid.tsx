@@ -55,7 +55,12 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
   const getOccupancyForHall = (hallId: string) => {
     const hallOccupancy = occupancyData?.find(item => item.hall_id === hallId);
     const occupied = Number(hallOccupancy?.occupied_slots || 0);
-    const available = Number(hallOccupancy?.available_slots || 0);
+    
+    // Calculate available slots: 12 hours Saturday + 12 hours Sunday = 24 total slots
+    // Each slot is 1 hour, 3 times per week (Sat/Sun schedule)
+    const working_hours_per_day = Number(hallOccupancy?.working_hours_per_day || 12); // 9am-9pm = 12 hours
+    const working_days_per_week = Number(hallOccupancy?.working_days_per_week || 2); // Saturday + Sunday = 2 days
+    const available = working_hours_per_day * working_days_per_week; // 12 * 2 = 24 slots
     
     // Calculate proper percentage (round to nearest integer)
     const percentage = available > 0 ? Math.round((occupied / available) * 100) : 0;
@@ -64,8 +69,8 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
       percentage,
       occupied_slots: occupied,
       available_slots: available,
-      working_hours_per_day: Number(hallOccupancy?.working_hours_per_day || 12), // Default 12 hours (9am-9pm)
-      working_days_per_week: Number(hallOccupancy?.working_days_per_week || 3), // Default 3 days
+      working_hours_per_day,
+      working_days_per_week,
     };
   };
 
@@ -165,7 +170,7 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
                         </div>
                         <div className="flex justify-between mt-1">
                           <span className="text-muted-foreground">أيام العمل:</span>
-                          <span className="font-medium">{getOccupancyForHall(hall.id).working_days_per_week} أيام/أسبوع</span>
+                          <span className="font-medium">السبت والأحد (يومان/أسبوع)</span>
                         </div>
                       </div>
                     </div>
