@@ -699,6 +699,38 @@
     }
   }
 
+  /* Card styles with enhanced borders and elevation */
+  .card-elevated {
+    @apply shadow-sm border border-border/60 transition-all duration-200 bg-card/50;
+  }
+
+  .card-elevated:hover {
+    @apply shadow-md border-border/80 bg-card;
+  }
+
+  /* Table and content spacing improvements */
+  .table-container {
+    @apply border border-border/50 rounded-lg overflow-hidden;
+  }
+
+  .table-row {
+    @apply border-b border-border/30 last:border-b-0;
+  }
+
+  /* Button and input consistency */
+  .btn-primary {
+    @apply shadow-sm border border-primary/20;
+  }
+
+  /* Navigation spacing fixes */
+  .nav-item {
+    @apply px-3 py-2 transition-colors duration-200;
+  }
+
+  .nav-item:hover {
+    @apply bg-muted/50;
+  }
+
   /* Enhanced mobile interactions */
   @media (hover: none) and (pointer: coarse) {
     /* Remove hover effects on touch devices */

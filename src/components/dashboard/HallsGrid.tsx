@@ -170,7 +170,7 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
                         </div>
                         <div className="flex justify-between mt-1">
                           <span className="text-muted-foreground">أيام العمل:</span>
-                          <span className="font-medium">السبت والأحد (يومان/أسبوع)</span>
+                          <span className="font-medium">السبت والأحد ({getOccupancyForHall(hall.id).working_days_per_week} أيام/أسبوع)</span>
                         </div>
                       </div>
                     </div>

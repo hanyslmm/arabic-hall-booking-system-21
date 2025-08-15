@@ -60,13 +60,13 @@ const defaultNavigation: NavigationGroup[] = [
     ],
   },
   {
-    title: "إدارة الحجوزات",
+    title: "إدارة المجموعات",
     items: [
       {
-        title: "جميع الحجوزات",
+        title: "جميع المجموعات",
         url: "/bookings",
         icon: Calendar,
-        description: "عرض وإدارة الحجوزات",
+        description: "عرض وإدارة المجموعات الدراسية",
       },
       {
         title: "حجز جديد",
@@ -436,8 +436,8 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:mr-72">
-        {/* Top Header - with breadcrumbs and navigation buttons */}
-        <header className="flex h-14 sm:h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4 sticky top-0 z-40">
+        {/* Top Header - simplified to avoid duplication */}
+        <header className="flex h-14 sm:h-16 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-md px-4 sticky top-0 z-40">
           <div className="flex flex-1 items-center justify-between">
             <div className="flex items-center gap-2">
               {/* Hamburger Menu Button - Only visible on mobile/tablet */}

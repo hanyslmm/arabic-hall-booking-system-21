@@ -141,9 +141,9 @@ const HallsPage = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-primary">إدارة القاعات</h1>
-            <p className="text-muted-foreground mt-2">
-              عرض وإدارة القاعات في النظام
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">إدارة القاعات</h1>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+              عرض وإدارة جميع القاعات في النظام وقياس معدلات إشغالها
             </p>
           </div>
           <div className="flex items-center gap-4">

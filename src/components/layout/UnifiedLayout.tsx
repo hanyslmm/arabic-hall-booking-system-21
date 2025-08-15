@@ -22,10 +22,10 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
       ],
     },
     {
-      title: isTeacher ? "المجموعات" : "إدارة الحجوزات",
+      title: isTeacher ? "المجموعات" : "إدارة المجموعات",
       items: [
         {
-          title: isTeacher ? "مراقبة المجموعات" : "جميع الحجوزات",
+          title: isTeacher ? "مراقبة المجموعات" : "جميع المجموعات",
           url: "/bookings",
           icon: Calendar
         },
