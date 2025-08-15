@@ -42,50 +42,29 @@ return data.map((profile: any) => ({
 };
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
-  // Create user with Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: userData.email || `${userData.username}@local.app`,
-    password: userData.password,
-    user_metadata: {
+  // Use Edge Function to create user with proper admin permissions
+  const response = await supabase.functions.invoke('create-user', {
+    body: {
       username: userData.username,
-      full_name: userData.full_name || userData.username,
+      password: userData.password,
+      email: userData.email,
+      full_name: userData.full_name,
       phone: userData.phone,
       user_role: userData.user_role,
+      teacher_id: userData.user_role === 'teacher' ? userData.teacher_id : undefined,
     },
   });
 
-  if (authError) throw authError;
-
-  // The profile should be created automatically via database trigger
-  // Wait a moment and then fetch the profile
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (profileError) {
-    // If profile doesn't exist, create it manually
-    const { data: newProfile, error: createProfileError } = await supabase
-      .from("profiles")
-      .insert([{
-        id: authData.user.id,
-        email: userData.email || `${userData.username}@local.app`,
-        full_name: userData.full_name || userData.username,
-        phone: userData.phone,
-        user_role: userData.user_role,
-        username: userData.username,
-      }])
-      .select()
-      .single();
-
-    if (createProfileError) throw createProfileError;
-    return { ...newProfile, phone: userData.phone || null } as UserProfile;
+  if (response.error) {
+    console.error('Edge Function error:', response.error);
+    throw new Error(response.error.message || 'Failed to create user');
   }
 
-  return { ...profile, phone: null } as UserProfile;
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || 'Failed to create user');
+  }
+
+  return response.data.user as UserProfile;
 };
 
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
@@ -96,15 +75,28 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
     email: userData.email,
     user_role: userData.user_role,
   };
+  
+  // Include teacher_id if provided
   if ((userData as any).teacher_id !== undefined) {
     body.teacher_id = (userData as any).teacher_id;
   }
+  
+  // Include password if provided and not empty
   if (userData.password && userData.password.trim() !== '') {
     body.password = userData.password;
   }
 
   const response = await supabase.functions.invoke('update-user', { body });
-  if (response.error) throw response.error;
+  
+  if (response.error) {
+    console.error('Edge Function error:', response.error);
+    throw new Error(response.error.message || 'Failed to update user');
+  }
+  
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || 'Failed to update user');
+  }
+  
   return response.data.user as UserProfile;
 };
 

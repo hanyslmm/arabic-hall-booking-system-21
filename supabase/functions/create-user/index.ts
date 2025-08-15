@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -41,22 +40,38 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is admin (owner or manager)
+    // Check if user is admin with enhanced permission check
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('user_role')
+      .select('user_role, role')
       .eq('id', user.id)
       .single();
 
-    if (profileError || (profile?.user_role !== 'owner' && profile?.user_role !== 'manager')) {
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized: Admin access required' }),
+        JSON.stringify({ error: 'Failed to fetch user profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Enhanced admin check - allow owner, manager, or legacy ADMIN role
+    const isAdmin = profile?.user_role === 'owner' || 
+                   profile?.user_role === 'manager' || 
+                   profile?.role === 'ADMIN';
+
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized: Admin access required',
+          details: `Current role: ${profile?.user_role}, App role: ${profile?.role}`
+        }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-// Parse request body
-const { username, password, user_role, full_name, email, phone, teacher_id } = await req.json();
+    // Parse request body
+    const { username, password, user_role, full_name, email, phone, teacher_id } = await req.json();
 
     if (!username || !password || !user_role) {
       return new Response(
@@ -65,14 +80,14 @@ const { username, password, user_role, full_name, email, phone, teacher_id } = a
       );
     }
 
-// Validate user_role
-const validRoles = ['owner', 'manager', 'space_manager', 'read_only', 'teacher'];
-if (!validRoles.includes(user_role)) {
-  return new Response(
-    JSON.stringify({ error: 'Invalid user_role. Must be one of: owner, manager, space_manager, read_only, teacher' }),
-    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
-}
+    // Validate user_role - include all valid roles
+    const validRoles = ['owner', 'manager', 'space_manager', 'teacher', 'read_only'];
+    if (!validRoles.includes(user_role)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid user_role. Must be one of: ${validRoles.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Use provided email or generate one based on username
     const userEmail = email || `${username}@local.app`;
@@ -97,57 +112,67 @@ if (!validRoles.includes(user_role)) {
       );
     }
 
-    // Update the user's profile with the specified user_role and additional info
+    // Create profile for the new user using direct insert (bypass RLS)
     if (newUser.user) {
-      // Use the admin function to update profile without trigger issues
-      const { data: updatedProfile, error: profileUpdateError } = await supabaseClient
-        .rpc('admin_update_user_role', {
-          target_user_id: newUser.user.id,
-          new_user_role: user_role,
-          new_full_name: full_name || username,
-          new_email: userEmail,
-          new_phone: phone || null,
-          new_teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
-        });
-
-      if (profileUpdateError) {
-        console.error('Error updating profile via admin function:', profileUpdateError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to set user profile', details: profileUpdateError.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Also update the username separately since it's not in the admin function
-      const { error: usernameError } = await supabaseClient
+      const { data: newProfile, error: profileCreateError } = await supabaseClient
         .from('profiles')
-        .update({ username: username })
-        .eq('id', newUser.user.id);
-        
-      if (usernameError) {
-        console.error('Error updating username:', usernameError);
-      }
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        user: {
-          id: newUser.user?.id,
+        .insert({
+          id: newUser.user.id,
           email: userEmail,
           username: username,
           full_name: full_name || username,
           phone: phone || null,
-          user_role: user_role
+          user_role: user_role,
+          teacher_id: user_role === 'teacher' ? (teacher_id || null) : null,
+          role: 'USER', // Default app role
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (profileCreateError) {
+        console.error('Error creating profile:', profileCreateError);
+        
+        // Try to delete the auth user if profile creation failed
+        try {
+          await supabaseClient.auth.admin.deleteUser(newUser.user.id);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup auth user:', cleanupError);
         }
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        
+        return new Response(
+          JSON.stringify({ error: 'Failed to create user profile', details: profileCreateError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          user: {
+            id: newUser.user.id,
+            email: userEmail,
+            username: username,
+            full_name: full_name || username,
+            phone: phone || null,
+            user_role: user_role,
+            teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: 'Failed to create user - no user returned' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

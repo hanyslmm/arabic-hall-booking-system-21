@@ -85,29 +85,15 @@ const { data: teachers = [] } = useQuery({
     mutationFn: async (data: EditUserFormData) => {
       if (!user) throw new Error('No user selected');
 
-const updateData: any = {
-  userId: user.id,
-  user_role: data.user_role,
-  full_name: data.full_name || undefined,
-  email: data.email || undefined,
-  phone: data.phone || undefined,
-  teacher_id: data.user_role === 'teacher' ? data.teacher_id : null,
-};
-
-      if (data.password && data.password.trim() !== "") {
-        updateData.password = data.password;
-      }
-
-      // Call the Edge Function to update user
-      const response = await supabase.functions.invoke('update-user', {
-        body: updateData,
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to update user');
-      }
-
-      return response.data;
+      // Use the updateUser API function which handles Edge Function calls
+      return await updateUser(user.id, {
+        full_name: data.full_name,
+        email: data.email,
+        phone: data.phone,
+        user_role: data.user_role,
+        password: data.password,
+        teacher_id: data.user_role === 'teacher' ? data.teacher_id : undefined,
+      } as any);
     },
     onSuccess: () => {
       toast({
@@ -121,7 +107,7 @@ const updateData: any = {
     onError: (error: any) => {
       toast({
         title: "خطأ في تحديث المستخدم",
-        description: error.message,
+        description: error.message || "حدث خطأ غير متوقع",
         variant: "destructive",
       });
     },

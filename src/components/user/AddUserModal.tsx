@@ -65,24 +65,16 @@ defaultValues: {
 
 const addUserMutation = useMutation({
   mutationFn: async (data: UserFormData) => {
-    // Call the Edge Function to create user
-    const response = await supabase.functions.invoke('create-user', {
-body: {
-  username: data.username,
-  password: data.password,
-  full_name: data.full_name || undefined,
-  email: data.email || undefined,
-  phone: data.phone || undefined,
-  user_role: data.user_role,
-  teacher_id: data.user_role === 'teacher' ? data.teacher_id : undefined,
-},
-    });
-
-    if (response.error) {
-      throw new Error(response.error.message || 'Failed to create user');
-    }
-
-    return response.data;
+      // Use the createUser API function which handles Edge Function calls
+      return await createUser({
+        username: data.username,
+        password: data.password,
+        email: data.email,
+        full_name: data.full_name,
+        phone: data.phone,
+        user_role: data.user_role,
+        teacher_id: data.user_role === 'teacher' ? data.teacher_id : undefined,
+      });
   },
     onSuccess: () => {
       toast({
@@ -96,7 +88,7 @@ body: {
     onError: (error: any) => {
       toast({
         title: "خطأ في إضافة المستخدم",
-        description: error.message,
+        description: error.message || "حدث خطأ غير متوقع",
         variant: "destructive",
       });
     },
@@ -293,4 +285,5 @@ body: {
       </DialogContent>
     </Dialog>
   );
+  teacher_id?: string;
 };
