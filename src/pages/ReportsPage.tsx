@@ -3,7 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  ResponsiveTable, 
+  ResponsiveTableBody, 
+  ResponsiveTableCell, 
+  ResponsiveTableHead, 
+  ResponsiveTableHeader, 
+  ResponsiveTableRow 
+} from "@/components/ui/responsive-table";
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -174,8 +181,8 @@ export function ReportsPage() {
             <CardDescription>تصفية البيانات حسب المعلم أو الصف</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+            <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 md:space-x-reverse">
+              <div className="flex-1 space-y-2">
                 <label className="text-sm font-medium">المعلم</label>
                 <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
                   <SelectTrigger>
@@ -189,7 +196,7 @@ export function ReportsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="flex-1 space-y-2">
                 <label className="text-sm font-medium">المجموعة</label>
                 <Select value={selectedBooking} onValueChange={setSelectedBooking}>
                   <SelectTrigger>
@@ -203,9 +210,10 @@ export function ReportsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end md:flex-initial">
                 <Button
                   variant="outline"
+                  className="w-full md:w-auto"
                   onClick={() => {
                     // Export CSV of filtered data with per-booking collected (current month)
                     const rows = (filteredBookings || []).map(b => {
@@ -237,7 +245,7 @@ export function ReportsPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">إجمالي الإيرادات</CardTitle>
@@ -266,7 +274,7 @@ export function ReportsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="sm:col-span-2 lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-lg">متوسط قيمة الحجز</CardTitle>
             </CardHeader>
@@ -289,36 +297,42 @@ export function ReportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>القاعة</TableHead>
-                    <TableHead>المعلم</TableHead>
-                    <TableHead>الكود</TableHead>
-                    <TableHead>عدد الطلاب</TableHead>
-                    <TableHead>المحصل (هذا الشهر)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBookings?.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell>
-                        {format(new Date(booking.start_date), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>{booking.halls?.name}</TableCell>
-                      <TableCell>{booking.teachers?.name}</TableCell>
-                      <TableCell>{booking.class_code || '-'}</TableCell>
-                      <TableCell>{booking.number_of_students || 0}</TableCell>
-                      <TableCell className="font-semibold">
-                        {Number(perBookingCollected.get(booking.id) || 0).toLocaleString()} جنيه
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <ResponsiveTable>
+              <ResponsiveTableHeader>
+                <ResponsiveTableRow>
+                  <ResponsiveTableHead>التاريخ</ResponsiveTableHead>
+                  <ResponsiveTableHead>القاعة</ResponsiveTableHead>
+                  <ResponsiveTableHead>المعلم</ResponsiveTableHead>
+                  <ResponsiveTableHead>الكود</ResponsiveTableHead>
+                  <ResponsiveTableHead>عدد الطلاب</ResponsiveTableHead>
+                  <ResponsiveTableHead>المحصل (هذا الشهر)</ResponsiveTableHead>
+                </ResponsiveTableRow>
+              </ResponsiveTableHeader>
+              <ResponsiveTableBody>
+                {filteredBookings?.map((booking) => (
+                  <ResponsiveTableRow key={booking.id}>
+                    <ResponsiveTableCell label="التاريخ" primary>
+                      {format(new Date(booking.start_date), "dd/MM/yyyy")}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="القاعة">
+                      {booking.halls?.name}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="المعلم">
+                      {booking.teachers?.name}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="الكود">
+                      {booking.class_code || '-'}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="عدد الطلاب">
+                      {booking.number_of_students || 0}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="المحصل" className="font-semibold">
+                      {Number(perBookingCollected.get(booking.id) || 0).toLocaleString()} جنيه
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
+                ))}
+              </ResponsiveTableBody>
+            </ResponsiveTable>
 
             {filteredBookings?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">

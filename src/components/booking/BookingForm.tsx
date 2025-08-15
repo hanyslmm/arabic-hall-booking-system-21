@@ -331,7 +331,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
           {/* Days of Week */}
           <div className="space-y-2">
             <Label>أيام الأسبوع</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {DAYS_OF_WEEK.map((day) => (
                 <div key={day.value} className="flex items-center space-x-2 space-x-reverse justify-end">
                   <Checkbox
