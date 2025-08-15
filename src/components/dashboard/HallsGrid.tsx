@@ -54,12 +54,18 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
 
   const getOccupancyForHall = (hallId: string) => {
     const hallOccupancy = occupancyData?.find(item => item.hall_id === hallId);
+    const occupied = Number(hallOccupancy?.occupied_slots || 0);
+    const available = Number(hallOccupancy?.available_slots || 0);
+    
+    // Calculate proper percentage (round to nearest integer)
+    const percentage = available > 0 ? Math.round((occupied / available) * 100) : 0;
+    
     return {
-      percentage: Number(hallOccupancy?.occupancy_percentage || 0),
-      occupied_slots: Number(hallOccupancy?.occupied_slots || 0),
-      available_slots: Number(hallOccupancy?.available_slots || 0),
-      working_hours_per_day: Number(hallOccupancy?.working_hours_per_day || 0),
-      working_days_per_week: Number(hallOccupancy?.working_days_per_week || 0),
+      percentage,
+      occupied_slots: occupied,
+      available_slots: available,
+      working_hours_per_day: Number(hallOccupancy?.working_hours_per_day || 12), // Default 12 hours (9am-9pm)
+      working_days_per_week: Number(hallOccupancy?.working_days_per_week || 3), // Default 3 days
     };
   };
 
@@ -134,7 +140,7 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
                     {getCapacityLabel(hall.capacity)}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center space-x-2 space-x-reverse">
                       <Activity className="h-4 w-4 text-primary" />
                       <span className="text-sm text-muted-foreground">نسبة إشغال الفترات:</span>
@@ -143,9 +149,25 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
                       </span>
                     </div>
                     
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div>المحجوز: {getOccupancyForHall(hall.id).occupied_slots} من {getOccupancyForHall(hall.id).available_slots} فترة</div>
-                      <div>ساعات العمل: {getOccupancyForHall(hall.id).working_hours_per_day} ساعة/يوم × {getOccupancyForHall(hall.id).working_days_per_week} أيام</div>
+                    <div className="bg-muted/30 rounded-lg p-3 space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">الفترات المحجوزة:</span>
+                        <span className="font-medium">{getOccupancyForHall(hall.id).occupied_slots} فترة</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">إجمالي الفترات المتاحة:</span>
+                        <span className="font-medium">{getOccupancyForHall(hall.id).available_slots} فترة</span>
+                      </div>
+                      <div className="pt-2 border-t border-border/30">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">ساعات العمل يومياً:</span>
+                          <span className="font-medium">{getOccupancyForHall(hall.id).working_hours_per_day} ساعة (9 ص - 9 م)</span>
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-muted-foreground">أيام العمل:</span>
+                          <span className="font-medium">{getOccupancyForHall(hall.id).working_days_per_week} أيام/أسبوع</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   

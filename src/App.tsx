@@ -97,7 +97,9 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   
   return (
     <Suspense fallback={<LoadingScreen />}>
-      {children}
+      <UnifiedLayout>
+        {children}
+      </UnifiedLayout>
     </Suspense>
   );
 }
@@ -143,7 +145,7 @@ const App = () => {
               <Route path="/" element={<RootRoute />} />
               <Route path="/login" element={<LoginPage />} />
 
-              {/* Protected routes wrapped with UnifiedLayout */}
+              {/* Protected routes with unified navigation and logout */}
               <Route path="/booking" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
               <Route path="/teachers" element={<ProtectedRoute><TeachersPage /></ProtectedRoute>} />
@@ -160,7 +162,7 @@ const App = () => {
               <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
               <Route path="/audit-logs" element={<ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
               <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsPage /></ProtectedRoute>} />
-              <Route path="/style-showcase" element={<ProtectedRoute><UnifiedLayout><StyleShowcase /></UnifiedLayout></ProtectedRoute>} />
+              <Route path="/style-showcase" element={<ProtectedRoute><StyleShowcase /></ProtectedRoute>} />
 
               {/* Admin Routes - removed since admin routes are handled in UnifiedLayout */}
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

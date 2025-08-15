@@ -497,32 +497,76 @@
     box-shadow: 0 2px 8px hsl(var(--destructive) / 0.1);
   }
 
-  /* Border consistency fixes */
+  /* Enhanced Border consistency fixes */
   .border-consistent {
     @apply border border-border rounded-lg;
+    box-shadow: 0 1px 2px hsl(var(--border) / 0.1);
   }
 
   .border-consistent-md {
     @apply border border-border rounded-md;
+    box-shadow: 0 1px 2px hsl(var(--border) / 0.1);
   }
 
   .border-consistent-sm {
     @apply border border-border rounded-sm;
+    box-shadow: 0 1px 2px hsl(var(--border) / 0.1);
   }
 
-  /* Card border fixes */
-  .card-border-fix {
-    @apply border border-border rounded-lg shadow-sm;
+  /* Global border fixes for common UI elements */
+  .card, [role="dialog"], .modal, .popover {
+    @apply border border-border;
+    box-shadow: var(--shadow-card);
   }
 
-  /* Input border fixes */
-  .input-border-fix {
-    @apply border border-input rounded-md;
+  /* Input and form element border fixes */
+  input:not([type="checkbox"]):not([type="radio"]), 
+  textarea, 
+  select,
+  [role="combobox"] {
+    @apply border border-input bg-background;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   }
 
-  /* Button border fixes */
-  .button-border-fix {
-    @apply border border-border rounded-md;
+  input:focus:not([type="checkbox"]):not([type="radio"]), 
+  textarea:focus, 
+  select:focus,
+  [role="combobox"]:focus {
+    @apply border-primary ring-2 ring-primary/20;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Button border improvements */
+  button, [role="button"] {
+    @apply border border-transparent;
+    transition: all 0.2s ease-in-out;
+  }
+
+  button[variant="outline"], [data-variant="outline"] {
+    @apply border-border bg-background hover:bg-accent;
+  }
+
+  button[variant="secondary"], [data-variant="secondary"] {
+    @apply border-border bg-secondary hover:bg-secondary/80;
+  }
+
+  /* Table border consistency */
+  table, .table {
+    @apply border border-border rounded-md overflow-hidden;
+  }
+
+  th, td, .table-cell {
+    @apply border-r border-border last:border-r-0;
+  }
+
+  tr, .table-row {
+    @apply border-b border-border last:border-b-0;
+  }
+
+  /* Enhanced dropdown and select styling */
+  [role="listbox"], [role="menu"], .dropdown-content {
+    @apply border border-border bg-popover rounded-md shadow-lg;
+    box-shadow: var(--shadow-elegant);
   }
 
   /* Enhanced status badges */

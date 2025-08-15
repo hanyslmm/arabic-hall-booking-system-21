@@ -398,49 +398,9 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
         ))}
       </ScrollArea>
 
-      {/* Enhanced Bottom Section with Booking Info */}
+      {/* User Profile Section - Enhanced Bottom */}
       <div className="mt-auto border-t border-border/50 bg-gradient-to-t from-background/50 to-transparent">
-        {/* Booking Summary Section - New Addition */}
-        <div className="px-4 py-4 space-y-3">
-          <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-3 border border-primary/20">
-            <h4 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" />
-              ملخص حالة الدفع اليوم
-            </h4>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">إجمالي الطلاب</span>
-                <span className="font-bold text-foreground">84</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">الحضور حتى الآن</span>
-                <span className="font-bold text-green-600">80</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                <div className="bg-gradient-to-r from-primary to-primary-dark h-full transition-all duration-500" style={{ width: '95%' }}></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-card/50 rounded-lg p-2 text-center border border-border/30">
-              <div className="text-xs text-muted-foreground">القاعة الأولى</div>
-              <div className="text-sm font-bold text-foreground">140 جنيه</div>
-            </div>
-            <div className="bg-card/50 rounded-lg p-2 text-center border border-border/30">
-              <div className="text-xs text-muted-foreground">عدد الطلاب</div>
-              <div className="text-sm font-bold text-foreground">84 طالب</div>
-            </div>
-            <div className="bg-card/50 rounded-lg p-2 text-center border border-border/30">
-              <div className="text-xs text-muted-foreground">الوقت</div>
-              <div className="text-sm font-bold text-foreground">14:00</div>
-            </div>
-          </div>
-        </div>
-
-        {/* User Profile Section - Enhanced */}
-        <div className="px-4 py-3 border-t border-border/30">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 border-2 border-primary/20">
