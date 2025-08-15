@@ -469,7 +469,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
 
       {/* Mobile Sidebar - Using Sheet component for better mobile experience */}
       <Sheet open={sidebarOpen} onOpenChange={(open) => open ? openSidebar() : closeSidebar()}>
-        <SheetContent side="right" className="w-[85%] max-w-sm p-0 overflow-hidden" style={{ direction: 'rtl' }}>
+        <SheetContent side="right" className="w-[85%] max-w-sm p-0 overflow-hidden z-[100]" style={{ direction: 'rtl' }}>
           <SidebarContent />
         </SheetContent>
       </Sheet>
