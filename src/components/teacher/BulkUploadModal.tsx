@@ -265,128 +265,156 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
             booking = newBooking;
           }
 
-          // Process students for this class
-          for (const studentData of classData.students) {
+          // Process students for this class in batches for better performance
+          const batchSize = 10; // Process 10 students at a time
+          const studentBatches = [];
+          for (let i = 0; i < classData.students.length; i += batchSize) {
+            studentBatches.push(classData.students.slice(i, i + batchSize));
+          }
+
+          // First, get all existing students by mobile numbers to avoid multiple queries
+          const allMobileNumbers = classData.students.map(s => s.mobile);
+          const { data: existingStudentsData } = await supabase
+            .from('students')
+            .select('*')
+            .in('mobile_phone', allMobileNumbers);
+
+          const existingStudentsMap = new Map<string, any>(
+            existingStudentsData?.map(student => [student.mobile_phone, student]) || []
+          );
+
+          // Get existing registrations for this booking to avoid duplicates in append mode
+          const { data: existingRegistrationsData } = await supabase
+            .from('student_registrations')
+            .select('student_id')
+            .eq('booking_id', booking.id);
+
+          const existingRegistrationStudentIds = new Set(
+            existingRegistrationsData?.map(reg => reg.student_id) || []
+          );
+
+          for (const batch of studentBatches) {
+            setProgress(prev => prev ? {
+              ...prev,
+              processed: processedSteps + batch.length,
+              currentStep: `معالجة مجموعة من ${batch.length} طلاب...`
+            } : null);
+
             try {
-              setProgress(prev => prev ? {
-                ...prev,
-                processed: processedSteps + 1,
-                currentStep: `معالجة الطالب ${studentData.name}...`
-              } : null);
+              // Prepare batch operations
+              const studentsToCreate = [];
+              const registrationsToCreate = [];
+              const paymentsToCreate = [];
+              const studentPromises = [];
 
-              // Find existing student by mobile number
-              const { data: existingStudents } = await supabase
-                .from('students')
-                .select('*')
-                .eq('mobile_phone', studentData.mobile);
-
-              let student;
-              if (existingStudents && existingStudents.length > 0) {
-                student = existingStudents[0];
-              } else {
-                // Create new student using the students API that handles serial number generation
-                try {
-                  const newStudent = await studentsApi.create({
-                    name: studentData.name,
-                    mobile_phone: studentData.mobile,
-                    parent_phone: studentData.home || undefined,
-                    city: studentData.city || undefined
-                  });
-                  student = newStudent;
-
-                } catch (studentError: any) {
-                  errors.push(`خطأ في إنشاء الطالب ${studentData.name}: ${studentError.message}`);
-                  processedSteps++;
-                  continue;
-                }
-              }
-
-              // Check if student is already registered in this class (for append mode)
-              let registration;
-              if (data.mode === 'append') {
-                const { data: existingRegistration } = await supabase
-                  .from('student_registrations')
-                  .select('*')
-                  .eq('student_id', student.id)
-                  .eq('booking_id', booking.id)
-                  .single();
-
-                if (existingRegistration) {
-                  registration = existingRegistration;
-                  // Update existing registration if needed
-                  const { error: updateError } = await supabase
-                    .from('student_registrations')
-                    .update({
-                      total_fees: booking.class_fees || 0, // Use class fees, not from Excel
-                      updated_at: new Date().toISOString()
+              for (const studentData of batch) {
+                let student = existingStudentsMap.get(studentData.mobile);
+                
+                if (!student) {
+                  // Use the students API for new students
+                  studentPromises.push(
+                    studentsApi.create({
+                      name: studentData.name,
+                      mobile_phone: studentData.mobile,
+                      parent_phone: studentData.home || undefined,
+                      city: studentData.city || undefined
+                    }).then(newStudent => {
+                      existingStudentsMap.set(studentData.mobile, newStudent);
+                      return { studentData, student: newStudent };
+                    }).catch(error => {
+                      errors.push(`خطأ في إنشاء الطالب ${studentData.name}: ${error.message}`);
+                      return null;
                     })
-                    .eq('id', registration.id);
-
-                  if (updateError) {
-                    errors.push(`خطأ في تحديث تسجيل الطالب ${studentData.name}: ${updateError.message}`);
-                  }
+                  );
                 } else {
-                  // Create new registration for append mode
-                  const { data: newRegistration, error: regError } = await supabase
-                    .from('student_registrations')
-                    .insert({
-                      student_id: student.id,
-                      booking_id: booking.id,
-                      total_fees: booking.class_fees || 0, // Use class fees, not from Excel
-                      payment_status: 'pending'
-                    })
-                    .select()
-                    .single();
-
-                  if (regError) {
-                    errors.push(`خطأ في تسجيل الطالب ${studentData.name}: ${regError.message}`);
-                    processedSteps++;
+                  // Student already exists, prepare registration
+                  if (data.mode === 'append' && existingRegistrationStudentIds.has(student.id)) {
+                    // Skip if already registered in append mode
                     continue;
                   }
-                  registration = newRegistration;
-                }
-              } else {
-                // Create new registration for delete mode (fresh start)
-                const { data: newRegistration, error: regError } = await supabase
-                  .from('student_registrations')
-                  .insert({
+                  
+                  registrationsToCreate.push({
                     student_id: student.id,
                     booking_id: booking.id,
-                    total_fees: booking.class_fees || 0, // Use class fees, not from Excel
+                    total_fees: booking.class_fees || 0,
                     payment_status: 'pending'
-                  })
-                  .select()
-                  .single();
-
-                if (regError) {
-                  errors.push(`خطأ في تسجيل الطالب ${studentData.name}: ${regError.message}`);
-                  processedSteps++;
-                  continue;
-                }
-                registration = newRegistration;
-              }
-
-              // Create payment record if "dars" payment amount is provided
-              if (studentData.darsPayment && studentData.darsPayment > 0 && registration) {
-                const { error: paymentError } = await supabase
-                  .from('payment_records')
-                  .insert({
-                    student_registration_id: registration.id,
-                    amount: studentData.darsPayment,
-                    payment_date: new Date().toISOString().split('T')[0],
-                    payment_method: 'cash',
-                    notes: 'مستورد من ملف Excel - عمود Dars'
                   });
 
-                if (paymentError) {
-                  errors.push(`خطأ في إضافة دفعة للطالب ${studentData.name}: ${paymentError.message}`);
+                  // Prepare payment record if applicable
+                  if (studentData.darsPayment && studentData.darsPayment > 0) {
+                    paymentsToCreate.push({
+                      studentData,
+                      studentId: student.id
+                    });
+                  }
                 }
               }
 
-              processedSteps++;
+              // Wait for all new students to be created
+              const newStudentResults = await Promise.all(studentPromises);
+              
+              // Add registrations for newly created students
+              for (const result of newStudentResults) {
+                if (result) {
+                  const { studentData, student } = result;
+                  registrationsToCreate.push({
+                    student_id: student.id,
+                    booking_id: booking.id,
+                    total_fees: booking.class_fees || 0,
+                    payment_status: 'pending'
+                  });
+
+                  if (studentData.darsPayment && studentData.darsPayment > 0) {
+                    paymentsToCreate.push({
+                      studentData,
+                      studentId: student.id
+                    });
+                  }
+                }
+              }
+
+              // Batch insert registrations
+              if (registrationsToCreate.length > 0) {
+                const { data: newRegistrations, error: regError } = await supabase
+                  .from('student_registrations')
+                  .insert(registrationsToCreate)
+                  .select();
+
+                if (regError) {
+                  errors.push(`خطأ في تسجيل مجموعة من الطلاب: ${regError.message}`);
+                } else if (newRegistrations) {
+                  // Batch insert payments if any
+                  const paymentRecords = [];
+                  for (let i = 0; i < paymentsToCreate.length; i++) {
+                    const paymentInfo = paymentsToCreate[i];
+                    const registration = newRegistrations.find(reg => reg.student_id === paymentInfo.studentId);
+                    if (registration) {
+                      paymentRecords.push({
+                        student_registration_id: registration.id,
+                        amount: paymentInfo.studentData.darsPayment,
+                        payment_date: new Date().toISOString().split('T')[0],
+                        payment_method: 'cash',
+                        notes: 'مستورد من ملف Excel - عمود Dars'
+                      });
+                    }
+                  }
+
+                  if (paymentRecords.length > 0) {
+                    const { error: paymentError } = await supabase
+                      .from('payment_records')
+                      .insert(paymentRecords);
+
+                    if (paymentError) {
+                      errors.push(`خطأ في إضافة الدفعات: ${paymentError.message}`);
+                    }
+                  }
+                }
+              }
+
+              processedSteps += batch.length;
             } catch (error) {
-              errors.push(`خطأ في معالجة الطالب ${studentData.name}: ${error}`);
-              processedSteps++;
+              errors.push(`خطأ في معالجة مجموعة من الطلاب: ${error}`);
+              processedSteps += batch.length;
             }
           }
         } catch (error) {
