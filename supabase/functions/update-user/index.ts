@@ -144,6 +144,11 @@ serve(async (req) => {
       const effectiveRole = (profileUpdateData.user_role ?? targetProfile.user_role) as string | null;
       profileUpdateData.teacher_id = (effectiveRole === 'teacher') ? teacher_id : null;
     }
+    
+    // Handle phone field - only add if it's provided and not empty
+    if (phone !== undefined && phone !== null && phone.trim() !== '') {
+      profileUpdateData.phone = phone;
+    }
 
     if (Object.keys(profileUpdateData).length > 0) {
       console.log('Updating profile with data:', profileUpdateData);

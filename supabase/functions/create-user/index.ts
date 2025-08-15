@@ -99,36 +99,33 @@ if (!validRoles.includes(user_role)) {
 
     // Update the user's profile with the specified user_role and additional info
     if (newUser.user) {
-const { error: profileUpdateError } = await supabaseClient
-  .from('profiles')
-  .update({ 
-    user_role: user_role,
-    full_name: full_name || username,
-    email: userEmail,
-    phone: phone || null,
-    username: username,
-    teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
-  })
-  .eq('id', newUser.user.id);
+      // Use the admin function to update profile without trigger issues
+      const { data: updatedProfile, error: profileUpdateError } = await supabaseClient
+        .rpc('admin_update_user_role', {
+          target_user_id: newUser.user.id,
+          new_user_role: user_role,
+          new_full_name: full_name || username,
+          new_email: userEmail,
+          new_phone: phone || null,
+          new_teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
+        });
 
       if (profileUpdateError) {
-        console.error('Error updating profile:', profileUpdateError);
-        // Try to insert if update failed (profile might not exist)
-        const { error: insertError } = await supabaseClient
-          .from('profiles')
-.insert({
-  id: newUser.user.id,
-  user_role: user_role,
-  full_name: full_name || username,
-  email: userEmail,
-  phone: phone || null,
-  username: username,
-  teacher_id: user_role === 'teacher' ? (teacher_id || null) : null
-});
+        console.error('Error updating profile via admin function:', profileUpdateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to set user profile', details: profileUpdateError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Also update the username separately since it's not in the admin function
+      const { error: usernameError } = await supabaseClient
+        .from('profiles')
+        .update({ username: username })
+        .eq('id', newUser.user.id);
         
-        if (insertError) {
-          console.error('Error inserting profile:', insertError);
-        }
+      if (usernameError) {
+        console.error('Error updating username:', usernameError);
       }
     }
 
