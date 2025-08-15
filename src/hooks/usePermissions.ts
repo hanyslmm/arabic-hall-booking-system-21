@@ -34,17 +34,15 @@ export const usePermissions = (profile: UserProfile | null): AuthPermissions => 
     const isOwner = userRole === USER_ROLES.OWNER || appRole === 'ADMIN';
     const isManager = userRole === USER_ROLES.MANAGER;
     const isSpaceManager = userRole === 'space_manager';
-    
-    // Only owner has full admin privileges, manager has same as space_manager
-    const isAdmin = isOwner; // Only owner is admin now
+    const isAdmin = isOwner; // Only owner has full admin privileges, manager is limited
 
     return {
       isOwner,
       isAdmin,
       isManager: isManager || isOwner, // Manager includes owner
-      canManageBookings: isAdmin || isManager || isSpaceManager, // Managers can manage bookings like space managers
-      canManageData: isAdmin || isManager || isSpaceManager, // Managers can manage data like space managers
-      canManageUsers: isAdmin // Only owners can manage users now
+      canManageBookings: isAdmin || isManager || isSpaceManager, // All roles can manage bookings
+      canManageData: isAdmin || isManager || isSpaceManager, // All roles can manage data  
+      canManageUsers: isOwner // Only owner can manage users (not manager)
     };
   }, [profile]);
 };
