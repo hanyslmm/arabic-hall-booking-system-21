@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile } from "@/api/users";
+import { UserProfile, updateUser } from "@/api/users";
 import { User, Lock, Mail, Phone, Shield, Edit, Key } from "lucide-react";
 
 const editUserSchema = z.object({

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { User, Lock, Mail, Phone, Shield, UserPlus } from "lucide-react";
+import { createUser } from "@/api/users";
 
 const userSchema = z.object({
   username: z.string().min(1, "يرجى إدخال اسم المستخدم"),
@@ -285,5 +286,4 @@ const addUserMutation = useMutation({
       </DialogContent>
     </Dialog>
   );
-  teacher_id?: string;
 };

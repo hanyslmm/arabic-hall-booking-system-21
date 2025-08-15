@@ -18,6 +18,7 @@ export type CreateUserData = {
   full_name?: string;
   phone?: string;
   user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
+  teacher_id?: string;
 };
 
 export type UpdateUserData = {
