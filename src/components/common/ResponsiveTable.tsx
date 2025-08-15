@@ -50,28 +50,29 @@ export function ResponsiveTable({
 
   if (isMobile) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {data.map((row, index) => (
           <Card 
             key={index} 
-            className={`${onRowClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            variant="elevated"
+            className={`${onRowClick ? 'cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1' : ''} border border-border/50`}
             onClick={() => onRowClick?.(row)}
           >
-            <CardContent className="p-4">
-              <div className="space-y-2">
+            <CardContent className="p-5">
+              <div className="mobile-content">
                 {columns
                   .filter(col => col.mobileShow !== false)
-                  .slice(0, 4) // Show max 4 fields on mobile
+                  .slice(0, 5) // Show max 5 fields on mobile for better UX
                   .map((column) => {
                     const value = row[column.key];
                     const displayValue = column.render ? column.render(value, row) : value;
                     
                     return (
-                      <div key={column.key} className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground font-medium">
+                      <div key={column.key} className="flex justify-between items-start gap-3">
+                        <span className="text-sm text-muted-foreground font-medium min-w-0 flex-shrink-0">
                           {column.label}:
                         </span>
-                        <div className="text-sm font-medium">
+                        <div className="text-sm font-medium text-right min-w-0 flex-1 break-words">
                           {displayValue}
                         </div>
                       </div>

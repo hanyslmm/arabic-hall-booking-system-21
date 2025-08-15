@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,15 +85,16 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <Card key={i} className="card-elevated">
-            <CardHeader className="pb-3">
-              <Skeleton className="h-6 w-24" />
+      <div className="responsive-grid">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i} variant="elevated" className="animate-pulse">
+            <CardHeader className="pb-4">
+              <div className="skeleton-animate h-6 w-24 rounded"></div>
             </CardHeader>
-            <CardContent>
-              <Skeleton className="h-4 w-20 mb-2" />
-              <Skeleton className="h-4 w-16" />
+            <CardContent className="space-y-3">
+              <div className="skeleton-animate h-4 w-20 rounded"></div>
+              <div className="skeleton-animate h-4 w-16 rounded"></div>
+              <div className="skeleton-animate h-8 w-full rounded"></div>
             </CardContent>
           </Card>
         ))}
@@ -105,93 +105,121 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-destructive">حدث خطأ في تحميل القاعات. يرجى تسجيل الدخول مرة أخرى إذا استمر الخطأ.</p>
+        <p className="text-destructive">خطأ في تحميل البيانات</p>
+      </div>
+    );
+  }
+
+  if (!halls || halls.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+          <Users className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold">لا توجد قاعات</h3>
+        <p className="text-muted-foreground">لم يتم إضافة أي قاعات بعد</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">القاعات المتاحة</h2>
-          <Badge variant="outline" className="text-muted-foreground">
-            {halls?.length} قاعة
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {halls?.map((hall) => (
-            <Card 
-              key={hall.id} 
-              className="card-elevated hover:shadow-lg transition-shadow cursor-pointer"
+      <div className="responsive-grid">
+        {halls?.map((hall) => {
+          const occupancy = getOccupancyForHall(hall.id);
+          return (
+            <Card
+              key={hall.id}
+              variant="interactive"
+              className="group relative overflow-hidden border-l-4 border-l-primary hover:border-l-primary-glow transition-all duration-300"
               onClick={() => handleHallClick(hall)}
             >
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span>{hall.name}</span>
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                </CardTitle>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <CardHeader className="pb-4 relative z-10">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors duration-200">
+                    {hall.name}
+                  </CardTitle>
+                  <Badge 
+                    className={`${getCapacityVariant(hall.capacity)} text-xs font-medium`}
+                  >
+                    {getCapacityLabel(hall.capacity)}
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">السعة:</span>
-                    <span className="font-semibold text-primary">{hall.capacity} طالب</span>
+              
+              <CardContent className="space-y-4 relative z-10">
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
+                      <Users className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground">السعة الكاملة</div>
+                      <div className="text-sm font-semibold">{hall.capacity} طالب</div>
+                    </div>
                   </div>
                   
-                  <div className={`capacity-indicator ${getCapacityVariant(hall.capacity)}`}>
-                    {getCapacityLabel(hall.capacity)}
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-info/10 text-info">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground">الساعات المتاحة</div>
+                      <div className="text-sm font-semibold">{occupancy.available_slots} ساعة/أسبوع</div>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Activity className="h-4 w-4 text-primary" />
-                      <span className="text-sm text-muted-foreground">نسبة إشغال الفترات:</span>
-                      <span className={`font-semibold ${getOccupancyColor(getOccupancyForHall(hall.id).percentage)}`}>
-                        {getOccupancyForHall(hall.id).percentage}%
-                      </span>
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-warning/10 text-warning">
+                      <Activity className="h-4 w-4" />
                     </div>
-                    
-                    <div className="bg-muted/30 rounded-lg p-3 space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">الفترات المحجوزة:</span>
-                        <span className="font-medium">{getOccupancyForHall(hall.id).occupied_slots} فترة</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">إجمالي الفترات المتاحة:</span>
-                        <span className="font-medium">{getOccupancyForHall(hall.id).available_slots} فترة</span>
-                      </div>
-                      <div className="pt-2 border-t border-border/30">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">ساعات العمل يومياً:</span>
-                          <span className="font-medium">{getOccupancyForHall(hall.id).working_hours_per_day} ساعة (9 ص - 9 م)</span>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <span className="text-muted-foreground">أيام العمل:</span>
-                          <span className="font-medium">السبت والأحد ({getOccupancyForHall(hall.id).working_days_per_week} أيام/أسبوع)</span>
-                        </div>
-                      </div>
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground">الساعات المحجوزة</div>
+                      <div className="text-sm font-semibold">{occupancy.occupied_slots} ساعة</div>
                     </div>
                   </div>
-                  
-                  <p className="text-xs text-muted-foreground mt-2">
-                    انقر لعرض الجدول الأسبوعي
-                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-muted-foreground">نسبة الإشغال</span>
+                    <span className={`text-sm font-bold px-2 py-1 rounded-full ${
+                      occupancy.percentage >= 80 ? 'bg-destructive/10 text-destructive' :
+                      occupancy.percentage >= 50 ? 'bg-warning/10 text-warning' : 
+                      'bg-success/10 text-success'
+                    }`}>
+                      %{occupancy.percentage}
+                    </span>
+                  </div>
+                  <div className="relative w-full bg-muted rounded-full h-3 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ease-out relative ${
+                        occupancy.percentage >= 80 ? 'bg-gradient-to-r from-destructive/80 to-destructive' :
+                        occupancy.percentage >= 50 ? 'bg-gradient-to-r from-warning/80 to-warning' : 
+                        'bg-gradient-to-r from-success/80 to-success'
+                      }`}
+                      style={{ width: `${Math.min(occupancy.percentage, 100)}%` }}
+                    >
+                      <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      <HallScheduleModal
-        hallId={selectedHall?.id || null}
-        hallName={selectedHall?.name || ""}
-        isOpen={!!selectedHall}
-        onClose={() => setSelectedHall(null)}
-      />
+      {selectedHall && (
+        <HallScheduleModal
+          hallId={selectedHall.id}
+          hallName={selectedHall.name}
+          isOpen={!!selectedHall}
+          onClose={() => setSelectedHall(null)}
+        />
+      )}
     </>
   );
 };

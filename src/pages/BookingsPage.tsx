@@ -30,6 +30,7 @@ import {
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { GraduationCap } from "lucide-react";
 import { studentRegistrationsApi } from "@/api/students";
 
 interface Booking {
@@ -580,25 +581,50 @@ const BookingsPage = () => {
   return (
     <UnifiedLayout>
       <div className="container mx-auto py-6 space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary">{profile?.user_role === 'teacher' ? 'مراقبة المجموعات' : 'إدارة المجموعات'}</h1>
-            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-              {profile?.user_role === 'teacher' ? 'عرض المجموعات والطلاب ونِسَب الدفع للشهر المحدد' : 'عرض وإدارة المجموعات الدراسية والطلاب المسجلين بها'}
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <span className="font-semibold">{bookings?.length || 0} مجموعة</span>
+        {/* Enhanced Header Section */}
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-xl border">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-primary-foreground">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  {profile?.user_role === 'teacher' ? 'مراقبة المجموعات' : 'إدارة المجموعات'}
+                </h1>
+                <p className="text-muted-foreground">
+                  {profile?.user_role === 'teacher' 
+                    ? 'مراقبة حضور الطلاب في المجموعات المخصصة لك'
+                    : 'عرض وإدارة جميع المجموعات والحجوزات'
+                  }
+                </p>
+              </div>
             </div>
-            {canManage && (
-              <Button onClick={() => navigate('/booking')} className="btn-primary w-full sm:w-auto">
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة مجموعة جديدة
-              </Button>
-            )}
+            
+            <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-lg border border-success/20">
+                <Users className="h-4 w-4" />
+                <span className="text-sm font-semibold">{bookings?.length || 0} مجموعة نشطة</span>
+              </div>
+              {profile?.user_role === 'teacher' && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-info/10 text-info rounded-lg border border-info/20">
+                  <GraduationCap className="h-4 w-4" />
+                  <span className="text-sm font-semibold">معلم</span>
+                </div>
+              )}
+            </div>
           </div>
+          
+          {canManage && (
+            <Button 
+              onClick={() => navigate('/booking')} 
+              className="btn-primary touch-friendly flex items-center gap-2"
+              size="lg"
+            >
+              <Plus className="h-5 w-5" />
+              إضافة مجموعة جديدة
+            </Button>
+          )}
         </div>
 
         {/* Filters */}

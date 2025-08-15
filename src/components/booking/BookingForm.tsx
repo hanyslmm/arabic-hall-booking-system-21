@@ -20,6 +20,7 @@ import { ar } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { formatArabicDate } from "@/utils/dateUtils";
+import { useNavigate } from "react-router-dom";
 
 const bookingSchema = z.object({
   hall_id: z.string().min(1, "يرجى اختيار القاعة"),
@@ -58,6 +59,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   }>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch default booking duration from settings
   const { data: settings } = useQuery({
@@ -224,8 +226,13 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
                   الأيام: <span className="font-medium">{recentBookingSummary.days.map(d => DAYS_OF_WEEK.find(dd => dd.value === d)?.label || d).join('، ')}</span>
                 </div>
                 <div className="pt-2">
-                  <Button asChild size="sm" variant="secondary" className="w-full sm:w-auto">
-                    <a href="/bookings">عرض جميع المجموعات</a>
+                  <Button 
+                    onClick={() => navigate('/bookings')} 
+                    size="sm" 
+                    variant="secondary" 
+                    className="w-full sm:w-auto"
+                  >
+                    عرض جميع المجموعات
                   </Button>
                 </div>
               </div>
