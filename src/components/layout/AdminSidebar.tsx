@@ -453,7 +453,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
                 {getRoleBadge(profile?.user_role)}
               </div>
             </div>
-            <SignOutButton />
+            <LogoutButton />
           </div>
         </div>
       </div>
