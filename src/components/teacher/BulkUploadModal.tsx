@@ -276,12 +276,16 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
           const allMobileNumbers = classData.students.map(s => s.mobile);
           const { data: existingStudentsData } = await supabase
             .from('students')
-            .select('*')
-            .in('mobile_phone', allMobileNumbers);
+            .select('*');
 
-          const existingStudentsMap = new Map<string, any>(
-            existingStudentsData?.map(student => [student.mobile_phone, student]) || []
-          );
+          // Create a map using normalized mobile numbers for comparison
+          const existingStudentsMap = new Map<string, any>();
+          if (existingStudentsData) {
+            existingStudentsData.forEach(student => {
+              const normalizedMobile = normalizeMobileNumber(student.mobile_phone);
+              existingStudentsMap.set(normalizedMobile, student);
+            });
+          }
 
           // Get existing registrations for this booking to avoid duplicates in append mode
           const { data: existingRegistrationsData } = await supabase
@@ -308,7 +312,8 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
               const studentPromises = [];
 
               for (const studentData of batch) {
-                let student = existingStudentsMap.get(studentData.mobile);
+                const normalizedMobile = normalizeMobileNumber(studentData.mobile);
+                let student = existingStudentsMap.get(normalizedMobile);
                 
                 if (!student) {
                   // Use the students API for new students
@@ -319,7 +324,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                       parent_phone: studentData.home || undefined,
                       city: studentData.city || undefined
                     }).then(newStudent => {
-                      existingStudentsMap.set(studentData.mobile, newStudent);
+                      existingStudentsMap.set(normalizedMobile, newStudent);
                       return { studentData, student: newStudent };
                     }).catch(error => {
                       errors.push(`خطأ في إنشاء الطالب ${studentData.name}: ${error.message}`);
@@ -479,7 +484,9 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
 
   const normalizeMobileNumber = (mobile: any): string => {
     if (!mobile) return '';
-    return mobile.toString().replace(/\D/g, '');
+    // Remove all non-digits and leading zeros
+    const cleaned = mobile.toString().replace(/\D/g, '');
+    return cleaned.replace(/^0+/, '') || '0'; // Keep at least one zero if the number is all zeros
   };
 
   const getDarsPaymentValue = (row: any, darsColumnIndexes?: number[]): number => {
