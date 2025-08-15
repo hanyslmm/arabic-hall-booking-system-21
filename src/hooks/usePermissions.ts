@@ -33,15 +33,16 @@ export const usePermissions = (profile: UserProfile | null): AuthPermissions => 
 
     const isOwner = userRole === USER_ROLES.OWNER || appRole === 'ADMIN';
     const isManager = userRole === USER_ROLES.MANAGER;
+    const isSpaceManager = userRole === 'space_manager';
     const isAdmin = isOwner || isManager; // Admin is derived from owner or manager, or legacy ADMIN role
 
     return {
       isOwner,
       isAdmin,
       isManager: isManager || isOwner, // Manager includes owner
-      canManageBookings: isAdmin,
-      canManageData: isAdmin,
-      canManageUsers: isAdmin
+      canManageBookings: isAdmin || isSpaceManager, // Space managers can manage bookings
+      canManageData: isAdmin || isSpaceManager, // Space managers can manage data
+      canManageUsers: isAdmin // Only admins can manage users
     };
   }, [profile]);
 };

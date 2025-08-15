@@ -128,15 +128,7 @@ serve(async (req) => {
         // Keep system admin as owner regardless of requested role
         profileUpdateData.user_role = 'owner';
       } else {
-        // Prevent changing current owners/managers to teacher/read_only/space_manager unless explicitly allowed
-        const isCurrentlyAdmin = targetProfile.user_role === 'owner' || targetProfile.user_role === 'manager';
-        const isRequestedNonAdmin = user_role === 'teacher' || user_role === 'read_only' || user_role === 'space_manager';
-        if (isCurrentlyAdmin && isRequestedNonAdmin) {
-          return new Response(
-            JSON.stringify({ error: 'Cannot demote admin users to non-admin roles' }),
-            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
+        // Allow role changes for space_manager - no restrictions on promoting to space_manager
         profileUpdateData.user_role = user_role;
       }
     }

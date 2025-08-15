@@ -697,6 +697,10 @@ export type Database = {
         Args: { p_fee: number; p_teacher_id: string }
         Returns: undefined
       }
+      can_manage_operations: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       check_booking_conflict: {
         Args: {
           p_booking_id?: string
