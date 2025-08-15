@@ -689,6 +689,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_user_role: {
+        Args: {
+          new_email?: string
+          new_full_name?: string
+          new_phone?: string
+          new_teacher_id?: string
+          new_user_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
+        Returns: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          teacher_id: string | null
+          updated_at: string
+          user_role: Database["public"]["Enums"]["user_role"] | null
+          username: string | null
+        }
+      }
       apply_booking_fee: {
         Args: { p_booking_id: string }
         Returns: undefined

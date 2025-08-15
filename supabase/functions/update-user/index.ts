@@ -148,20 +148,15 @@ serve(async (req) => {
     if (Object.keys(profileUpdateData).length > 0) {
       console.log('Updating profile with data:', profileUpdateData);
       
-      // Use a direct SQL UPDATE to bypass RLS since we're acting as service role with admin privileges
-      // We've already verified the current user has admin permissions above
-      const updateQuery = `
-        UPDATE profiles 
-        SET ${Object.keys(profileUpdateData).map((key, index) => `${key} = $${index + 2}`).join(', ')}, updated_at = NOW()
-        WHERE id = $1
-      `;
-      
-      const queryParams = [userId, ...Object.values(profileUpdateData)];
-      
-      const { error: profileUpdateError } = await supabaseClient
-        .rpc('exec_sql', { 
-          query: updateQuery,
-          params: queryParams
+      // Use the admin function that bypasses the trigger for authorized admin operations
+      const { data: updatedProfile, error: profileUpdateError } = await supabaseClient
+        .rpc('admin_update_user_role', {
+          target_user_id: userId,
+          new_user_role: profileUpdateData.user_role || null,
+          new_full_name: profileUpdateData.full_name || null,
+          new_email: profileUpdateData.email || null,
+          new_phone: profileUpdateData.phone || null,
+          new_teacher_id: profileUpdateData.teacher_id || null
         });
 
       if (profileUpdateError) {
