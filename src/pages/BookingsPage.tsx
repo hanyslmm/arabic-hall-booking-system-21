@@ -579,7 +579,7 @@ const BookingsPage = () => {
 
   return (
     <UnifiedLayout>
-      <div className="space-y-6">
+      <div className="container mx-auto py-6 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-primary">{profile?.user_role === 'teacher' ? 'مراقبة المجموعات' : 'إدارة المجموعات'}</h1>
@@ -593,7 +593,8 @@ const BookingsPage = () => {
               <span className="font-semibold">{bookings?.length || 0} مجموعة</span>
             </div>
             {canManage && (
-              <Button onClick={() => navigate('/booking')} className="w-full sm:w-auto">
+              <Button onClick={() => navigate('/booking')} className="btn-primary w-full sm:w-auto">
+                <Plus className="h-4 w-4 ml-2" />
                 إضافة مجموعة جديدة
               </Button>
             )}
@@ -601,7 +602,7 @@ const BookingsPage = () => {
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="card-elevated">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Filter className="h-4 w-4 sm:h-5 sm:w-5" />

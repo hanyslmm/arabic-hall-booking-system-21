@@ -731,6 +731,21 @@
     @apply bg-muted/50;
   }
 
+  /* Fix duplicated content spacing */
+  .mobile-table-row {
+    @apply border-b border-border/20 pb-4 mb-4 last:border-b-0 last:mb-0;
+  }
+
+  /* Ensure proper spacing in mobile views */
+  .mobile-content {
+    @apply space-y-2;
+  }
+
+  /* Fix white space issues */
+  .container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
   /* Enhanced mobile interactions */
   @media (hover: none) and (pointer: coarse) {
     /* Remove hover effects on touch devices */

@@ -56,10 +56,10 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
     const hallOccupancy = occupancyData?.find(item => item.hall_id === hallId);
     const occupied = Number(hallOccupancy?.occupied_slots || 0);
     
-    // Calculate available slots: 12 hours Saturday + 12 hours Sunday = 24 total slots
-    // Each slot is 1 hour, 3 times per week (Sat/Sun schedule)
-    const working_hours_per_day = Number(hallOccupancy?.working_hours_per_day || 12); // 9am-9pm = 12 hours
-    const working_days_per_week = Number(hallOccupancy?.working_days_per_week || 2); // Saturday + Sunday = 2 days
+    // Fixed calculation: 12 hours Saturday + 12 hours Sunday = 24 total available slots
+    // Each time slot is 1 hour, and we work Saturday and Sunday only
+    const working_hours_per_day = 12; // 9am-9pm = 12 hours
+    const working_days_per_week = 2; // Saturday + Sunday = 2 days
     const available = working_hours_per_day * working_days_per_week; // 12 * 2 = 24 slots
     
     // Calculate proper percentage (round to nearest integer)

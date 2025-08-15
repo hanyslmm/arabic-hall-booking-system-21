@@ -225,7 +225,7 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
                 </div>
                 <div className="pt-2">
                   <Button asChild size="sm" variant="secondary" className="w-full sm:w-auto">
-                    <a href="/bookings">عرض جميع الحجوزات</a>
+                    <a href="/bookings">عرض جميع المجموعات</a>
                   </Button>
                 </div>
               </div>
