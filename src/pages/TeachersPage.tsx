@@ -343,7 +343,7 @@ const TeachersPage = () => {
             <BulkUploadModal>
               <Button variant="outline" className="gap-2">
                 <Upload className="h-4 w-4" />
-                استيراد CSV
+                رفع ملف Excel
               </Button>
             </BulkUploadModal>
           </div>
