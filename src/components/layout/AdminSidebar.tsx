@@ -462,24 +462,12 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:mr-72">
-        {/* Top Header - simplified to avoid duplication */}
-        <header className="flex h-14 sm:h-16 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-md px-4 sticky top-0 z-40">
+        {/* Top Header - only show on desktop */}
+        <header className="hidden lg:flex h-16 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-md px-6 sticky top-0 z-40">
           <div className="flex flex-1 items-center justify-between">
             <div className="flex items-center gap-2">
-              {/* Hamburger Menu Button - Only visible on mobile/tablet */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={openSidebar}
-                className="lg:hidden relative h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
-              >
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                <Menu className="h-5 w-5 relative z-10 transition-transform duration-200 group-hover:scale-110" />
-                <span className="sr-only">فتح القائمة</span>
-              </Button>
-              
               {/* Navigation buttons for desktop */}
-              <div className="hidden md:flex items-center gap-1">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -501,7 +489,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
               </div>
 
               {/* Breadcrumbs - show on desktop only */}
-              <Breadcrumb className="hidden md:flex">
+              <Breadcrumb className="flex">
                 <BreadcrumbList>
                   {breadcrumbs.map((crumb, index) => (
                     <div key={crumb.url} className="flex items-center gap-2">
@@ -522,6 +510,27 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
                   ))}
                 </BreadcrumbList>
               </Breadcrumb>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
+          </div>
+        </header>
+
+        {/* Mobile Header - only show on mobile */}
+        <header className="flex lg:hidden h-14 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-md px-4 sticky top-0 z-40">
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-2">
+              {/* Hamburger Menu Button - Only visible on mobile/tablet */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={openSidebar}
+                className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">فتح القائمة</span>
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
