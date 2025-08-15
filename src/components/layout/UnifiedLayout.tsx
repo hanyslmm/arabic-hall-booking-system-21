@@ -100,12 +100,14 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
   }
 
   return (
-    <AdminSidebar 
-      navigation={navigation as any} 
-      appTitle={appTitle} 
-      appSubtitle={appSubtitle}
-    >
-      {children}
-    </AdminSidebar>
+    <div className="min-h-screen bg-background">
+      <AdminSidebar 
+        navigation={navigation as any} 
+        appTitle={appTitle} 
+        appSubtitle={appSubtitle}
+      >
+        {children}
+      </AdminSidebar>
+    </div>
   );
 }

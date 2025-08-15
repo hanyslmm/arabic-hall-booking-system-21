@@ -320,35 +320,42 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
     .slice(0, 5);
 
   // Sidebar content component (reusable for both mobile and desktop)
-  const SidebarContent = () => (
+  const SidebarContent = ({ showHeader = true }: { showHeader?: boolean }) => (
     <div className="flex flex-col h-full bg-gradient-to-b from-card via-card/98 to-card/95">
       {/* Sidebar Header - Enhanced with better visual hierarchy */}
-      <div className="flex h-16 sm:h-18 items-center justify-between px-4 sm:px-5 border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-primary-foreground shadow-lg shadow-primary/20">
-            <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+      {showHeader && (
+        <div className="flex h-16 sm:h-18 items-center justify-between px-4 sm:px-5 border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark text-primary-foreground shadow-lg shadow-primary/20">
+              <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div className="grid flex-1 text-left leading-tight">
+              <span className="truncate font-bold text-base sm:text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                {appTitle ?? 'Science Club'}
+              </span>
+              <span className="truncate text-xs text-muted-foreground/80 hidden sm:block">
+                {appSubtitle ?? 'لوحة التحكم الإدارية'}
+              </span>
+            </div>
           </div>
-          <div className="grid flex-1 text-left leading-tight">
-            <span className="truncate font-bold text-base sm:text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              {appTitle ?? 'Science Club'}
-            </span>
-            <span className="truncate text-xs text-muted-foreground/80 hidden sm:block">
-              {appSubtitle ?? 'لوحة التحكم الإدارية'}
-            </span>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={closeSidebar}
+            className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all duration-200 lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={closeSidebar}
-          className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all duration-200 lg:hidden"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
+      )}
 
       {/* Sidebar Content with improved scrolling and spacing */}
-      <ScrollArea className="flex-1 px-3 sm:px-4 py-5 h-[calc(100vh-20rem)] sm:h-[calc(100vh-22rem)]">
+      <ScrollArea className={cn(
+        "flex-1 px-3 sm:px-4 py-5",
+        showHeader 
+          ? "h-[calc(100vh-20rem)] sm:h-[calc(100vh-22rem)]" 
+          : "h-[calc(100vh-16rem)] sm:h-[calc(100vh-18rem)]"
+      )}>
         {navGroups.map((group, groupIndex) => (
           <div key={group.title} className={cn(
             "mb-7 pb-5",
@@ -424,13 +431,32 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
     <div className="flex h-screen bg-background" style={{ ['--bottom-nav-height' as any]: `${bottomNavHeightPx}px` }}>
       {/* Desktop Sidebar - Always visible on large screens */}
       <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 lg:z-50 border-r bg-card" style={{ direction: 'rtl' }}>
-        <SidebarContent />
+        <SidebarContent showHeader={true} />
       </aside>
 
       {/* Mobile Sidebar - Using Sheet component for better mobile experience */}
       <Sheet open={sidebarOpen} onOpenChange={(open) => open ? openSidebar() : closeSidebar()}>
         <SheetContent side="right" className="w-[85%] max-w-sm p-0 overflow-hidden z-[100]" style={{ direction: 'rtl' }}>
-          <SidebarContent />
+          {/* Mobile Header inside sidebar */}
+          <div className="flex h-14 items-center justify-between px-4 border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-primary-foreground shadow-md">
+                <Building2 className="h-4 w-4" />
+              </div>
+              <span className="font-bold text-sm bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                {appTitle ?? 'Science Club'}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeSidebar}
+              className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <SidebarContent showHeader={false} />
         </SheetContent>
       </Sheet>
 

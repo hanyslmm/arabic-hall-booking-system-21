@@ -26,9 +26,7 @@ export function ModernLayout({ children }: ModernLayoutProps) {
 
   return (
     <UnifiedLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-        {children}
-      </div>
+      {children}
     </UnifiedLayout>
   );
 }
