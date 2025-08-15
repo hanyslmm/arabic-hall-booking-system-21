@@ -56,7 +56,9 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, password, user_role, full_name, email, phone, teacher_id } = await req.json();
+    const requestBody = await req.json();
+    console.log('Update user request:', requestBody);
+    const { userId, password, user_role, full_name, email, phone, teacher_id } = requestBody;
 
     if (!userId) {
       return new Response(
@@ -144,6 +146,7 @@ serve(async (req) => {
     }
 
     if (Object.keys(profileUpdateData).length > 0) {
+      console.log('Updating profile with data:', profileUpdateData);
       const { error: profileUpdateError } = await supabaseClient
         .from('profiles')
         .update(profileUpdateData)
@@ -156,6 +159,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      console.log('Profile updated successfully');
     }
 
     // Get updated profile
