@@ -14,14 +14,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { UnifiedLayout } from '@/components/layout/UnifiedLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload, Trash2, Edit, Filter } from 'lucide-react';
+import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload, Trash2, Edit, Filter, QrCode } from 'lucide-react';
 import { bookingsApi } from '@/api/bookings';
 import { studentRegistrationsApi, paymentsApi } from '@/api/students';
 import { studentsApi } from '@/api/students';
 import { BulkUploadModal } from '@/components/student/BulkUploadModal';
+import { StudentQRCodeModal } from '@/components/student/StudentQRCodeModal';
 import { format } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
-// removed duplicate import of studentRegistrationsApi
 
 interface AttendanceRecord {
   student_registration_id: string;
@@ -57,6 +57,7 @@ export default function ClassManagementPage() {
   const [editingFees, setEditingFees] = useState<Record<string, number>>({});
   const [isApplyingAll, setIsApplyingAll] = useState(false);
   const [viewingStudentDetails, setViewingStudentDetails] = useState<any | null>(null);
+  const [qrCodeStudent, setQrCodeStudent] = useState<any | null>(null);
 
   // Fetch booking details
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -601,6 +602,7 @@ export default function ClassManagementPage() {
                         <th className="text-right p-3">الرسوم</th>
                         <th className="text-right p-3">المدفوع</th>
                         <th className="text-right p-3">حالة الدفع</th>
+                        <th className="text-center p-3">QR Code</th>
                         <th className="text-center p-3">إجراءات</th>
                       </tr>
                     </thead>
@@ -647,6 +649,16 @@ export default function ClassManagementPage() {
                               {registration.payment_status === 'paid' ? 'مدفوع' :
                                registration.payment_status === 'partial' ? 'جزئي' : 'غير مدفوع'}
                             </Badge>
+                          </td>
+                          <td className="p-3 text-center">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setQrCodeStudent(registration.student)}
+                              title="عرض QR Code"
+                            >
+                              <QrCode className="w-4 h-4" />
+                            </Button>
                           </td>
                           <td className="p-3 text-center">
                             <Button
@@ -715,6 +727,16 @@ export default function ClassManagementPage() {
                   <p><strong>إجمالي المدفوع:</strong> {viewingStudentDetails.paid_amount} جنيه</p>
                   <p><strong>الحالة:</strong> <Badge variant={viewingStudentDetails.payment_status === 'paid' ? 'default' : 'destructive'}>{viewingStudentDetails.payment_status}</Badge></p>
                 </div>
+                <div className="flex justify-center mt-4">
+                  <Button
+                    onClick={() => setQrCodeStudent(viewingStudentDetails.student)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    عرض QR Code
+                  </Button>
+                </div>
                 <Separator />
                 <div>
                   <h4 className="font-semibold mb-2">سجل الحضور الشهري</h4>
@@ -731,6 +753,13 @@ export default function ClassManagementPage() {
         <BulkUploadModal
           isOpen={isBulkUploadOpen}
           onClose={() => setIsBulkUploadOpen(false)}
+        />
+
+        {/* Student QR Code Modal */}
+        <StudentQRCodeModal
+          isOpen={!!qrCodeStudent}
+          onClose={() => setQrCodeStudent(null)}
+          student={qrCodeStudent}
         />
       </div>
     </UnifiedLayout>

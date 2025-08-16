@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Download, Printer, QrCode } from 'lucide-react';
+import { Download, Printer, QrCode, Maximize2 } from 'lucide-react';
+import { FullScreenQRModal } from './FullScreenQRModal';
 
 interface Student {
   id: string;
@@ -20,6 +21,8 @@ interface StudentQRCodeModalProps {
 }
 
 export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeModalProps) => {
+  const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
+  
   if (!student) return null;
 
   const qrValue = `STUDENT:${student.serial_number}:${student.id}`;
@@ -235,7 +238,11 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
 
           {/* QR Code */}
           <div className="flex justify-center">
-            <div className="p-4 bg-white border rounded-lg">
+            <div 
+              className="p-4 bg-white border rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setIsFullScreenOpen(true)}
+              title="انقر للعرض بحجم كامل"
+            >
               <QRCodeSVG
                 id="student-qr-code"
                 value={qrValue}
@@ -244,6 +251,19 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
                 includeMargin={true}
               />
             </div>
+          </div>
+
+          {/* Full Screen Button */}
+          <div className="flex justify-center">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setIsFullScreenOpen(true)}
+              className="text-muted-foreground hover:text-primary"
+            >
+              <Maximize2 className="w-4 h-4 ml-2" />
+              عرض بحجم كامل
+            </Button>
           </div>
 
           {/* Action Buttons */}
@@ -262,6 +282,13 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             يمكن استخدام هذا الرمز لمسح بيانات الطالب سريعاً في النظام
           </div>
         </div>
+
+        {/* Full Screen QR Modal */}
+        <FullScreenQRModal
+          isOpen={isFullScreenOpen}
+          onClose={() => setIsFullScreenOpen(false)}
+          student={student}
+        />
       </DialogContent>
     </Dialog>
   );
