@@ -66,15 +66,8 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
         {/* Mobile Header */}
         <header className="flex h-14 items-center justify-between px-4 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(true)}
-              className="h-10 w-10 hover:bg-primary/10"
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">فتح القائمة</span>
-            </Button>
+            {/* Title or Logo */}
+            <h1 className="text-lg font-semibold text-primary">Science Club</h1>
           </div>
           
           <div className="flex items-center gap-2">
@@ -86,37 +79,22 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
                 {profile?.full_name?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(true)}
+              className="h-10 w-10 hover:bg-primary/10"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">فتح القائمة</span>
+            </Button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 pb-20">
+        <main className="flex-1 overflow-auto p-4">
           {children}
         </main>
-
-        {/* Mobile Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <nav className="grid grid-cols-5 h-16 max-w-screen-sm mx-auto">
-            {bottomNavItems.map((item) => {
-              const isActive = location.pathname === item.url;
-              return (
-                <button
-                  key={item.url}
-                  onClick={() => navigate(item.url)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-2 text-xs transition-colors",
-                    isActive 
-                      ? "text-primary font-medium" 
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <item.icon className={cn("h-5 w-5", isActive && "scale-110")} />
-                  <span className="text-[10px] leading-tight">{item.title}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
       </div>
     </div>
   );

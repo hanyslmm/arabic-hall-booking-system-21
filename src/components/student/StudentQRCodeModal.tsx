@@ -25,7 +25,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
   
   if (!student) return null;
 
-  const qrValue = `STUDENT:${student.serial_number}:${student.id}`;
+  const qrValue = student.serial_number;
 
   const handleDownloadQR = () => {
     const svg = document.getElementById('student-qr-code');
@@ -51,10 +51,27 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   };
 
-  const handlePrintCard = () => {
-    // Create a new window for printing the student ID card
-    const printWindow = window.open('', '_blank', 'width=600,height=800');
+  const handlePrintBarcode = () => {
+    // Create a new window for printing the barcode label
+    const printWindow = window.open('', '_blank', 'width=400,height=300');
     if (!printWindow) return;
+
+    // Generate barcode using JsBarcode
+    const canvas = document.createElement('canvas');
+    const JsBarcode = (window as any).JsBarcode;
+    
+    if (JsBarcode) {
+      JsBarcode(canvas, student.serial_number, {
+        format: "CODE128",
+        width: 2,
+        height: 60,
+        displayValue: true,
+        fontSize: 14,
+        margin: 10
+      });
+    }
+
+    const barcodeDataURL = canvas.toDataURL();
 
     const printContent = `
       <!DOCTYPE html>
@@ -62,134 +79,53 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>بطاقة الطالب - ${student.name}</title>
+        <title>ملصق باركود - ${student.serial_number}</title>
         <style>
           body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Courier New', monospace;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background: white;
             direction: rtl;
           }
-          .card {
-            width: 85.6mm;
-            height: 53.98mm;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
+          .label {
+            width: 50mm;
+            height: 25mm;
+            border: 1px solid #000;
+            padding: 2mm;
             margin: 0 auto;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-          }
-          .card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-            transform: rotate(45deg);
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 12px;
-            position: relative;
-            z-index: 1;
-          }
-          .title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #1e40af;
-            margin: 0;
-          }
-          .subtitle {
-            font-size: 12px;
-            color: #64748b;
-            margin: 2px 0 0 0;
-          }
-          .content {
+            background: white;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            position: relative;
-            z-index: 1;
+            text-align: center;
           }
-          .student-info {
-            flex: 1;
+          .barcode {
+            margin: 1mm 0;
           }
           .student-name {
-            font-size: 14px;
+            font-size: 8pt;
+            margin: 1mm 0;
             font-weight: bold;
-            color: #1f2937;
-            margin: 0 0 4px 0;
           }
-          .student-serial {
-            font-size: 12px;
-            color: #6b7280;
-            margin: 0 0 2px 0;
-          }
-          .student-phone {
-            font-size: 11px;
-            color: #6b7280;
-            margin: 0;
-            font-family: monospace;
-          }
-          .qr-section {
-            text-align: center;
-          }
-          .qr-code {
-            width: 60px;
-            height: 60px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            background: white;
-            padding: 4px;
-          }
-          .qr-label {
-            font-size: 8px;
-            color: #9ca3af;
-            margin-top: 2px;
-          }
-          .footer {
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 8px;
-            color: #d1d5db;
+          .serial-text {
+            font-size: 10pt;
+            margin: 1mm 0;
+            font-weight: bold;
           }
           @media print {
             body { margin: 0; padding: 0; }
-            .card { margin: 0; box-shadow: none; }
+            .label { margin: 0; border: 1px solid #000; }
           }
         </style>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       </head>
       <body>
-        <div class="card">
-          <div class="header">
-            <h1 class="title">بطاقة طالب</h1>
-            <p class="subtitle">نظام إدارة المراكز التعليمية</p>
-          </div>
-          <div class="content">
-            <div class="student-info">
-              <h2 class="student-name">${student.name}</h2>
-              <p class="student-serial">رقم التسلسل: ${student.serial_number}</p>
-              <p class="student-phone">الجوال: ${student.mobile_phone}</p>
-              ${student.parent_phone ? `<p class="student-phone">جوال الولي: ${student.parent_phone}</p>` : ''}
-            </div>
-            <div class="qr-section">
-              <div class="qr-code">
-                ${document.getElementById('student-qr-code')?.outerHTML || ''}
-              </div>
-              <p class="qr-label">كود الطالب</p>
-            </div>
-          </div>
-          <div class="footer">
-            تاريخ الإصدار: ${new Date().toLocaleDateString('ar')}
-          </div>
+        <div class="label">
+          <div class="student-name">${student.name}</div>
+          <img src="${barcodeDataURL}" alt="Barcode" class="barcode" />
+          <div class="serial-text">${student.serial_number}</div>
         </div>
       </body>
       </html>
@@ -198,7 +134,6 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     printWindow.document.write(printContent);
     printWindow.document.close();
     
-    // Wait for content to load then print
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
@@ -272,9 +207,9 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
               <Download className="w-4 h-4 ml-2" />
               تحميل QR Code
             </Button>
-            <Button onClick={handlePrintCard} className="flex-1">
+            <Button onClick={handlePrintBarcode} className="flex-1">
               <Printer className="w-4 h-4 ml-2" />
-              طباعة بطاقة الطالب
+              طباعة باركود الرقم التسلسلي
             </Button>
           </div>
 

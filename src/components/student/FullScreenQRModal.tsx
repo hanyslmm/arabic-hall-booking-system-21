@@ -21,7 +21,7 @@ interface FullScreenQRModalProps {
 export const FullScreenQRModal = ({ isOpen, onClose, student }: FullScreenQRModalProps) => {
   if (!student) return null;
 
-  const qrValue = `STUDENT:${student.serial_number}:${student.id}`;
+  const qrValue = student.serial_number;
 
   const handleDownloadQR = () => {
     const svg = document.getElementById('fullscreen-qr-code');
