@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { MobileDialog as Dialog, MobileDialogContent as DialogContent, MobileDialogHeader as DialogHeader, MobileDialogTitle as DialogTitle, MobileDialogDescription as DialogDescription } from "@/components/ui/mobile-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,7 +101,7 @@ const addUserMutation = useMutation({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -134,7 +134,7 @@ const addUserMutation = useMutation({
                   id="username" 
                   placeholder="أدخل اسم المستخدم" 
                   {...form.register("username")} 
-                  className="h-11"
+                  className="h-12 text-base md:h-11 md:text-sm touch-manipulation"
                 />
                 {form.formState.errors.username && (
                   <p className="text-sm text-destructive">{form.formState.errors.username.message}</p>
@@ -151,7 +151,7 @@ const addUserMutation = useMutation({
                   type="password" 
                   placeholder="أدخل كلمة المرور" 
                   {...form.register("password")} 
-                  className="h-11"
+                  className="h-12 text-base md:h-11 md:text-sm touch-manipulation"
                 />
                 {form.formState.errors.password && (
                   <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
@@ -165,7 +165,7 @@ const addUserMutation = useMutation({
                 الدور *
               </Label>
               <Select onValueChange={value => form.setValue("user_role", value as any)} value={form.watch("user_role") || ""}>
-                <SelectTrigger id="user_role" className="h-11">
+                <SelectTrigger id="user_role" className="h-12 text-base md:h-11 md:text-sm touch-manipulation">
                   <SelectValue placeholder="اختر الدور" />
                 </SelectTrigger>
 <SelectContent>
@@ -188,7 +188,7 @@ const addUserMutation = useMutation({
       اختر المعلم (بالاسم/الكود)
     </Label>
     <Select value={form.watch('teacher_id') || ''} onValueChange={val => form.setValue('teacher_id', val)}>
-      <SelectTrigger id="teacher_id" className="h-11">
+      <SelectTrigger id="teacher_id" className="h-12 text-base md:h-11 md:text-sm touch-manipulation">
         <SelectValue placeholder="اختر المعلم" />
       </SelectTrigger>
       <SelectContent>
@@ -224,7 +224,7 @@ const addUserMutation = useMutation({
                   id="full_name" 
                   placeholder="أدخل الاسم الكامل (اختياري)" 
                   {...form.register("full_name")} 
-                  className="h-11"
+                  className="h-12 text-base md:h-11 md:text-sm touch-manipulation"
                 />
               </div>
               
@@ -239,7 +239,7 @@ const addUserMutation = useMutation({
                     type="email" 
                     placeholder="example@domain.com" 
                     {...form.register("email")} 
-                    className="h-11"
+                    className="h-12 text-base md:h-11 md:text-sm touch-manipulation"
                   />
                   {form.formState.errors.email && (
                     <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
@@ -255,7 +255,7 @@ const addUserMutation = useMutation({
                     id="phone" 
                     placeholder="01xxxxxxxxx" 
                     {...form.register("phone")} 
-                    className="h-11"
+                    className="h-12 text-base md:h-11 md:text-sm touch-manipulation"
                   />
                 </div>
               </div>
@@ -265,10 +265,10 @@ const addUserMutation = useMutation({
           <Separator />
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button 
               type="submit" 
-              className="flex-1 h-11" 
+              className="flex-1 h-12 text-base sm:h-11 sm:text-sm touch-manipulation" 
               disabled={addUserMutation.isPending}
             >
               {addUserMutation.isPending ? "جاري الإضافة..." : "إضافة المستخدم"}
@@ -277,7 +277,7 @@ const addUserMutation = useMutation({
               type="button" 
               variant="outline" 
               onClick={onClose} 
-              className="flex-1 h-11"
+              className="flex-1 h-12 text-base sm:h-11 sm:text-sm touch-manipulation"
             >
               إلغاء
             </Button>

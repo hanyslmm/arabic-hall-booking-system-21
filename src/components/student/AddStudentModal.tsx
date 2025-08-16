@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MobileDialog as Dialog, MobileDialogContent as DialogContent, MobileDialogDescription as DialogDescription, MobileDialogFooter as DialogFooter, MobileDialogHeader as DialogHeader, MobileDialogTitle as DialogTitle } from "@/components/ui/mobile-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -209,7 +209,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
               onChange={(e) => setFormData(prev => ({ ...prev, serial_number: e.target.value }))}
               onBlur={handleBlurSerial}
               aria-invalid={!!fieldErrors.serial_number}
-              className="text-right"
+              className="text-right h-12 text-base md:h-10 md:text-sm touch-manipulation"
             />
             {fieldErrors.serial_number && (
               <p className="text-sm text-red-500">{fieldErrors.serial_number}</p>
@@ -227,7 +227,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               required
-              className="text-right"
+              className="text-right h-12 text-base md:h-10 md:text-sm touch-manipulation"
             />
           </div>
           
@@ -241,7 +241,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
               onBlur={handleBlurPhone}
               aria-invalid={!!fieldErrors.mobile_phone}
               required
-              className="text-right"
+              className="text-right h-12 text-base md:h-10 md:text-sm touch-manipulation"
             />
             {(isChecking.mobile_phone) && (
               <p className="text-xs text-muted-foreground">جاري التحقق من الرقم...</p>
@@ -258,7 +258,7 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
               placeholder="رقم هاتف ولي الأمر"
               value={formData.parent_phone}
               onChange={(e) => setFormData(prev => ({ ...prev, parent_phone: e.target.value }))}
-              className="text-right"
+              className="text-right h-12 text-base md:h-10 md:text-sm touch-manipulation"
             />
           </div>
           
@@ -269,15 +269,15 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
               placeholder="المدينة"
               value={formData.city}
               onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-              className="text-right"
+              className="text-right h-12 text-base md:h-10 md:text-sm touch-manipulation"
             />
           </div>
           
-          <DialogFooter className="grid grid-cols-1 sm:flex sm:flex-row gap-2">
-            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto">
+          <DialogFooter className="grid grid-cols-1 sm:flex sm:flex-row gap-3">
+            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto h-12 text-base sm:h-10 sm:text-sm touch-manipulation">
               إلغاء
             </Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={createMutation.isPending || isChecking.mobile_phone || isChecking.serial_number || !!fieldErrors.mobile_phone || !!fieldErrors.serial_number}>
+            <Button type="submit" className="w-full sm:w-auto h-12 text-base sm:h-10 sm:text-sm touch-manipulation" disabled={createMutation.isPending || isChecking.mobile_phone || isChecking.serial_number || !!fieldErrors.mobile_phone || !!fieldErrors.serial_number}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               إضافة الطالب
             </Button>

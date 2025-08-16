@@ -163,6 +163,7 @@ export function SettingsPage() {
                       onChange={(e) => setDuration(e.target.value)}
                       placeholder="60"
                       required
+                      className="h-12 text-base md:h-10 md:text-sm touch-manipulation"
                     />
                     <p className="text-sm text-muted-foreground">
                       ستستخدم هذه المدة كوقت افتراضي عند إنشاء حجز جديد
@@ -187,6 +188,7 @@ export function SettingsPage() {
                         value={workingHoursStart}
                         onChange={(e) => setWorkingHoursStart(e.target.value)}
                         required
+                        className="h-12 text-base md:h-10 md:text-sm touch-manipulation"
                       />
                     </div>
                     
@@ -198,6 +200,7 @@ export function SettingsPage() {
                         value={workingHoursEnd}
                         onChange={(e) => setWorkingHoursEnd(e.target.value)}
                         required
+                        className="h-12 text-base md:h-10 md:text-sm touch-manipulation"
                       />
                     </div>
                   </div>
@@ -208,7 +211,7 @@ export function SettingsPage() {
                       id="workingDays"
                       value={workingDays}
                       onChange={(e) => setWorkingDays(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full h-12 px-3 py-2 text-base border rounded-md md:h-10 md:text-sm touch-manipulation focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       required
                     >
                       <option value="saturday,monday,wednesday">السبت، الاثنين، الأربعاء</option>
@@ -222,7 +225,7 @@ export function SettingsPage() {
                   <Button 
                     type="submit" 
                     disabled={updateSettingMutation.isPending}
-                    className="w-full"
+                    className="w-full h-12 text-base md:h-10 md:text-sm touch-manipulation"
                   >
                     {updateSettingMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
                   </Button>
