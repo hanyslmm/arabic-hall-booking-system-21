@@ -21,6 +21,7 @@ import BookingsPage from "./pages/BookingsPage";
 import StudentsPage from "./pages/StudentsPage";
 import StudentRegistrationsPage from "./pages/StudentRegistrationsPage";
 import ClassManagementPage from "./pages/ClassManagementPage";
+import AttendanceManagementPage from "./pages/AttendanceManagementPage";
 import ClassFinancialReportsPage from "./pages/ClassFinancialReportsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
@@ -156,6 +157,7 @@ const App = () => {
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="students" element={<StudentsPage />} />
                 <Route path="student-registrations" element={<StudentRegistrationsPage />} />
+                <Route path="attendance" element={<AttendanceManagementPage />} />
                 <Route path="class-management/:bookingId" element={<ClassManagementPage />} />
                 <Route path="financial-reports" element={<ClassFinancialReportsPage />} />
                 <Route path="admin-privileges" element={<AdminPrivilegesPage />} />
