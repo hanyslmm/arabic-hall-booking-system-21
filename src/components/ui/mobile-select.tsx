@@ -26,6 +26,11 @@ const MobileSelectTrigger = React.forwardRef<
           : "h-10 text-sm",
         className
       )}
+      style={{
+        fontSize: isMobile ? '16px' : undefined, // Prevent zoom on iOS
+        WebkitAppearance: 'none',
+        WebkitTextSizeAdjust: '100%',
+      }}
       {...props}
     >
       {children}

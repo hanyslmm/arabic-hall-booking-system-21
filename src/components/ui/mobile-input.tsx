@@ -23,6 +23,11 @@ const MobileInput = React.forwardRef<HTMLInputElement, MobileInputProps>(
             : "",
           className
         )}
+        style={{
+          fontSize: isMobile ? '16px' : undefined, // Prevent zoom on iOS
+          WebkitAppearance: 'none',
+          WebkitTextSizeAdjust: '100%',
+        }}
         ref={ref}
         {...props}
       />
