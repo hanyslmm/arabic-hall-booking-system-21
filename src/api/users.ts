@@ -71,10 +71,10 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
   const body: any = {
     userId,
-    full_name: userData.full_name,
-    phone: userData.phone,
-    email: userData.email,
-    user_role: userData.user_role,
+    full_name: userData.full_name || null,
+    phone: userData.phone || null,
+    email: userData.email || null,
+    user_role: userData.user_role || null,
   };
   
   // Include teacher_id if provided
@@ -91,11 +91,15 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
   
   if (response.error) {
     console.error('Edge Function error:', response.error);
-    throw new Error(response.error.message || 'Failed to update user');
+    const errorMessage = response.error.message || 'Failed to update user';
+    const errorDetails = response.error.details || '';
+    throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
   }
   
   if (!response.data?.success) {
-    throw new Error(response.data?.error || 'Failed to update user');
+    const errorMessage = response.data?.error || 'Failed to update user';
+    const errorDetails = response.data?.details || '';
+    throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
   }
   
   return response.data.user as UserProfile;

@@ -84,7 +84,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate user_role if provided - include all valid roles
+    // Validate user_role if provided - include all valid roles including read_only
     if (user_role) {
       const validRoles = ['owner', 'manager', 'space_manager', 'teacher', 'read_only'];
       if (!validRoles.includes(user_role)) {
@@ -112,106 +112,75 @@ serve(async (req) => {
     console.log('Target profile fetched:', { targetUserId: targetProfile.id, currentRole: targetProfile.user_role });
 
     // Update user using admin client (for password and email changes)
-    const updateData: any = {};
     if (password && password.trim() !== '') {
-      updateData.password = password;
-    }
-    if (email && email.trim() !== '') {
-      updateData.email = email;
-    }
-
-    let updatedUser = null;
-    if (Object.keys(updateData).length > 0) {
-      const { data: authUser, error: updateError } = await supabaseClient.auth.admin.updateUserById(
+      const { error: updateError } = await supabaseClient.auth.admin.updateUserById(
         userId,
-        updateData
+        { password: password }
       );
 
       if (updateError) {
-        console.error('Error updating user:', updateError);
+        console.error('Error updating user password:', updateError);
         return new Response(
-          JSON.stringify({ error: 'Failed to update user', details: updateError.message }),
+          JSON.stringify({ error: 'Failed to update user password', details: updateError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      updatedUser = authUser.user;
     }
 
-    // Update the user's profile using direct database update (bypass RLS)
-    const profileUpdateData: any = {};
+    // Update email if provided
+    if (email && email.trim() !== '' && email !== targetProfile.email) {
+      const { error: emailUpdateError } = await supabaseClient.auth.admin.updateUserById(
+        userId,
+        { email: email }
+      );
 
-    if (user_role !== undefined) {
-      profileUpdateData.user_role = user_role;
-    }
-    if (full_name !== undefined) {
-      profileUpdateData.full_name = full_name;
-    }
-    if (email !== undefined) {
-      profileUpdateData.email = email;
-    }
-    if (phone !== undefined) {
-      profileUpdateData.phone = phone;
-    }
-
-    // Handle teacher_id linkage
-    if (teacher_id !== undefined) {
-      const effectiveRole = profileUpdateData.user_role ?? targetProfile.user_role;
-      profileUpdateData.teacher_id = (effectiveRole === 'teacher') ? teacher_id : null;
+      if (emailUpdateError) {
+        console.error('Error updating user email:', emailUpdateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update user email', details: emailUpdateError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    if (Object.keys(profileUpdateData).length > 0) {
-      profileUpdateData.updated_at = new Date().toISOString();
-      
-      console.log('Updating profile with data:', profileUpdateData);
-      
-      // Use direct update with service role privileges
+    // Use the admin_update_user_role function for profile updates
+    if (user_role || full_name || phone || teacher_id !== undefined) {
       const { data: updatedProfile, error: profileUpdateError } = await supabaseClient
-        .from('profiles')
-        .update(profileUpdateData)
-        .eq('id', userId)
-        .select()
-        .single();
+        .rpc('admin_update_user_role', {
+          target_user_id: userId,
+          new_user_role: user_role || targetProfile.user_role,
+          new_full_name: full_name,
+          new_email: email,
+          new_phone: phone,
+          new_teacher_id: teacher_id
+        });
 
       if (profileUpdateError) {
-        console.error('Error updating profile:', {
-          message: profileUpdateError.message,
-          code: profileUpdateError.code,
-          details: profileUpdateError.details,
-          hint: profileUpdateError.hint
-        });
+        console.error('Error updating profile via RPC:', profileUpdateError);
         return new Response(
           JSON.stringify({ 
             error: 'Failed to update user profile', 
             details: profileUpdateError.message,
-            code: profileUpdateError.code,
-            db_details: profileUpdateError.details,
-            hint: profileUpdateError.hint
+            code: profileUpdateError.code
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      console.log('Profile updated successfully');
-    }
 
-    // Get updated profile
-    const { data: finalProfile, error: fetchError } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (fetchError) {
-      console.error('Error fetching updated profile:', fetchError);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch updated profile', details: fetchError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          user: updatedProfile
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // If no profile updates needed, just return the current profile
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user: finalProfile
+        user: targetProfile
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
