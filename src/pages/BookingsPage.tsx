@@ -362,6 +362,45 @@ const BookingsPage = () => {
     return days.map(day => dayMap[day] || day).join(', ');
   };
 
+  // Define actions for table
+  const bookingActions: TableAction<Booking>[] = [
+    {
+      label: 'إدارة المجموعة',
+      icon: <GraduationCap className="h-4 w-4" />,
+      onClick: (booking) => navigate(`/class-management/${booking.id}`),
+      variant: 'default',
+      size: 'sm',
+    },
+    ...(canManage ? [
+      {
+        label: 'تعديل',
+        icon: <Edit className="h-4 w-4" />,
+        onClick: (booking) => {
+          // We'll trigger the edit modal programmatically
+          const editButton = document.querySelector(`[data-booking-id="${booking.id}"] button`);
+          if (editButton instanceof HTMLButtonElement) {
+            editButton.click();
+          }
+        },
+        variant: 'outline' as const,
+        size: 'sm' as const,
+      },
+      {
+        label: 'حذف',
+        icon: <Trash2 className="h-4 w-4" />,
+        onClick: (booking) => {
+          // We'll trigger the delete dialog programmatically  
+          const deleteButton = document.querySelector(`[data-delete-booking-id="${booking.id}"] button`);
+          if (deleteButton instanceof HTMLButtonElement) {
+            deleteButton.click();
+          }
+        },
+        variant: 'destructive' as const,
+        size: 'sm' as const,
+      }
+    ] : [])
+  ];
+
   // Define table columns with mobile optimization
   const bookingColumns: TableColumn<Booking>[] = [
     {
@@ -692,6 +731,7 @@ const BookingsPage = () => {
           <MobileResponsiveTable
             data={bookings || []}
             columns={bookingColumns}
+            actions={bookingActions}
             title="قائمة المجموعات الدراسية"
             isLoading={isLoading}
             emptyMessage="لم يتم إنشاء أي مجموعات بعد"
