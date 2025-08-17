@@ -65,7 +65,7 @@ export const validationSchemas = {
   user: z.object({
     full_name: z.string().min(2, "يجب أن يكون الاسم أكثر من حرفين"),
     email: z.string().email("البريد الإلكتروني غير صحيح").optional(),
-    user_role: z.enum(["owner", "manager", "space_manager", "teacher"]),
+    user_role: z.enum(["owner", "manager", "space_manager", "teacher", "read_only"]),
     username: z.string().min(3, "اسم المستخدم يجب أن يكون أكثر من 3 أحرف").optional(),
   }),
   

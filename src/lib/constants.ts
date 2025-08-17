@@ -12,6 +12,7 @@ export const USER_ROLES = {
   OWNER: 'owner',
   MANAGER: 'manager', 
   SPACE_MANAGER: 'space_manager',
+  TEACHER: 'teacher',
   READ_ONLY: 'read_only'
 } as const;
 
