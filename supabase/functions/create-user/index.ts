@@ -29,13 +29,16 @@ serve(async (req) => {
       );
     }
 
-    // Get current user from token
+    // Get current user from token - use the JWT directly for validation
     const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the JWT and get user info
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
+      console.error('Token validation error:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
+        JSON.stringify({ error: 'Invalid or expired token', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
