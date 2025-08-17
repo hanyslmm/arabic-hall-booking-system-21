@@ -5,7 +5,7 @@ export type UserProfile = {
   email: string | null;
   full_name: string | null;
   phone: string | null;
-  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
+  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only';
 created_at: string;
 username?: string | null;
 teacher_id?: string | null;
@@ -17,7 +17,7 @@ export type CreateUserData = {
   email?: string;
   full_name?: string;
   phone?: string;
-  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher';
+  user_role: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only';
   teacher_id?: string;
 };
 
@@ -25,7 +25,7 @@ export type UpdateUserData = {
   full_name?: string;
   phone?: string;
   email?: string;
-  user_role?: 'owner' | 'manager' | 'space_manager' | 'teacher';
+  user_role?: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only';
   password?: string;
 };
 
@@ -105,7 +105,7 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
   return response.data.user as UserProfile;
 };
 
-export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager' | 'teacher') => {
+export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only') => {
   const response = await supabase.functions.invoke('update-user', {
     body: { userId, user_role: newRole }
   });
