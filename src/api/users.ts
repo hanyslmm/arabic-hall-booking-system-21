@@ -43,74 +43,118 @@ return data.map((profile: any) => ({
 };
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
-  // Use Edge Function to create user with proper admin permissions
-  const response = await supabase.functions.invoke('create-user', {
-    body: {
-      username: userData.username,
-      password: userData.password,
-      email: userData.email,
-      full_name: userData.full_name,
-      phone: userData.phone,
-      user_role: userData.user_role,
-      teacher_id: userData.user_role === 'teacher' ? userData.teacher_id : undefined,
-    },
-  });
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Not authenticated');
+    }
 
-  if (response.error) {
-    console.error('Edge Function error:', response.error);
-    throw new Error(response.error.message || 'Failed to create user');
+    const response = await supabase.functions.invoke('create-user', {
+      body: {
+        username: userData.username,
+        password: userData.password,
+        email: userData.email,
+        full_name: userData.full_name,
+        phone: userData.phone,
+        user_role: userData.user_role,
+        teacher_id: userData.user_role === 'teacher' ? userData.teacher_id : undefined,
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+
+    if (response.error) {
+      console.error('Edge Function error:', response.error);
+      throw new Error(response.error.message || 'Failed to create user');
+    }
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.error || 'Failed to create user');
+    }
+
+    return response.data.user as UserProfile;
+  } catch (error: any) {
+    console.error('Create user error:', error);
+    throw new Error(error.message || 'Failed to create user');
   }
-
-  if (!response.data?.success) {
-    throw new Error(response.data?.error || 'Failed to create user');
-  }
-
-  return response.data.user as UserProfile;
 };
 
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
-  const body: any = {
-    userId,
-    full_name: userData.full_name || null,
-    phone: userData.phone || null,
-    email: userData.email || null,
-    user_role: userData.user_role || null,
-  };
-  
-  // Include teacher_id if provided
-  if ((userData as any).teacher_id !== undefined) {
-    body.teacher_id = (userData as any).teacher_id;
-  }
-  
-  // Include password if provided and not empty
-  if (userData.password && userData.password.trim() !== '') {
-    body.password = userData.password;
-  }
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Not authenticated');
+    }
 
-  const response = await supabase.functions.invoke('update-user', { body });
-  
-  if (response.error) {
-    console.error('Edge Function error:', response.error);
-    const errorMessage = response.error.message || 'Failed to update user';
-    const errorDetails = response.error.details || '';
-    throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
+    const body: any = {
+      userId,
+      full_name: userData.full_name || null,
+      phone: userData.phone || null,
+      email: userData.email || null,
+      user_role: userData.user_role || null,
+    };
+    
+    // Include teacher_id if provided
+    if ((userData as any).teacher_id !== undefined) {
+      body.teacher_id = (userData as any).teacher_id;
+    }
+    
+    // Include password if provided and not empty
+    if (userData.password && userData.password.trim() !== '') {
+      body.password = userData.password;
+    }
+
+    const response = await supabase.functions.invoke('update-user', { 
+      body,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+    
+    if (response.error) {
+      console.error('Edge Function error:', response.error);
+      const errorMessage = response.error.message || 'Failed to update user';
+      const errorDetails = response.error.details || '';
+      throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
+    }
+    
+    if (!response.data?.success) {
+      const errorMessage = response.data?.error || 'Failed to update user';
+      const errorDetails = response.data?.details || '';
+      throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
+    }
+    
+    return response.data.user as UserProfile;
+  } catch (error: any) {
+    console.error('Update user error:', error);
+    throw new Error(error.message || 'Failed to update user');
   }
-  
-  if (!response.data?.success) {
-    const errorMessage = response.data?.error || 'Failed to update user';
-    const errorDetails = response.data?.details || '';
-    throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
-  }
-  
-  return response.data.user as UserProfile;
 };
 
 export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only') => {
-  const response = await supabase.functions.invoke('update-user', {
-    body: { userId, user_role: newRole }
-  });
-  if (response.error) throw response.error;
-  return response.data.user as UserProfile;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await supabase.functions.invoke('update-user', {
+      body: { userId, user_role: newRole },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+    
+    if (response.error) throw response.error;
+    return response.data.user as UserProfile;
+  } catch (error: any) {
+    console.error('Update user role error:', error);
+    throw new Error(error.message || 'Failed to update user role');
+  }
 };
 
 export const deleteUser = async (userId: string) => {
