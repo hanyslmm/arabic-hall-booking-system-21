@@ -86,10 +86,14 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             margin: 0;
             padding: 0;
             background: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
           }
           .label {
-            width: 25mm;
-            height: 50mm;
+            width: 60mm;
+            height: 90mm;
             border: none;
             padding: 0;
             margin: 0;
@@ -102,22 +106,22 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             box-sizing: border-box;
           }
           .barcode {
-            max-width: 23mm;
-            max-height: 35mm;
+            max-width: 55mm;
+            max-height: 65mm;
             margin: 0;
           }
           .serial-text {
-            font-size: 8pt;
-            margin: 2mm 0 0 0;
+            font-size: 10pt;
+            margin: 5mm 0 0 0;
             font-weight: bold;
             color: black;
-            max-width: 23mm;
+            max-width: 55mm;
             word-break: break-all;
           }
           @media print {
             body { margin: 0; padding: 0; }
             .label { margin: 0; border: none; }
-            @page { margin: 0; size: 25mm 50mm; }
+            @page { margin: 0; size: 60mm 90mm; }
           }
         </style>
       </head>
