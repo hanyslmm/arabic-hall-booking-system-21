@@ -63,11 +63,11 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: "CODE128",
-        width: 1.2,
-        height: 35,
+        width: 2.5,
+        height: 60,
         displayValue: true,
-        fontSize: 10,
-        margin: 4
+        fontSize: 14,
+        margin: 2
       });
     }
 
