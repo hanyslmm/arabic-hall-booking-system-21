@@ -75,55 +75,54 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
 
     const printContent = `
       <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
+      <html>
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ملصق باركود - ${student.serial_number}</title>
+        <title>Barcode Label - ${student.serial_number}</title>
         <style>
           body {
             font-family: 'Courier New', monospace;
             margin: 0;
             padding: 0;
             background: white;
-            direction: rtl;
           }
           .label {
-            width: 50mm;
-            height: 25mm;
-            border: 1px solid #000;
-            padding: 2mm;
-            margin: 0 auto;
+            width: 25mm;
+            height: 50mm;
+            border: none;
+            padding: 0;
+            margin: 0;
             background: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
+            box-sizing: border-box;
           }
           .barcode {
-            margin: 1mm 0;
-          }
-          .student-name {
-            font-size: 8pt;
-            margin: 1mm 0;
-            font-weight: bold;
+            max-width: 23mm;
+            max-height: 35mm;
+            margin: 0;
           }
           .serial-text {
-            font-size: 10pt;
-            margin: 1mm 0;
+            font-size: 8pt;
+            margin: 2mm 0 0 0;
             font-weight: bold;
+            color: black;
+            max-width: 23mm;
+            word-break: break-all;
           }
           @media print {
             body { margin: 0; padding: 0; }
-            .label { margin: 0; border: 1px solid #000; }
+            .label { margin: 0; border: none; }
+            @page { margin: 0; size: 25mm 50mm; }
           }
         </style>
-        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       </head>
       <body>
         <div class="label">
-          <div class="student-name">${student.name}</div>
           <img src="${barcodeDataURL}" alt="Barcode" class="barcode" />
           <div class="serial-text">${student.serial_number}</div>
         </div>
