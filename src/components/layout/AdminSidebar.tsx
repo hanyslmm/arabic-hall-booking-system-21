@@ -14,6 +14,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -165,6 +166,12 @@ const defaultNavigation: NavigationGroup[] = [
         url: "/admin-privileges",
         icon: Settings,
         description: "إدارة صلاحيات المدراء",
+      },
+      {
+        title: "المصروفات اليومية",
+        url: "/daily-expenses",
+        icon: FileText,
+        description: "إدارة المصروفات اليومية",
       },
       {
         title: "الإعدادات",

@@ -26,6 +26,7 @@ import ClassFinancialReportsPage from "./pages/ClassFinancialReportsPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import AdminPrivilegesPage from "./pages/AdminPrivilegesPage";
+import DailyExpensesPage from "./pages/DailyExpensesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
@@ -161,6 +162,7 @@ const App = () => {
                 <Route path="class-management/:bookingId" element={<ClassManagementPage />} />
                 <Route path="financial-reports" element={<ClassFinancialReportsPage />} />
                 <Route path="admin-privileges" element={<AdminPrivilegesPage />} />
+                <Route path="daily-expenses" element={<DailyExpensesPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="audit-logs" element={<AuditLogPage />} />

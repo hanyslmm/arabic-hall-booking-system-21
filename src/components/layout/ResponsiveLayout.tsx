@@ -38,13 +38,6 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
     }
   }, [location.pathname, isMobile]);
 
-  // Mobile bottom navigation items
-  const bottomNavItems = [
-    { title: "الحجوزات", url: "/bookings", icon: Calendar },
-    { title: "الطلاب", url: "/students", icon: Users },
-    { title: "التقارير", url: "/reports", icon: BookOpen },
-    { title: "الإعدادات", url: "/settings", icon: Settings },
-  ];
 
   if (!isMobile) {
     // Desktop: Use the existing AdminSidebar
@@ -91,7 +84,7 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4">
+        <main className="flex-1 overflow-auto p-4 pb-4">
           {children}
         </main>
       </div>
