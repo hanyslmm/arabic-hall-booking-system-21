@@ -2,35 +2,63 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  grantAdminPrivileges, 
-  grantReadOnlyPrivileges, 
-  getAllUsers, 
-  upgradeAllExistingUsers,
-  getRoleDisplayName,
-  canPerformAdminActions,
-  type UserProfile 
-} from "@/utils/privilegeManager";
-import { Shield, User, UserCheck, Eye, Settings, Users } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { User, Shield, UserCheck, Eye, Settings, Users, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name?: string;
+  user_role: 'owner' | 'manager' | 'space_manager' | 'read_only' | 'teacher';
+  phone?: string;
+  created_at: string;
+}
 
 export const UserPrivilegeManager = () => {
   const [email, setEmail] = useState("");
+  const [selectedRole, setSelectedRole] = useState<'owner' | 'manager' | 'space_manager' | 'read_only'>('space_manager');
   const [loading, setLoading] = useState(false);
-  const [upgradeAllLoading, setUpgradeAllLoading] = useState(false);
-  const [readOnlyLoading, setReadOnlyLoading] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const { toast } = useToast();
 
+  const roleDisplayNames = {
+    owner: 'مالك النظام',
+    manager: 'مدير',
+    space_manager: 'مدير قاعات',
+    read_only: 'قراءة فقط',
+    teacher: 'معلم'
+  };
+
+  const roleVariants = {
+    owner: 'destructive' as const,
+    manager: 'default' as const,
+    space_manager: 'secondary' as const,
+    read_only: 'outline' as const,
+    teacher: 'outline' as const
+  };
+
   const loadUsers = async () => {
     setUsersLoading(true);
     try {
-      const allUsers = await getAllUsers();
-      setUsers(allUsers);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, user_role, phone, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
     } catch (error) {
       console.error('Error loading users:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في تحميل قائمة المستخدمين",
+        variant: "destructive",
+      });
     } finally {
       setUsersLoading(false);
     }
@@ -40,7 +68,7 @@ export const UserPrivilegeManager = () => {
     loadUsers();
   }, []);
 
-  const handleGrantAdminPrivileges = async () => {
+  const handleGrantPrivileges = async () => {
     if (!email.trim()) {
       toast({
         title: "خطأ",
@@ -52,26 +80,52 @@ export const UserPrivilegeManager = () => {
 
     setLoading(true);
     try {
-      const result = await grantAdminPrivileges(email.trim());
-      
-      if (result.success) {
+      // First check if user exists
+      const { data: existingUser, error: userError } = await supabase
+        .from('profiles')
+        .select('id, email, user_role')
+        .eq('email', email.trim())
+        .single();
+
+      if (userError && userError.code !== 'PGRST116') {
+        throw new Error('خطأ في البحث عن المستخدم');
+      }
+
+      if (!existingUser) {
         toast({
-          title: "نجح التحديث",
-          description: result.message,
-        });
-        setEmail("");
-        loadUsers(); // Refresh the users list
-      } else {
-        toast({
-          title: "فشل التحديث",
-          description: result.message,
+          title: "المستخدم غير موجود",
+          description: "يجب على المستخدم تسجيل الدخول أولاً لإنشاء حسابه",
           variant: "destructive",
         });
+        return;
       }
-    } catch (error) {
+
+      // Update user role
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          user_role: selectedRole,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingUser.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء منح صلاحيات المدير",
+        title: "نجح التحديث",
+        description: `تم منح صلاحيات ${roleDisplayNames[selectedRole]} للمستخدم ${email}`,
+      });
+      
+      setEmail("");
+      await loadUsers();
+
+    } catch (error: any) {
+      console.error('Error granting privileges:', error);
+      toast({
+        title: "فشل التحديث",
+        description: error.message || "حدث خطأ أثناء تحديث صلاحيات المستخدم",
         variant: "destructive",
       });
     } finally {
@@ -79,178 +133,117 @@ export const UserPrivilegeManager = () => {
     }
   };
 
-  const handleGrantReadOnlyPrivileges = async () => {
-    if (!email.trim()) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال البريد الإلكتروني",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setReadOnlyLoading(true);
+  const handleBulkUpgrade = async () => {
+    setLoading(true);
     try {
-      const result = await grantReadOnlyPrivileges(email.trim());
-      
-      if (result.success) {
-        toast({
-          title: "نجح التحديث",
-          description: result.message,
-        });
-        setEmail("");
-        loadUsers(); // Refresh the users list
-      } else {
-        toast({
-          title: "فشل التحديث",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+      const { data: allUsers, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .neq('user_role', 'owner');
+
+      if (fetchError) throw fetchError;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ user_role: 'manager' })
+        .neq('user_role', 'owner');
+
+      if (updateError) throw updateError;
+
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء منح صلاحيات القراءة فقط",
+        title: "نجح التحديث الشامل",
+        description: `تم ترقية ${allUsers?.length || 0} مستخدم إلى مدير`,
+      });
+
+      await loadUsers();
+
+    } catch (error: any) {
+      console.error('Error in bulk upgrade:', error);
+      toast({
+        title: "فشل التحديث الشامل",
+        description: error.message || "حدث خطأ أثناء الترقية الشاملة",
         variant: "destructive",
       });
     } finally {
-      setReadOnlyLoading(false);
+      setLoading(false);
     }
-  };
-
-  const handleUpgradeAllUsers = async () => {
-    setUpgradeAllLoading(true);
-    try {
-      const results = await upgradeAllExistingUsers();
-      
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
-      
-      if (successCount > 0) {
-        toast({
-          title: "نجح التحديث الشامل",
-          description: `تم ترقية ${successCount} مستخدم بنجاح${failCount > 0 ? ` وفشل في ترقية ${failCount}` : ''}`,
-        });
-        loadUsers(); // Refresh the users list
-      } else {
-        toast({
-          title: "فشل التحديث الشامل",
-          description: "لم يتم ترقية أي مستخدم",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء الترقية الشاملة للمستخدمين",
-        variant: "destructive",
-      });
-    } finally {
-      setUpgradeAllLoading(false);
-    }
-  };
-
-  const getRoleBadgeVariant = (userRole: string) => {
-    if (userRole === 'owner') return 'destructive';
-    if (userRole === 'manager') return 'default';
-    if (userRole === 'read_only') return 'secondary';
-    return 'outline';
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">إدارة صلاحيات المستخدمين</h2>
-        <p className="text-gray-600">منح وإدارة صلاحيات المستخدمين في النظام</p>
+        <h2 className="text-2xl font-bold mb-2">إدارة صلاحيات المستخدمين</h2>
+        <p className="text-muted-foreground">منح وإدارة صلاحيات المستخدمين في النظام</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Grant Admin Privileges */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-red-600" />
-              منح صلاحيات المدير
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                البريد الإلكتروني للمستخدم
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="أدخل البريد الإلكتروني"
-                className="text-right"
-                dir="ltr"
-              />
-            </div>
-            <Button
-              onClick={handleGrantAdminPrivileges}
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? "جاري المعالجة..." : "منح صلاحيات المدير"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Grant Read-Only Privileges */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600" />
-              منح صلاحيات القراءة فقط
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                البريد الإلكتروني للمستخدم
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="أدخل البريد الإلكتروني"
-                className="text-right"
-                dir="ltr"
-              />
-            </div>
-            <Button
-              onClick={handleGrantReadOnlyPrivileges}
-              disabled={readOnlyLoading}
-              variant="outline"
-              className="w-full"
-            >
-              {readOnlyLoading ? "جاري المعالجة..." : "منح صلاحيات القراءة فقط"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Grant Privileges Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            منح صلاحيات جديدة
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">البريد الإلكتروني للمستخدم</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="أدخل البريد الإلكتروني"
+              dir="ltr"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="role">نوع الصلاحية</Label>
+            <Select value={selectedRole} onValueChange={(value: any) => setSelectedRole(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="اختر نوع الصلاحية" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">مالك النظام - صلاحيات كاملة</SelectItem>
+                <SelectItem value="manager">مدير - صلاحيات إدارية</SelectItem>
+                <SelectItem value="space_manager">مدير قاعات - إدارة القاعات فقط</SelectItem>
+                <SelectItem value="read_only">قراءة فقط - عرض البيانات فقط</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button
+            onClick={handleGrantPrivileges}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            منح الصلاحيات
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Bulk Operations */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-purple-600" />
+            <Settings className="h-5 w-5 text-primary" />
             العمليات الشاملة
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              ترقية جميع المستخدمين الحاليين إلى صلاحيات المدير كإجراء مؤقت لحل مشاكل الصلاحيات
+            <p className="text-sm text-muted-foreground">
+              ترقية جميع المستخدمين الحاليين إلى صلاحيات مدير (باستثناء المالكين)
             </p>
             <Button
-              onClick={handleUpgradeAllUsers}
-              disabled={upgradeAllLoading}
+              onClick={handleBulkUpgrade}
+              disabled={loading}
               variant="outline"
               className="w-full"
             >
-              {upgradeAllLoading ? "جاري الترقية..." : "ترقية جميع المستخدمين إلى مدير"}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              ترقية جميع المستخدمين إلى مدير
             </Button>
           </div>
         </CardContent>
@@ -260,31 +253,39 @@ export const UserPrivilegeManager = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-green-600" />
-            قائمة المستخدمين
+            <Users className="h-5 w-5 text-primary" />
+            قائمة المستخدمين ({users.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {usersLoading ? (
-            <div className="text-center py-4">جاري تحميل المستخدمين...</div>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="mr-2">جاري تحميل المستخدمين...</span>
+            </div>
           ) : users.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">لا توجد مستخدمون</div>
+            <div className="text-center py-8 text-muted-foreground">
+              لا توجد مستخدمون في النظام
+            </div>
           ) : (
             <div className="space-y-3">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
                   <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-gray-400" />
+                    <User className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <div className="font-medium">{user.full_name || user.email}</div>
-                      <div className="text-sm text-gray-500" dir="ltr">{user.email}</div>
+                      <div className="font-medium">{user.full_name || 'بدون اسم'}</div>
+                      <div className="text-sm text-muted-foreground" dir="ltr">{user.email}</div>
+                      {user.phone && (
+                        <div className="text-xs text-muted-foreground" dir="ltr">{user.phone}</div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={getRoleBadgeVariant(user.user_role)}>
-                      {getRoleDisplayName(user.user_role)}
+                    <Badge variant={roleVariants[user.user_role]}>
+                      {roleDisplayNames[user.user_role]}
                     </Badge>
-                    {canPerformAdminActions(user.user_role) && (
+                    {(user.user_role === 'owner' || user.user_role === 'manager') && (
                       <UserCheck className="h-4 w-4 text-green-600" />
                     )}
                   </div>

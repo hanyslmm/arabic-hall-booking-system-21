@@ -304,7 +304,6 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
   const isTeacher = profile?.user_role === 'teacher';
 
   const baseCandidates = [
-    { title: "الرئيسية", url: "/", icon: Home, show: true },
     { title: "الحجوزات", url: "/bookings", icon: Calendar, show: true },
     { title: "الطلاب", url: "/students", icon: Users, show: true },
     { title: "التقارير", url: "/reports", icon: BookOpen, show: isOwnerOrAdmin },

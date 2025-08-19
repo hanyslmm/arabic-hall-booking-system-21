@@ -40,7 +40,6 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
   // Mobile bottom navigation items
   const bottomNavItems = [
-    { title: "الرئيسية", url: "/", icon: Home },
     { title: "الحجوزات", url: "/bookings", icon: Calendar },
     { title: "الطلاب", url: "/students", icon: Users },
     { title: "التقارير", url: "/reports", icon: BookOpen },
