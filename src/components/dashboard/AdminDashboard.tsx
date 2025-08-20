@@ -6,7 +6,7 @@ import StatsCards from "@/components/dashboard/StatsCards";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { useAuth } from "@/hooks/useAuth";
-import { AdminDataDiagnostic } from "@/components/AdminDataDiagnostic";
+
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "@/api/dashboard";
 
@@ -15,7 +15,7 @@ export function AdminDashboard() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isFastReceptionistOpen, setIsFastReceptionistOpen] = useState(false);
-  const [showDiagnostic, setShowDiagnostic] = useState(false);
+  
 
   // Local permission helper to align with `can('create:registrations')`
   const can = (permission: string) => {
@@ -43,14 +43,6 @@ export function AdminDashboard() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">لوحة التحكم</h1>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button 
-            onClick={() => setShowDiagnostic(!showDiagnostic)}
-            variant="outline"
-            size="sm"
-            className="w-full sm:w-auto"
-          >
-            {showDiagnostic ? 'Hide' : 'Show'} Diagnostic
-          </Button>
           {can('create:registrations') && (
             <Button 
               onClick={() => setIsFastReceptionistOpen(true)}
@@ -63,9 +55,6 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {showDiagnostic && (
-        <AdminDataDiagnostic />
-      )}
 
       <MonthSelector 
         selectedMonth={selectedMonth}
