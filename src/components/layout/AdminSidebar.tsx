@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  DollarSign,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +140,12 @@ const defaultNavigation: NavigationGroup[] = [
         description: "عرض التقارير المالية",
       },
       {
+        title: "المصروفات اليومية",
+        url: "/daily-expenses",
+        icon: DollarSign,
+        description: "إدارة المصروفات اليومية",
+      },
+      {
         title: "تقارير المجموعات",
         url: "/financial-reports",
         icon: BookOpen,
@@ -166,12 +173,6 @@ const defaultNavigation: NavigationGroup[] = [
         url: "/admin-privileges",
         icon: Settings,
         description: "إدارة صلاحيات المدراء",
-      },
-      {
-        title: "المصروفات اليومية",
-        url: "/daily-expenses",
-        icon: FileText,
-        description: "إدارة المصروفات اليومية",
       },
       {
         title: "الإعدادات",
