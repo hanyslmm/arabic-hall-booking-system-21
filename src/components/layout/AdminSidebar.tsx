@@ -222,8 +222,6 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
 
   const navGroups = navigation ?? defaultNavigation;
 
-  // Make bottom nav height available as a CSS variable for dynamic padding
-  const bottomNavHeightPx = 64; // keep in sync with bottom nav visual height
 
   // Generate breadcrumbs from current path
   const getBreadcrumbs = () => {
@@ -306,24 +304,6 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
     }
   };
 
-  // Quick access mobile bottom navigation items based on role/permissions and available routes
-  const isOwnerOrAdmin = isAdmin || isOwner || canManageUsers;
-  const isTeacher = profile?.user_role === 'teacher';
-
-  const baseCandidates = [
-    { title: "الحجوزات", url: "/bookings", icon: Calendar, show: true },
-    { title: "الطلاب", url: "/students", icon: Users, show: true },
-    { title: "التقارير", url: "/reports", icon: BookOpen, show: isOwnerOrAdmin },
-    { title: "الإعدادات", url: "/settings", icon: Settings, show: isOwnerOrAdmin },
-  ];
-
-  const quickNav = baseCandidates
-    .filter((c) => c.show)
-    .filter((candidate) =>
-      navGroups.some((group) => group.items.some((it) => it.url === candidate.url))
-    )
-    // Limit to 5 items and prefer core items for teachers vs admins
-    .slice(0, 5);
 
   // Sidebar content component (reusable for both mobile and desktop)
   const SidebarContent = ({ showHeader = true }: { showHeader?: boolean }) => (
@@ -371,7 +351,15 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
               {group.title}
             </h3>
             <div className="space-y-1">
-              {group.items.map((item) => {
+              {group.items
+                .filter((item) => {
+                  // Show daily expenses only for admin/owner
+                  if (item.url === '/daily-expenses') {
+                    return isAdmin || isOwner || canManageUsers;
+                  }
+                  return true;
+                })
+                .map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <button
@@ -434,7 +422,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
   );
 
   return (
-    <div className="flex h-screen bg-background" style={{ ['--bottom-nav-height' as any]: `${bottomNavHeightPx}px` }}>
+    <div className="flex h-screen bg-background">
       {/* Desktop Sidebar - Always visible on large screens */}
       <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 lg:z-50 border-r bg-card" style={{ direction: 'rtl' }}>
         <SidebarContent showHeader={true} />
@@ -545,30 +533,9 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
         </header>
 
         {/* Page Content with improved scrolling and space for mobile bottom bar */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 md:pb-6">{children}</main>
+        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-[56] md:hidden border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <nav className="grid grid-cols-5 items-center h-16">
-          {quickNav.map((item) => {
-            const isActive = location.pathname === item.url;
-            return (
-              <button
-                key={item.url}
-                onClick={() => navigate(item.url)}
-                className={cn(
-                  "flex flex-col items-center justify-center h-full text-[11px] leading-tight",
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <item.icon className={cn("h-5 w-5", isActive && "scale-110")} />
-                <span className="mt-1">{item.title}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
     </div>
   );
 }
