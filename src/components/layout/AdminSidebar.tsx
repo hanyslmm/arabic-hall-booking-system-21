@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  DollarSign,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -142,7 +141,7 @@ const defaultNavigation: NavigationGroup[] = [
       {
         title: "المصروفات اليومية",
         url: "/daily-expenses",
-        icon: DollarSign,
+        icon: FileText,
         description: "إدارة المصروفات اليومية",
       },
       {
