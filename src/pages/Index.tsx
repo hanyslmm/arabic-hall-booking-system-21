@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ReceptionistDashboard } from "@/components/receptionist/ReceptionistDashboard";
 import { DailyFinanceCards } from "@/components/dashboard/DailyFinanceCards";
+import { UserPermissionsDebug } from "@/components/debug/UserPermissionsDebug";
 
 export default function Index() {
   const { profile } = useAuth();
@@ -13,6 +14,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      <UserPermissionsDebug />
       {isAdmin ? (
         <div className="space-y-6">
           <DailyFinanceCards />
