@@ -317,19 +317,29 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6 border-t border-border">
             <Button
               type="submit"
-              className="flex-1 h-12"
+              className="flex-1 h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg hover:shadow-xl transition-all duration-300"
               disabled={updateUserMutation.isPending}
             >
-              {updateUserMutation.isPending ? "جاري التحديث..." : "تحديث المستخدم"}
+              {updateUserMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  جاري التحديث...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5" />
+                  حفظ التغييرات
+                </div>
+              )}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-12"
+              className="flex-1 h-14 text-lg font-medium border-2 hover:bg-muted/50 transition-all duration-300"
               disabled={updateUserMutation.isPending}
             >
               إلغاء

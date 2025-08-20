@@ -218,7 +218,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
   const { sidebarOpen, openSidebar, closeSidebar } = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
+  const { profile, isAdmin, isOwner, canManageUsers, canManageData } = useAuth();
 
   const navGroups = navigation ?? defaultNavigation;
 
@@ -353,9 +353,9 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
             <div className="space-y-1">
               {group.items
                 .filter((item) => {
-                  // Show daily expenses only for admin/owner
+                  // Show daily expenses for all authorized users
                   if (item.url === '/daily-expenses') {
-                    return isAdmin || isOwner;
+                    return isAdmin || isOwner || canManageData;
                   }
                   return true;
                 })
