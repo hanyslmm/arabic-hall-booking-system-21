@@ -355,7 +355,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
                 .filter((item) => {
                   // Show daily expenses only for admin/owner
                   if (item.url === '/daily-expenses') {
-                    return isAdmin || isOwner || canManageUsers;
+                    return isAdmin || isOwner;
                   }
                   return true;
                 })
