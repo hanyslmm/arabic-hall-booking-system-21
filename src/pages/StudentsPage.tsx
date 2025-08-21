@@ -47,7 +47,6 @@ const StudentsPage = () => {
   const searchMutation = useMutation({
     mutationFn: studentsApi.search,
     onSuccess: (searchResults) => {
-      // For compatibility; but main list uses server-side search via debouncedSearch
       queryClient.setQueryData(["students", page, debouncedSearch], { data: searchResults, total: searchResults.length });
     },
     onError: () => {
@@ -73,8 +72,7 @@ const StudentsPage = () => {
         const student = await studentsApi.create({
           name: studentData.name,
           mobile_phone: studentData.mobile,
-          parent_phone: studentData.home,
-          city: studentData.city,
+          // Note: parent_phone and city fields not available in simplified schema
         });
         results.push(student);
       }
@@ -104,7 +102,7 @@ const StudentsPage = () => {
     setPage(1);
   };
 
-  const canManageStudents = profile?.user_role && ['owner', 'manager'].includes(profile.user_role);
+  const canManageStudents = profile?.role === 'ADMIN'; // Fixed: use 'role' instead of 'user_role'
 
   // Define table columns with mobile optimization
   const studentColumns: TableColumn<Student>[] = [
@@ -113,7 +111,7 @@ const StudentsPage = () => {
       header: 'الرقم التسلسلي',
       mobileLabel: 'الرقم',
       render: (student) => (
-        <Badge variant="secondary">{student.serial_number}</Badge>
+        <Badge variant="secondary">{student.serial_number || '-'}</Badge>
       ),
     },
     {
@@ -132,18 +130,6 @@ const StudentsPage = () => {
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground sm:inline hidden" />
           {student.mobile_phone}
-        </div>
-      ),
-    },
-    {
-      key: 'city',
-      header: 'المدينة',
-      mobileLabel: 'المدينة',
-      hideOnMobile: true,
-      render: (student) => (
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          {student.city || '-'}
         </div>
       ),
     },
@@ -201,14 +187,6 @@ const StudentsPage = () => {
             <span className="text-muted-foreground">الهاتف المحمول:</span>
             <span>{student.mobile_phone}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">هاتف ولي الأمر:</span>
-            <span>{student.parent_phone || '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">المدينة:</span>
-            <span>{student.city || '-'}</span>
-          </div>
         </div>
       </div>
       
@@ -217,7 +195,7 @@ const StudentsPage = () => {
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">الرقم التسلسلي:</span>
-            <Badge variant="secondary">{student.serial_number}</Badge>
+            <Badge variant="secondary">{student.serial_number || '-'}</Badge>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">تاريخ التسجيل:</span>

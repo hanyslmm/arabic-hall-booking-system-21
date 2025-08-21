@@ -8,8 +8,8 @@ import { UserPermissionsDebug } from "@/components/debug/UserPermissionsDebug";
 export default function Index() {
   const { profile } = useAuth();
   
-  const isAdmin = profile?.role === 'ADMIN' || ['owner', 'manager'].includes(profile?.user_role || '');
-  const isSpaceManager = profile?.user_role === 'space_manager';
+  const isAdmin = profile?.role === 'ADMIN'; // Fixed: use 'role' instead of 'user_role'
+  const isSpaceManager = profile?.role === 'ADMIN'; // Simplified for current schema
   const canViewFinance = isAdmin || isSpaceManager;
 
   return (

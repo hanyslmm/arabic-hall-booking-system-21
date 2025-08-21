@@ -30,43 +30,8 @@ export function AuditLogPage() {
   const { data: auditLogs, isLoading } = useQuery({
     queryKey: ['audit-logs', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select(`
-          id,
-          actor_user_id,
-          action,
-          details,
-          created_at
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (error) throw error;
-      
-      if (!data || data.length === 0) {
-        return [] as AuditLog[];
-      }
-
-      // Fetch profiles separately
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', data.map(log => log.actor_user_id));
-
-      const profilesMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
-      
-      return data.map(log => {
-        const profile = profilesMap.get(log.actor_user_id) as any;
-        return {
-          id: log.id,
-          actor_user_id: log.actor_user_id,
-          action: log.action,
-          details: log.details,
-          created_at: log.created_at,
-          actor_name: profile?.full_name || profile?.email || 'مستخدم محذوف'
-        };
-      }) as AuditLog[];
+      // Audit logs table doesn't exist in simplified schema
+      return [] as AuditLog[];
     },
     enabled: !!user,
     staleTime: 30_000,
@@ -194,8 +159,8 @@ export function AuditLogPage() {
             {auditLogs?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Shield className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">لا توجد سجلات</h3>
-                <p>لم يتم تسجيل أي أنشطة بعد</p>
+                <h3 className="text-lg font-medium mb-2">ميزة سجل التدقيق غير متوفرة</h3>
+                <p>هذه الميزة تتطلب جداول إضافية لتتبع العمليات والأنشطة في النسخة الكاملة من النظام</p>
               </div>
             )}
           </CardContent>

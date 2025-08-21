@@ -147,8 +147,8 @@ export default function ClassManagementPage() {
             await studentsApi.update(existingRegistration.student!.id, {
               name: studentData.name,
               mobile_phone: studentData.mobile,
-              parent_phone: studentData.home,
-              city: studentData.city,
+              // parent_phone: studentData.home, // Field not available in simplified schema
+              // city: studentData.city, // Field not available in simplified schema
             });
 
             // Add payment if amount > 0
@@ -173,16 +173,16 @@ export default function ClassManagementPage() {
               student = await studentsApi.update(globalStudent.id, {
                 name: studentData.name,
                 mobile_phone: studentData.mobile,
-                parent_phone: studentData.home,
-                city: studentData.city,
+                // parent_phone: studentData.home, // Field not available in simplified schema
+                // city: studentData.city, // Field not available in simplified schema
               });
             } else {
               // Create new student
               student = await studentsApi.create({
                 name: studentData.name,
                 mobile_phone: studentData.mobile,
-                parent_phone: studentData.home,
-                city: studentData.city,
+                // parent_phone: studentData.home, // Field not available in simplified schema
+                // city: studentData.city, // Field not available in simplified schema
               });
             }
 
@@ -445,7 +445,7 @@ export default function ClassManagementPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium">رسوم المجموعة</Label>
-                <p className="text-lg">{booking.class_fees || 0} جنيه {booking.is_custom_fee ? '(مخصص)' : '(افتراضي)'}</p>
+                <p className="text-lg">{booking.class_fees || 0} جنيه (افتراضي)</p>
               </div>
               <div>
                 <Label className="text-sm font-medium">عدد الطلاب</Label>

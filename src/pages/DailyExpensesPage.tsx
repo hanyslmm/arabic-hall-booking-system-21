@@ -47,46 +47,15 @@ export default function DailyExpensesPage() {
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['daily-expenses'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('type', 'expense')
-        .order('date', { ascending: false });
-      
-      if (error) throw error;
-      return data.map(item => ({
-        id: item.id,
-        date: item.date,
-        amount: item.amount,
-        sub_category: item.sub_category || '',
-        description: item.description || '',
-        created_at: item.created_at,
-        user_id: item.user_id
-      }));
+      // Transactions table doesn't exist in simplified schema
+      return [];
     }
   });
 
   const addExpenseMutation = useMutation({
     mutationFn: async (expense: { amount: string; sub_category: string; description: string; date: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .insert({
-          type: 'expense',
-          amount: parseFloat(expense.amount.toString()),
-          category_id: null,
-          sub_category: expense.sub_category,
-          description: expense.description,
-          date: expense.date,
-          user_id: user.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      // Transactions table doesn't exist in simplified schema
+      throw new Error('Feature not available in simplified schema');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['daily-expenses'] });
@@ -98,14 +67,15 @@ export default function DailyExpensesPage() {
         date: new Date().toISOString().split('T')[0]
       });
       toast({
-        title: "تم إضافة المصروف بنجاح",
-        description: "تم حفظ المصروف اليومي الجديد"
+        title: "ميزة غير متوفرة",
+        description: "ميزة المصروفات تتطلب جداول إضافية في النسخة الكاملة",
+        variant: "destructive"
       });
     },
     onError: () => {
       toast({
-        title: "خطأ",
-        description: "فشل في إضافة المصروف",
+        title: "ميزة غير متوفرة", 
+        description: "ميزة المصروفات تتطلب جداول إضافية في النسخة الكاملة",
         variant: "destructive"
       });
     }
@@ -230,7 +200,8 @@ export default function DailyExpensesPage() {
             <div className="text-center py-8">جاري التحميل...</div>
           ) : expenses.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              لا توجد مصروفات مسجلة
+              <h3 className="text-lg font-medium mb-2">ميزة المصروفات اليومية غير متوفرة</h3>
+              <p>هذه الميزة تتطلب جداول إضافية لإدارة المعاملات المالية في النسخة الكاملة من النظام</p>
             </div>
           ) : (
             <Table>
