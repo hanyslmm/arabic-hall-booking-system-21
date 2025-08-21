@@ -59,16 +59,27 @@ GRANT EXECUTE ON FUNCTION public.is_admin_user() TO authenticated;
 
 -- 3) Customize JWT claims to embed user_role and app_role from profiles
 -- Supabase will merge the object returned here into the base JWT claims
+--
+-- [ Gemini Fix: The previous version of this function was recursive and would fail. ]
+-- [ This corrected version uses the base JWT claims and adds the roles to it.   ]
+--
 CREATE OR REPLACE FUNCTION auth.jwt()
 RETURNS jsonb
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT jsonb_build_object(
-    'user_role', (SELECT user_role::text FROM public.profiles WHERE id = auth.uid()),
-    'app_role',  (SELECT role::text      FROM public.profiles WHERE id = auth.uid())
-  );
+  SELECT
+    jsonb_set(
+      jsonb_set(
+        (current_setting('request.jwt.claims', true))::jsonb,
+        '{user_role}',
+        (SELECT to_jsonb(user_role) FROM public.profiles WHERE id = auth.uid())
+      ),
+      '{app_role}',
+      (SELECT to_jsonb(role) FROM public.profiles WHERE id = auth.uid())
+    )
 $$;
+
 
 -- 4) Rebuild consistent RLS policy set
 -- Enable RLS on all tables in public and add two policies per table:
@@ -149,9 +160,9 @@ BEGIN
     END IF;
 
     EXECUTE 'CREATE TRIGGER trg_guard_profile_role_change
-             BEFORE UPDATE ON public.profiles
-             FOR EACH ROW
-             EXECUTE FUNCTION public.guard_profile_role_change()';
+              BEFORE UPDATE ON public.profiles
+              FOR EACH ROW
+              EXECUTE FUNCTION public.guard_profile_role_change()';
   END IF;
 END $$;
 
