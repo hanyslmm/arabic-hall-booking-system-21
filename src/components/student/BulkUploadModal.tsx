@@ -211,16 +211,16 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
         targetBooking = await bookingApi.create({
           teacher_id: teacher.id,
           hall_id: selectedHall.id,
-          academic_stage_id: halls[0]?.id || '', // Use first available stage as default
+          academic_stage_id: halls[0]?.id || '',
           number_of_students: classData.students.length,
           start_time: formatTimeForDB(classData.time),
           start_date: new Date().toISOString().split('T')[0],
           end_date: null,
           days_of_week: [classData.dayOfWeek],
-          // class_code removed from simplified schema
           class_fees: 0,
-          status: 'active' as const
-          // is_custom_fee removed from simplified schema
+          status: 'active' as const,
+          class_code: `${teacher.name.substring(0,3)}-${classData.dayOfWeek}`,
+          is_custom_fee: false
         });
       }
 

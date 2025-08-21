@@ -56,7 +56,7 @@ export const getUserProfile = async (email: string): Promise<UserProfile | null>
       return null;
     }
 
-    return data;
+    return data as UserProfile;
   } catch (error) {
     console.error('Error getting user profile:', error);
     return null;
@@ -78,7 +78,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
       return [];
     }
 
-    return data || [];
+    return (data || []) as UserProfile[];
   } catch (error) {
     console.error('Error getting all users:', error);
     return [];

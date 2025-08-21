@@ -14,6 +14,11 @@ export type Booking = Tables<"bookings"> & {
   academic_stages?: { name: string };
 };
 export type UserProfile = Tables<"profiles">;
+export type Settings = Tables<"settings">;
+export type Notification = Tables<"notifications">;
+export type AuditLog = Tables<"audit_logs">;
+export type AttendanceRecord = Tables<"attendance_records">;
+export type Transaction = Tables<"transactions">;
 
 // UI state types
 export interface LoadingState {

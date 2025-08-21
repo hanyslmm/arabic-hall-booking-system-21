@@ -1,6 +1,6 @@
 // Refactored API utilities with specific implementations
 import { supabase } from "@/integrations/supabase/client";
-import { Teacher, Hall, Subject, AcademicStage, Booking, WorkingHour } from "@/types";
+import { Teacher, Hall, Subject, AcademicStage, Booking } from "@/types";
 
 // Teachers API
 export const teachersApi = {

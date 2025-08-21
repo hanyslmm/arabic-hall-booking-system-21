@@ -32,15 +32,106 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance_records: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date: string
+          id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["attendance_status"] | null
+          student_registration_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"] | null
+          student_registration_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"] | null
+          student_registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_student_registration_id_fkey"
+            columns: ["student_registration_id"]
+            isOneToOne: false
+            referencedRelation: "student_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           academic_stage_id: string
+          class_code: string | null
           class_fees: number | null
           created_at: string | null
           days_of_week: string[]
           end_date: string | null
           hall_id: string
           id: string
+          is_custom_fee: boolean | null
           number_of_students: number | null
           start_date: string
           start_time: string
@@ -50,12 +141,14 @@ export type Database = {
         }
         Insert: {
           academic_stage_id: string
+          class_code?: string | null
           class_fees?: number | null
           created_at?: string | null
           days_of_week?: string[]
           end_date?: string | null
           hall_id: string
           id?: string
+          is_custom_fee?: boolean | null
           number_of_students?: number | null
           start_date: string
           start_time: string
@@ -65,12 +158,14 @@ export type Database = {
         }
         Update: {
           academic_stage_id?: string
+          class_code?: string | null
           class_fees?: number | null
           created_at?: string | null
           days_of_week?: string[]
           end_date?: string | null
           hall_id?: string
           id?: string
+          is_custom_fee?: boolean | null
           number_of_students?: number | null
           start_date?: string
           start_time?: string
@@ -123,6 +218,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_records: {
         Row: {
           amount: number
@@ -167,24 +300,71 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          phone: string | null
           role: string | null
+          teacher_id: string | null
           updated_at: string | null
+          user_role: Database["public"]["Enums"]["user_role"] | null
+          username: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
           full_name?: string | null
           id: string
+          phone?: string | null
           role?: string | null
+          teacher_id?: string | null
           updated_at?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
+          username?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           role?: string | null
+          teacher_id?: string | null
           updated_at?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"] | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string | null
         }
         Relationships: []
       }
@@ -193,6 +373,7 @@ export type Database = {
           booking_id: string
           created_at: string | null
           id: string
+          notes: string | null
           paid_amount: number | null
           payment_status: string | null
           registration_date: string | null
@@ -203,6 +384,7 @@ export type Database = {
           booking_id: string
           created_at?: string | null
           id?: string
+          notes?: string | null
           paid_amount?: number | null
           payment_status?: string | null
           registration_date?: string | null
@@ -213,6 +395,7 @@ export type Database = {
           booking_id?: string
           created_at?: string | null
           id?: string
+          notes?: string | null
           paid_amount?: number | null
           payment_status?: string | null
           registration_date?: string | null
@@ -239,26 +422,32 @@ export type Database = {
       students: {
         Row: {
           academic_stage_id: string | null
+          city: string | null
           created_at: string | null
           id: string
           mobile_phone: string | null
           name: string
+          parent_phone: string | null
           serial_number: string | null
         }
         Insert: {
           academic_stage_id?: string | null
+          city?: string | null
           created_at?: string | null
           id?: string
           mobile_phone?: string | null
           name: string
+          parent_phone?: string | null
           serial_number?: string | null
         }
         Update: {
           academic_stage_id?: string | null
+          city?: string | null
           created_at?: string | null
           id?: string
           mobile_phone?: string | null
           name?: string
+          parent_phone?: string | null
           serial_number?: string | null
         }
         Relationships: [
@@ -330,6 +519,57 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          created_by: string | null
+          date: string | null
+          description: string | null
+          id: string
+          student_registration_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          student_registration_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          student_registration_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_student_registration_id_fkey"
+            columns: ["student_registration_id"]
+            isOneToOne: false
+            referencedRelation: "student_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -338,7 +578,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      app_role: "ADMIN" | "USER"
+      attendance_status: "present" | "absent" | "late"
+      payment_status: "pending" | "partial" | "paid"
+      user_role:
+        | "owner"
+        | "manager"
+        | "teacher"
+        | "receptionist"
+        | "space_manager"
+        | "read_only"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -465,6 +714,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["ADMIN", "USER"],
+      attendance_status: ["present", "absent", "late"],
+      payment_status: ["pending", "partial", "paid"],
+      user_role: [
+        "owner",
+        "manager",
+        "teacher",
+        "receptionist",
+        "space_manager",
+        "read_only",
+      ],
+    },
   },
 } as const

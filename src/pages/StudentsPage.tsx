@@ -355,7 +355,7 @@ const StudentsPage = () => {
 
         {qrStudent && (
           <StudentQRCodeModal
-            student={qrStudent}
+            student={qrStudent as any}
             isOpen={true}
             onClose={() => setQrStudent(null)}
           />
@@ -363,7 +363,7 @@ const StudentsPage = () => {
 
         {editingStudent && (
           <EditStudentModal 
-            student={editingStudent}
+            student={editingStudent as any}
             isOpen={true}
             onClose={() => setEditingStudent(null)}
           />

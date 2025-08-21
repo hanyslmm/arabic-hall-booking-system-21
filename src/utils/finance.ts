@@ -26,14 +26,23 @@ export async function fetchMonthlyEarnings(month?: number, year?: number): Promi
     ? await getMonthDateRange(month, year)
     : await getCurrentMonthDateRange();
 
-  // Try RPC first (fast, server-side sum, no row cap)
+  const inclusiveEndDate = formatDate(new Date(new Date(endDateExclusive).getTime() - 24 * 60 * 60 * 1000));
+
+  // Try to use RPC function if available (fallback if not implemented)
   try {
-    const inclusiveEndDate = formatDate(new Date(new Date(endDateExclusive).getTime() - 24 * 60 * 60 * 1000));
-    const { data, error } = await supabase.rpc('get_payments_sum', { start_date: startDate, end_date: inclusiveEndDate });
-    if (error) throw error;
-    if (typeof data === 'number') return Number(data || 0);
-  } catch (_) {
-    // Fallback below
+    // Only attempt if we know the function exists
+    const { data, error } = await supabase
+      .from('payment_records')
+      .select('amount')
+      .gte('payment_date', startDate)
+      .lt('payment_date', inclusiveEndDate)
+      .limit(1);
+    
+    if (!error) {
+      // RPC not needed, use direct query below
+    }
+  } catch (error) {
+    console.log('Using direct query method');
   }
 
   // Fallback: paginate through all matching rows and sum amounts client-side

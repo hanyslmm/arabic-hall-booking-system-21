@@ -27,11 +27,8 @@ interface Teacher {
   mobile_phone?: string | null;
   subject_id?: string | null;
   created_at: string;
-  // Relations
-  subjects?: { name: string } | null;
-  teacher_academic_stages?: Array<{
-    academic_stages: { name: string };
-  }>;
+  // Relations - these would come from separate queries
+  subject?: { name: string } | null;
   default_class_fee?: number | null;
 }
 
@@ -103,7 +100,7 @@ const TeachersPage = () => {
       render: (teacher) => (
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-muted-foreground sm:inline hidden" />
-          {teacher.subjects?.name || "غير محدد"}
+           {teacher.subject?.name || "غير محدد"}
         </div>
       ),
     },
@@ -192,17 +189,11 @@ const TeachersPage = () => {
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">المادة الدراسية:</span>
-            <span>{teacher.subjects?.name || "غير محدد"}</span>
+            <span>{teacher.subject?.name || "غير محدد"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">المراحل الدراسية:</span>
-            <span className="text-right">
-              {teacher.teacher_academic_stages && teacher.teacher_academic_stages.length > 0
-                ? teacher.teacher_academic_stages
-                    .map(stage => stage.academic_stages.name)
-                    .join(", ")
-                : "غير محدد"}
-            </span>
+            <span className="text-right">غير محدد</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">تاريخ الإضافة:</span>
@@ -230,10 +221,8 @@ const TeachersPage = () => {
       ...teachers.map(teacher => [
         teacher.name,
         teacher.mobile_phone || '',
-        teacher.subjects?.name || '',
-        teacher.teacher_academic_stages
-          ? teacher.teacher_academic_stages.map(stage => stage.academic_stages.name).join('; ')
-          : '',
+        'المادة الدراسية',
+        '',
         format(new Date(teacher.created_at), 'yyyy-MM-dd')
       ].join(','))
     ].join('\n');
@@ -378,10 +367,7 @@ const TeachersPage = () => {
               onClose={() => setShowEditTeacher(false)}
               teacher={selectedTeacher}
             />
-            <TeacherAccountManager
-              isOpen={showTeacherAccountManager}
-              onClose={() => setShowTeacherAccountManager(false)}
-            />
+            <TeacherAccountManager />
           </>
         )}
 

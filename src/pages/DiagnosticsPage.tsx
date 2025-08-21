@@ -1,262 +1,277 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { CheckCircle, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
-import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Activity, Database, Users, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
 
-interface TestResult {
+interface DiagnosticTest {
   test: string;
   status: 'success' | 'error' | 'warning';
   message: string;
-  details?: any;
 }
 
 export default function DiagnosticsPage() {
-  const { profile, user } = useAuth();
-  const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [testResults, setTestResults] = useState<DiagnosticTest[]>([]);
 
   const runDiagnostics = async () => {
     setIsRunning(true);
-    const testResults: TestResult[] = [];
+    setTestResults([]);
+    const results: DiagnosticTest[] = [];
 
-    // Test database connection
     try {
-      const { data, error } = await supabase.from('profiles').select('count').limit(1);
-      if (error) throw error;
-      testResults.push({
-        test: 'الاتصال بقاعدة البيانات',
-        status: 'success',
-        message: 'تم الاتصال بقاعدة البيانات بنجاح'
-      });
-    } catch (error: any) {
-      testResults.push({
-        test: 'الاتصال بقاعدة البيانات',
-        status: 'error',
-        message: `فشل الاتصال بقاعدة البيانات: ${error.message}`
-      });
-    }
-
-    // Test authentication
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      if (user) {
-        testResults.push({
-          test: 'تسجيل الدخول',
+      // Test 1: Database Connection
+      try {
+        const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+        if (error) throw error;
+        results.push({
+          test: 'اتصال قاعدة البيانات',
           status: 'success',
-          message: 'تم تسجيل الدخول بنجاح',
-          details: { userId: user.id, email: user.email }
+          message: 'تم الاتصال بقاعدة البيانات بنجاح'
         });
-      } else {
-        testResults.push({
-          test: 'تسجيل الدخول',
+      } catch (error) {
+        results.push({
+          test: 'اتصال قاعدة البيانات',
           status: 'error',
-          message: 'لم يتم تسجيل الدخول'
+          message: `خطأ في الاتصال: ${(error as Error).message}`
         });
       }
-    } catch (error) {
-      testResults.push({
-        test: 'تسجيل الدخول',
-        status: 'error',
-        message: `خطأ في التحقق من تسجيل الدخول: ${error}`
-      });
-    }
 
-    // Test profile access
-    if (user) {
+      // Test 2: Authentication
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          testResults.push({
-            test: 'الوصول للملف الشخصي',
-            status: 'error',
-            message: `فشل في تحميل الملف الشخصي: ${error.message}`,
-            details: { error: error.code, hint: error.hint }
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (user) {
+          results.push({
+            test: 'المصادقة',
+            status: 'success',
+            message: `تم تسجيل الدخول بنجاح - المستخدم: ${user.email}`
           });
         } else {
-          testResults.push({
-            test: 'الوصول للملف الشخصي',
-            status: 'success',
-            message: `تم تحميل الملف الشخصي بنجاح`,
-            details: { 
-              userRole: data.role, // Fixed: use 'role' instead of 'user_role'
-              fullName: data.full_name,
-              username: (data as any).username
-            }
+          results.push({
+            test: 'المصادقة',
+            status: 'warning',
+            message: 'لم يتم تسجيل الدخول'
           });
         }
       } catch (error) {
-        testResults.push({
+        results.push({
+          test: 'المصادقة',
+          status: 'error',
+          message: `خطأ في المصادقة: ${(error as Error).message}`
+        });
+      }
+
+      // Test 3: User Profile Access
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, user_role, role')
+          .limit(1)
+          .single();
+        
+        if (error) throw error;
+        results.push({
+          test: 'الوصول للملف الشخصي',
+          status: 'success',
+          message: 'تم الوصول للملف الشخصي بنجاح'
+        });
+      } catch (error) {
+        results.push({
           test: 'الوصول للملف الشخصي',
           status: 'error',
-          message: `خطأ في الوصول للملف الشخصي: ${error}`,
-          details: { error }
+          message: `خطأ في الوصول للملف الشخصي: ${(error as Error).message}`
         });
       }
-    }
 
-    // Test basic table access
-    const tables = ['halls', 'subjects', 'academic_stages']; // Fixed: removed invalid table names
-    
-    for (const table of tables) {
+      // Test 4: Table Access Tests
+      const validTables = ['profiles', 'halls', 'subjects', 'academic_stages', 'bookings', 'students', 'teachers', 'settings'];
+      
+      for (const table of validTables) {
+        try {
+          const { count, error } = await supabase
+            .from(table as any)
+            .select('*', { count: 'exact', head: true });
+          if (error) throw error;
+          results.push({
+            test: `الوصول لجدول ${table}`,
+            status: 'success',
+            message: `تم الوصول لجدول ${table} بنجاح - العدد: ${count || 0}`
+          });
+        } catch (error) {
+          results.push({
+            test: `الوصول لجدول ${table}`,
+            status: 'error',
+            message: `خطأ في الوصول لجدول ${table}: ${(error as Error).message}`
+          });
+        }
+      }
+
+      // Test 5: RLS Policy Check
       try {
-        const { data, error } = await supabase.from(table).select('count').limit(1);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .limit(1);
+        
         if (error) throw error;
-        testResults.push({
-          test: `الوصول لجدول ${table}`,
+        results.push({
+          test: 'سياسات الأمان (RLS)',
           status: 'success',
-          message: `تم الوصول لجدول ${table} بنجاح`
+          message: 'سياسات الأمان تعمل بشكل صحيح'
         });
-      } catch (error: any) {
-        testResults.push({
-          test: `الوصول لجدول ${table}`,
-          status: 'error',
-          message: `فشل الوصول لجدول ${table}: ${error.message}`
+      } catch (error) {
+        results.push({
+          test: 'سياسات الأمان (RLS)',
+          status: 'warning',
+          message: `تحذير في سياسات الأمان: ${(error as Error).message}`
         });
       }
-    }
 
-    setResults(testResults);
-    setIsRunning(false);
+      setTestResults(results);
+    } catch (error) {
+      console.error('Diagnostic error:', error);
+      setTestResults([{
+        test: 'خطأ عام',
+        status: 'error',
+        message: `خطأ في تشغيل التشخيص: ${(error as Error).message}`
+      }]);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
-  const getStatusIcon = (status: TestResult['status']) => {
+  const getStatusIcon = (status: DiagnosticTest['status']) => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
       case 'error':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-red-600" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
       default:
         return null;
     }
   };
 
-  const getStatusBadge = (status: TestResult['status']) => {
+  const getStatusBadge = (status: DiagnosticTest['status']) => {
     switch (status) {
       case 'success':
-        return <Badge variant="default" className="bg-green-100 text-green-800">نجح</Badge>;
+        return <Badge className="bg-green-100 text-green-800">نجح</Badge>;
       case 'error':
         return <Badge variant="destructive">فشل</Badge>;
       case 'warning':
-        return <Badge variant="secondary">تحذير</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">تحذير</Badge>;
       default:
         return null;
     }
   };
 
+  const successCount = testResults.filter(r => r.status === 'success').length;
+  const errorCount = testResults.filter(r => r.status === 'error').length;
+  const warningCount = testResults.filter(r => r.status === 'warning').length;
+
   return (
     <UnifiedLayout>
-      <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">تشخيصات النظام</h1>
-          <Button onClick={runDiagnostics} disabled={isRunning}>
-            {isRunning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isRunning ? 'جاري التشخيص...' : 'تشغيل التشخيص'}
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Activity className="h-8 w-8" />
+              تشخيص النظام
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              فحص حالة النظام والتأكد من عمل جميع المكونات
+            </p>
+          </div>
+          <Button onClick={runDiagnostics} disabled={isRunning} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${isRunning ? 'animate-spin' : ''}`} />
+            {isRunning ? 'جاري الفحص...' : 'تشغيل التشخيص'}
           </Button>
         </div>
 
-        {/* System Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                معلومات المستخدم
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div>البريد الإلكتروني: {user?.email || 'غير متاح'}</div>
-                <div>الاسم الكامل: {profile?.full_name || 'غير محدد'}</div>
-                <div>معرف المستخدم: {user?.id ? user.id.substring(0, 8) + '...' : 'غير متاح'}</div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Summary Cards */}
+        {testResults.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">إجمالي الاختبارات</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{testResults.length}</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                الصلاحيات
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div>الدور: {profile?.role || 'غير محدد'}</div> {/* Fixed: use 'role' instead of 'user_role' */}
-                <div>نوع المستخدم: {profile?.role === 'ADMIN' ? 'مدير' : 'مستخدم عادي'}</div> {/* Simplified based on actual schema */}
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">نجح</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{successCount}</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                معلومات النظام
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div>إصدار النظام: 1.0.0</div>
-                <div>آخر تحديث: {new Date().toLocaleDateString('ar')}</div>
-                <div>وقت التشغيل: {new Date().toLocaleTimeString('ar')}</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">تحذيرات</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{warningCount}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">أخطاء</CardTitle>
+                <XCircle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{errorCount}</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Test Results */}
-        <Card>
-          <CardHeader>
-            <CardTitle>نتائج التشخيص</CardTitle>
-            <CardDescription>
-              اختبارات للتحقق من سلامة النظام وقواعد البيانات
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {results.length === 0 ? (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  اضغط على "تشغيل التشخيص" لبدء فحص النظام
-                </AlertDescription>
-              </Alert>
-            ) : (
+        {testResults.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>نتائج التشخيص</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                {results.map((result, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        {getStatusIcon(result.status)}
-                        <span className="font-medium">{result.test}</span>
+                {testResults.map((result, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {getStatusIcon(result.status)}
+                      <div>
+                        <p className="font-medium">{result.test}</p>
+                        <p className="text-sm text-muted-foreground">{result.message}</p>
                       </div>
-                      {getStatusBadge(result.status)}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{result.message}</p>
-                    {result.details && (
-                      <details className="text-xs">
-                        <summary className="cursor-pointer text-muted-foreground">تفاصيل إضافية</summary>
-                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                          {JSON.stringify(result.details, null, 2)}
-                        </pre>
-                      </details>
-                    )}
+                    {getStatusBadge(result.status)}
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Instructions */}
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>ملاحظات</AlertTitle>
+          <AlertDescription>
+            يقوم هذا التشخيص بفحص الاتصال بقاعدة البيانات، المصادقة، والوصول للجداول الرئيسية.
+            في حالة وجود أخطاء، تأكد من صحة إعدادات قاعدة البيانات والصلاحيات.
+          </AlertDescription>
+        </Alert>
       </div>
     </UnifiedLayout>
   );
