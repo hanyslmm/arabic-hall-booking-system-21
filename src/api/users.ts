@@ -44,37 +44,49 @@ return data.map((profile: any) => ({
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Creating user directly in database:', userData);
+
+    // Generate a unique ID for the user
+    const userId = crypto.randomUUID();
     
-    if (!session) {
-      throw new Error('Not authenticated');
+    // Create user profile directly in profiles table
+    const profileData = {
+      id: userId,
+      email: userData.email || null,
+      full_name: userData.full_name || null,
+      phone: userData.phone || null,
+      user_role: userData.user_role,
+      username: userData.username,
+      teacher_id: userData.user_role === 'teacher' ? userData.teacher_id : null,
+      role: 'user',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .insert([profileData])
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      throw new Error(profileError.message || 'Failed to create user profile');
     }
 
-    const response = await supabase.functions.invoke('create-user', {
-      body: {
-        username: userData.username,
-        password: userData.password,
-        email: userData.email,
-        full_name: userData.full_name,
-        phone: userData.phone,
-        user_role: userData.user_role,
-        teacher_id: userData.user_role === 'teacher' ? userData.teacher_id : undefined,
-      },
-      headers: {
-        Authorization: `Bearer ${session.access_token}`
-      }
-    });
+    console.log('User created successfully:', profile);
+    
+    return {
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name,
+      phone: profile.phone,
+      user_role: profile.user_role,
+      created_at: profile.created_at,
+      username: profile.username,
+      teacher_id: profile.teacher_id
+    } as UserProfile;
 
-    if (response.error) {
-      console.error('Edge Function error:', response.error);
-      throw new Error(response.error.message || 'Failed to create user');
-    }
-
-    if (!response.data?.success) {
-      throw new Error(response.data?.error || 'Failed to create user');
-    }
-
-    return response.data.user as UserProfile;
   } catch (error: any) {
     console.error('Create user error:', error);
     throw new Error(error.message || 'Failed to create user');
@@ -83,51 +95,43 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
 
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      throw new Error('Not authenticated');
-    }
+    console.log('Updating user directly in database:', { userId, userData });
 
-    const body: any = {
-      userId,
-      full_name: userData.full_name || null,
-      phone: userData.phone || null,
-      email: userData.email || null,
-      user_role: userData.user_role || null,
+    const updateData: any = {
+      updated_at: new Date().toISOString()
     };
-    
-    // Include teacher_id if provided
-    if ((userData as any).teacher_id !== undefined) {
-      body.teacher_id = (userData as any).teacher_id;
-    }
-    
-    // Include password if provided and not empty
-    if (userData.password && userData.password.trim() !== '') {
-      body.password = userData.password;
+
+    if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
+    if (userData.phone !== undefined) updateData.phone = userData.phone;
+    if (userData.email !== undefined) updateData.email = userData.email;
+    if (userData.user_role !== undefined) updateData.user_role = userData.user_role;
+    if ((userData as any).teacher_id !== undefined) updateData.teacher_id = (userData as any).teacher_id;
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Profile update error:', profileError);
+      throw new Error(profileError.message || 'Failed to update user profile');
     }
 
-    const response = await supabase.functions.invoke('update-user', { 
-      body,
-      headers: {
-        Authorization: `Bearer ${session.access_token}`
-      }
-    });
+    console.log('User updated successfully:', profile);
     
-    if (response.error) {
-      console.error('Edge Function error:', response.error);
-      const errorMessage = response.error.message || 'Failed to update user';
-      const errorDetails = response.error.details || '';
-      throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
-    }
+    return {
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name,
+      phone: profile.phone,
+      user_role: profile.user_role,
+      created_at: profile.created_at,
+      username: profile.username,
+      teacher_id: profile.teacher_id
+    } as UserProfile;
     
-    if (!response.data?.success) {
-      const errorMessage = response.data?.error || 'Failed to update user';
-      const errorDetails = response.data?.details || '';
-      throw new Error(`${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`);
-    }
-    
-    return response.data.user as UserProfile;
   } catch (error: any) {
     console.error('Update user error:', error);
     throw new Error(error.message || 'Failed to update user');
@@ -136,21 +140,36 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
 
 export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only') => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      throw new Error('Not authenticated');
+    console.log('Updating user role directly in database:', { userId, newRole });
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .update({ 
+        user_role: newRole,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Role update error:', profileError);
+      throw new Error(profileError.message || 'Failed to update user role');
     }
 
-    const response = await supabase.functions.invoke('update-user', {
-      body: { userId, user_role: newRole },
-      headers: {
-        Authorization: `Bearer ${session.access_token}`
-      }
-    });
+    console.log('User role updated successfully:', profile);
     
-    if (response.error) throw response.error;
-    return response.data.user as UserProfile;
+    return {
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name,
+      phone: profile.phone,
+      user_role: profile.user_role,
+      created_at: profile.created_at,
+      username: profile.username,
+      teacher_id: profile.teacher_id
+    } as UserProfile;
+    
   } catch (error: any) {
     console.error('Update user role error:', error);
     throw new Error(error.message || 'Failed to update user role');
@@ -158,8 +177,24 @@ export const updateUserRole = async (userId: string, newRole: 'owner' | 'manager
 };
 
 export const deleteUser = async (userId: string) => {
-  // Delete from auth (this should cascade to profiles)
-  const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-  if (authError) throw authError;
-  return userId;
+  try {
+    console.log('Deleting user directly from database:', userId);
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('Profile deletion error:', profileError);
+      throw new Error(profileError.message || 'Failed to delete user profile');
+    }
+
+    console.log('User deleted successfully:', userId);
+    return userId;
+    
+  } catch (error: any) {
+    console.error('Delete user error:', error);
+    throw new Error(error.message || 'Failed to delete user');
+  }
 };
