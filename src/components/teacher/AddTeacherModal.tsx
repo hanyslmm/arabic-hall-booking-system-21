@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 const teacherSchema = z.object({
   name: z.string().min(1, "يرجى إدخال اسم المعلم"),
+  teacher_code: z.string().min(1, "يرجى إدخال رمز المعلم"),
   mobile_phone: z.string().optional(),
   subject_id: z.string().optional(),
   academic_stage_ids: z.array(z.string()).optional(),
@@ -50,6 +51,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
     resolver: zodResolver(teacherSchema),
     defaultValues: {
       name: "",
+      teacher_code: "",
       mobile_phone: "",
       subject_id: "",
       academic_stage_ids: [],
@@ -87,6 +89,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       // Prepare teacher data with proper handling of empty strings
       const teacherData: any = {
         name: data.name,
+        teacher_code: data.teacher_code,
       };
       
       // Only include mobile_phone if it has a value
@@ -215,6 +218,18 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
             />
             {form.formState.errors.name && (
               <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="teacher_code">رمز المعلم</Label>
+            <Input
+              id="teacher_code"
+              placeholder="أدخل رمز المعلم (مثال: B)"
+              {...form.register('teacher_code')}
+            />
+            {form.formState.errors.teacher_code && (
+              <p className="text-sm text-red-500">{form.formState.errors.teacher_code.message}</p>
             )}
           </div>
 

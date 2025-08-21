@@ -29,6 +29,7 @@ export const addTeacher = async (teacherData: TeacherFormData) => {
     .from("teachers")
     .insert([{ 
       name: teacherData.name,
+      teacher_code: teacherData.teacher_code || null,
       mobile_phone: teacherData.mobile_phone || null,
       subject_id: teacherData.subject_id || null,
       created_by: user.user.id 
@@ -44,6 +45,7 @@ export const updateTeacher = async (id: string, updates: Partial<TeacherFormData
   const updateData: any = {};
   
   if (updates.name !== undefined) updateData.name = updates.name;
+  if ((updates as any).teacher_code !== undefined) updateData.teacher_code = (updates as any).teacher_code;
   if (updates.mobile_phone !== undefined) updateData.mobile_phone = updates.mobile_phone;
   if (updates.subject_id !== undefined) updateData.subject_id = updates.subject_id;
   if ((updates as any).default_class_fee !== undefined) updateData.default_class_fee = (updates as any).default_class_fee;
@@ -76,12 +78,29 @@ export const deleteTeacher = async (id: string) => {
 };
 
 export const addTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
-  // This functionality is not needed in the simplified schema
-  // Academic stages can be handled differently
-  console.log('Academic stages assignment not implemented in simplified schema');
+  if (stageIds.length === 0) return;
+  
+  const stageData = stageIds.map(stageId => ({
+    teacher_id: teacherId,
+    academic_stage_id: stageId
+  }));
+  
+  const { error } = await supabase
+    .from('teacher_academic_stages')
+    .insert(stageData);
+    
+  if (error) throw error;
 };
 
 export const updateTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
-  // This functionality is not needed in the simplified schema
-  console.log('Academic stages assignment not implemented in simplified schema');
+  // First delete existing associations
+  await supabase
+    .from('teacher_academic_stages')
+    .delete()
+    .eq('teacher_id', teacherId);
+    
+  // Then add new associations
+  if (stageIds.length > 0) {
+    await addTeacherAcademicStages(teacherId, stageIds);
+  }
 };

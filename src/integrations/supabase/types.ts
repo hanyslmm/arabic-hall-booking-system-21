@@ -470,9 +470,46 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_academic_stages: {
+        Row: {
+          academic_stage_id: string
+          created_at: string | null
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          academic_stage_id: string
+          created_at?: string | null
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          academic_stage_id?: string
+          created_at?: string | null
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_academic_stages_academic_stage_id_fkey"
+            columns: ["academic_stage_id"]
+            isOneToOne: false
+            referencedRelation: "academic_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_academic_stages_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teachers: {
         Row: {
           created_at: string | null
+          created_by: string | null
           default_class_fee: number | null
           id: string
           mobile_phone: string | null
@@ -483,6 +520,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           default_class_fee?: number | null
           id?: string
           mobile_phone?: string | null
@@ -493,6 +531,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           default_class_fee?: number | null
           id?: string
           mobile_phone?: string | null
