@@ -575,9 +575,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      custom_login: {
+        Args: { password: string; username: string }
+        Returns: Json
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      username_to_email: {
+        Args: { username: string }
+        Returns: string
       }
     }
     Enums: {

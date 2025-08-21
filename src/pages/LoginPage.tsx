@@ -17,14 +17,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const trySignIn = async (emailCandidate: string, pwd: string) => {
-    if (!isSupabaseConfigured) {
-      throw new Error("Database connection not configured. Please contact your administrator.");
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email: emailCandidate, password: pwd });
-    return error;
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -40,56 +32,31 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const raw = username.trim();
-      const isEmailInput = raw.includes("@");
-      const normalized = raw.toLowerCase();
-
-      // Build candidate emails in order of likelihood without hitting DB first
-      const candidates: string[] = [];
-      if (isEmailInput) {
-        candidates.push(raw);
-      } else {
-        if (normalized === "admin") {
-          candidates.push("admin@system.local");
-        } else if (["sc_manager", "sc-manager", "scmanager"].includes(normalized)) {
-          candidates.push("sc_manager@system.local");
-        }
-        // Generated email convention
-        candidates.push(`${raw}@local.app`);
+      let email = username.trim();
+      
+      // Map admin username to email
+      if (email.toLowerCase() === "admin") {
+        email = "admin@admin.com";
+      } else if (!email.includes("@")) {
+        // If it's not an email and not admin, assume it's a username@domain format
+        email = `${email}@admin.com`;
       }
 
-      // Try candidates sequentially
-      let lastError: any = null;
-      for (const candidate of candidates) {
-        const error = await trySignIn(candidate, password);
-        if (!error) {
-          toast({ title: "تم تسجيل الدخول", description: "مرحبًا بك!" });
-          navigate("/", { replace: true });
-          return;
-        }
-        lastError = error;
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: password.trim()
+      });
+
+      if (error) {
+        throw error;
       }
 
-      // Fallback: resolve by profiles.username -> email, then try
-      if (!isEmailInput) {
-        const { data: profileByUsername } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("username", raw)
-          .maybeSingle();
+      toast({ 
+        title: "تم تسجيل الدخول", 
+        description: "مرحبًا بك!" 
+      });
+      navigate("/", { replace: true });
 
-        if (profileByUsername?.email) {
-          const error = await trySignIn(profileByUsername.email, password);
-          if (!error) {
-            toast({ title: "تم تسجيل الدخول", description: "مرحبًا بك!" });
-            navigate("/", { replace: true });
-            return;
-          }
-          lastError = error;
-        }
-      }
-
-      throw lastError || new Error("فشل تسجيل الدخول");
     } catch (error: any) {
       toast({
         title: "فشل تسجيل الدخول",
