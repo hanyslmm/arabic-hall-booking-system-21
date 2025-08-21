@@ -320,9 +320,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                   studentPromises.push(
                     studentsApi.create({
                       name: studentData.name,
-                      mobile_phone: studentData.mobile,
-                      parent_phone: studentData.home || undefined,
-                      city: studentData.city || undefined
+                      mobile_phone: studentData.mobile
                     }).then(newStudent => {
                       existingStudentsMap.set(normalizedMobile, newStudent);
                       return { studentData, student: newStudent };
