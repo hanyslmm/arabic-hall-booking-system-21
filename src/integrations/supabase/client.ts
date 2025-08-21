@@ -2,17 +2,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Use actual Supabase project credentials from Lovable integration
-const SUPABASE_URL = 'https://lhklufuwbtjexsehlvtj.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxoa2x1ZnV3YnRqZXhzZWhsdnRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MTcyNTMsImV4cCI6MjA2NTA5MzI1M30.lRp-zyA9I3wwfBE8rT24oYJyzWS3_1QJRztZg-cnFhg';
-
-// Create a flag to track if Supabase is properly configured
-export const isSupabaseConfigured = !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
+const SUPABASE_URL = "https://vylizytdabmyxhuljzhe.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5bGl6eXRkYWJteXhodWxqemhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODY3MDAsImV4cCI6MjA3MTM2MjcwMH0.T7b2UsbtNLxG8iYC9VGjuA5M4Vj8IkuiFfEQy9KKaP0";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Create the Supabase client with the configured credentials
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
