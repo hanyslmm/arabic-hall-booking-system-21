@@ -6,10 +6,7 @@ export const getTeachers = async (): Promise<Teacher[]> => {
     .from("teachers")
     .select(`
       *,
-      subjects:subject_id(name),
-      teacher_academic_stages(
-        academic_stages(name)
-      )
+      subjects:subject_id(name)
     `)
     .order("name");
   
@@ -21,7 +18,7 @@ export const getTeachers = async (): Promise<Teacher[]> => {
   return data as Teacher[];
 };
 
-export const addTeacher = async (teacherData: TeacherFormData) => {
+export const addTeacher = async (teacherData: TeacherFormData & { teacher_code: string }) => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error("غير مصرح");
   
@@ -29,7 +26,7 @@ export const addTeacher = async (teacherData: TeacherFormData) => {
     .from("teachers")
     .insert([{ 
       name: teacherData.name,
-      teacher_code: teacherData.teacher_code || null,
+      teacher_code: teacherData.teacher_code,
       mobile_phone: teacherData.mobile_phone || null,
       subject_id: teacherData.subject_id || null,
       created_by: user.user.id 
@@ -41,11 +38,11 @@ export const addTeacher = async (teacherData: TeacherFormData) => {
   return data as Teacher;
 };
 
-export const updateTeacher = async (id: string, updates: Partial<TeacherFormData & { default_class_fee: number }>) => {
+export const updateTeacher = async (id: string, updates: Partial<TeacherFormData & { default_class_fee: number; teacher_code: string }>) => {
   const updateData: any = {};
   
   if (updates.name !== undefined) updateData.name = updates.name;
-  if ((updates as any).teacher_code !== undefined) updateData.teacher_code = (updates as any).teacher_code;
+  if (updates.teacher_code !== undefined) updateData.teacher_code = updates.teacher_code;
   if (updates.mobile_phone !== undefined) updateData.mobile_phone = updates.mobile_phone;
   if (updates.subject_id !== undefined) updateData.subject_id = updates.subject_id;
   if ((updates as any).default_class_fee !== undefined) updateData.default_class_fee = (updates as any).default_class_fee;
@@ -80,26 +77,26 @@ export const deleteTeacher = async (id: string) => {
 export const addTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
   if (stageIds.length === 0) return;
   
-  const stageData = stageIds.map(stageId => ({
+  const insertData = stageIds.map(stageId => ({
     teacher_id: teacherId,
     academic_stage_id: stageId
   }));
   
   const { error } = await supabase
     .from('teacher_academic_stages')
-    .insert(stageData);
-    
+    .insert(insertData);
+  
   if (error) throw error;
 };
 
 export const updateTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
-  // First delete existing associations
+  // First, delete existing associations
   await supabase
     .from('teacher_academic_stages')
     .delete()
     .eq('teacher_id', teacherId);
-    
-  // Then add new associations
+  
+  // Then add new associations if any
   if (stageIds.length > 0) {
     await addTeacherAcademicStages(teacherId, stageIds);
   }

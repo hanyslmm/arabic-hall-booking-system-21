@@ -89,7 +89,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       // Prepare teacher data with proper handling of empty strings
       const teacherData: any = {
         name: data.name,
-        teacher_code: data.teacher_code,
+        teacher_code: data.teacher_code.toUpperCase(),
       };
       
       // Only include mobile_phone if it has a value
@@ -100,11 +100,6 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       // Only include subject_id if it has a value
       if (data.subject_id && data.subject_id !== '') {
         teacherData.subject_id = data.subject_id;
-      }
-      
-      // Real-time validation guard: don't submit if phone duplicate still set
-      if (form.formState.errors.mobile_phone) {
-        throw new Error('duplicate_phone');
       }
 
       const teacher = await addTeacher(teacherData);
@@ -122,7 +117,13 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
         description: "تم إضافة المعلم بنجاح",
       });
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
-      form.reset();
+      form.reset({
+        name: "",
+        teacher_code: "",
+        mobile_phone: "",
+        subject_id: "",
+        academic_stage_ids: [],
+      });
       setSelectedStages([]);
       onClose();
     },
@@ -135,68 +136,6 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       console.error('Error adding teacher:', error);
     },
   });
-
-  const addSubjectMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const { addSubject } = await import('@/api/subjects');
-      return await addSubject({ name });
-    },
-    onSuccess: () => {
-      toast({
-        title: "تم بنجاح",
-        description: "تم إضافة المادة بنجاح",
-      });
-      queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      setShowAddSubject(false);
-      setNewSubjectName("");
-    },
-    onError: (error) => {
-      toast({
-        title: "تنبيه",
-        description: "لا يمكن إضافة المواد في الوقت الحالي",
-        variant: "destructive",
-      });
-      console.warn('Cannot add subject:', error);
-    },
-  });
-
-  const handleAddSubject = () => {
-    if (newSubjectName.trim()) {
-      addSubjectMutation.mutate(newSubjectName.trim());
-    }
-  };
-
-  const toggleAcademicStage = (stageId: string) => {
-    const updatedStages = selectedStages.includes(stageId)
-      ? selectedStages.filter(id => id !== stageId)
-      : [...selectedStages, stageId];
-    
-    setSelectedStages(updatedStages);
-    form.setValue('academic_stage_ids', updatedStages);
-  };
-
-  const checkTeacherPhoneDuplicate = async (phone: string) => {
-    if (!phone.trim()) return false;
-    const { count, error } = await supabase
-      .from('teachers')
-      .select('*', { count: 'exact', head: true })
-      .eq('mobile_phone', phone.trim());
-    if (error) return false;
-    return (count || 0) > 0;
-  };
-
-  const onBlurPhone = async () => {
-    const phone = form.getValues('mobile_phone') || '';
-    if (!phone) return;
-    setIsCheckingPhone(true);
-    const exists = await checkTeacherPhoneDuplicate(phone);
-    setIsCheckingPhone(false);
-    if (exists) {
-      form.setError('mobile_phone', { message: 'رقم الهاتف مستخدم من قبل معلم آخر' });
-    } else {
-      form.clearErrors('mobile_phone');
-    }
-  };
 
   const onSubmit = (data: TeacherFormData) => {
     createTeacherMutation.mutate(data);
@@ -227,6 +166,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
               id="teacher_code"
               placeholder="أدخل رمز المعلم (مثال: B)"
               {...form.register('teacher_code')}
+              style={{ textTransform: 'uppercase' }}
             />
             {form.formState.errors.teacher_code && (
               <p className="text-sm text-red-500">{form.formState.errors.teacher_code.message}</p>
@@ -239,68 +179,27 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
               id="mobile_phone"
               placeholder="أدخل رقم الهاتف المحمول"
               {...form.register('mobile_phone')}
-              onBlur={onBlurPhone}
-              aria-invalid={!!form.formState.errors.mobile_phone}
             />
-            {isCheckingPhone && (
-              <p className="text-xs text-muted-foreground">جاري التحقق من الرقم...</p>
-            )}
-            {form.formState.errors.mobile_phone && (
-              <p className="text-sm text-red-500">{form.formState.errors.mobile_phone.message as string}</p>
-            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="subject_id">المادة الدراسية (اختياري)</Label>
-            <div className="flex gap-2">
-              <Select
-                onValueChange={(value) => form.setValue('subject_id', value)}
-                defaultValue={form.getValues('subject_id')}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="اختر مادة دراسية" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowAddSubject(true)}
-                aria-label="إضافة مادة"
-                title="إضافة مادة"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Academic Stages Field */}
-          {academicStages.length > 0 && (
-            <div className="space-y-2">
-              <Label>المراحل الدراسية (اختياري)</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded p-2">
-                {academicStages.map((stage) => (
-                  <div key={stage.id} className="flex items-center space-x-2 space-x-reverse">
-                    <Checkbox
-                      id={`stage-${stage.id}`}
-                      checked={selectedStages.includes(stage.id)}
-                      onCheckedChange={() => toggleAcademicStage(stage.id)}
-                    />
-                    <Label htmlFor={`stage-${stage.id}`} className="text-sm">
-                      {stage.name}
-                    </Label>
-                  </div>
+            <Select
+              onValueChange={(value) => form.setValue('subject_id', value)}
+              defaultValue={form.getValues('subject_id')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="اختر مادة دراسية" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-          )}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex gap-2 pt-4">
             <Button
@@ -314,34 +213,6 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
             </Button>
           </div>
         </form>
-
-        {/* Add Subject Modal */}
-        {showAddSubject && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-96">
-              <h3 className="text-lg font-semibold mb-4">إضافة مادة جديدة</h3>
-              <Input
-                placeholder="اسم المادة"
-                value={newSubjectName}
-                onChange={(e) => setNewSubjectName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddSubject();
-                  }
-                }}
-              />
-              <div className="flex gap-2 mt-4">
-                <Button onClick={handleAddSubject} disabled={addSubjectMutation.isPending}>
-                  {addSubjectMutation.isPending ? "جاري الإضافة..." : "إضافة"}
-                </Button>
-                <Button variant="outline" onClick={() => setShowAddSubject(false)}>
-                  إلغاء
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
