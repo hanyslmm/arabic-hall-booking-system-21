@@ -135,6 +135,25 @@ export const studentsApi = {
   }
 };
 
+// Attendance API (simplified for now)
+export const attendanceApi = {
+  async getByRegistration(registrationId: string): Promise<any[]> {
+    // Attendance functionality not implemented in simplified schema
+    console.log('Attendance not implemented in simplified schema');
+    return [];
+  },
+  
+  async create(attendanceData: any): Promise<any> {
+    console.log('Attendance not implemented in simplified schema');
+    throw new Error('Attendance not implemented');
+  },
+  
+  async update(id: string, updates: any): Promise<any> {
+    console.log('Attendance not implemented in simplified schema');
+    throw new Error('Attendance not implemented');
+  }
+};
+
 export const getStudents = studentsApi.getAll;
 
 // Student Registrations API
