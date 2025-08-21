@@ -135,8 +135,7 @@ export const RegisterStudentModal = ({ isOpen, onClose }: RegisterStudentModalPr
     createStudentMutation.mutate({
       name: newStudentData.name.trim(),
       mobile_phone: newStudentData.mobile_phone.trim(),
-      parent_phone: newStudentData.parent_phone.trim() || undefined,
-      city: newStudentData.city.trim() || undefined,
+      // parent_phone and city removed from simplified schema
     });
   };
 
@@ -160,7 +159,7 @@ export const RegisterStudentModal = ({ isOpen, onClose }: RegisterStudentModalPr
       student_id: selectedStudent.id,
       booking_id: selectedBooking,
       total_fees: resolvedFees,
-      notes: notes.trim() || undefined,
+      // notes removed from simplified schema
     });
   };
 

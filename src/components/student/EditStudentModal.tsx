@@ -19,8 +19,7 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
   const [formData, setFormData] = useState({
     name: student.name,
     mobile_phone: student.mobile_phone,
-    parent_phone: student.parent_phone || "",
-    city: student.city || "",
+    // parent_phone and city removed from simplified schema
     serial_number: student.serial_number,
   });
 
@@ -67,8 +66,7 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
     updateMutation.mutate({
       name: formData.name.trim(),
       mobile_phone: formData.mobile_phone.trim(),
-      parent_phone: formData.parent_phone.trim() || undefined,
-      city: formData.city.trim() || undefined,
+      // parent_phone and city removed from simplified schema
       serial_number: formData.serial_number.trim(),
     });
   };
@@ -120,25 +118,7 @@ export const EditStudentModal = ({ student, isOpen, onClose }: EditStudentModalP
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="parent_phone">هاتف ولي الأمر</Label>
-            <Input
-              id="parent_phone"
-              placeholder="رقم هاتف ولي الأمر"
-              value={formData.parent_phone}
-              onChange={(e) => setFormData(prev => ({ ...prev, parent_phone: e.target.value }))}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="city">المدينة</Label>
-            <Input
-              id="city"
-              placeholder="المدينة"
-              value={formData.city}
-              onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-            />
-          </div>
+          {/* parent_phone and city fields removed from simplified schema */}
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

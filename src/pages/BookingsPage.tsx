@@ -92,7 +92,7 @@ const BookingsPage = () => {
           profileState: {
             profile: profile ? { 
               id: profile.id, 
-              user_role: profile.user_role,
+              user_role: profile.role,
               full_name: profile.full_name 
             } : null,
           },
@@ -231,8 +231,8 @@ const BookingsPage = () => {
  
   // Memoize expensive calculations
   const canManage = useMemo(() => 
-    profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin,
-    [profile?.user_role, isAdmin]
+    profile?.role === 'admin' || profile?.role === 'manager' || isAdmin,
+    [profile?.role, isAdmin]
   );
  
   // Loading timeout guard to avoid infinite spinner on flaky connections
@@ -629,10 +629,10 @@ const BookingsPage = () => {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                  {profile?.user_role === 'teacher' ? 'مراقبة المجموعات' : 'إدارة المجموعات'}
+                  {profile?.role === 'user' ? 'مراقبة المجموعات' : 'إدارة المجموعات'}
                 </h1>
                 <p className="text-muted-foreground">
-                  {profile?.user_role === 'teacher' 
+                  {profile?.role === 'user'
                     ? 'مراقبة حضور الطلاب في المجموعات المخصصة لك'
                     : 'عرض وإدارة جميع المجموعات والحجوزات'
                   }
@@ -645,7 +645,7 @@ const BookingsPage = () => {
                 <Users className="h-4 w-4" />
                 <span className="text-sm font-semibold">{bookings?.length || 0} مجموعة نشطة</span>
               </div>
-              {profile?.user_role === 'teacher' && (
+              {profile?.role === 'user' && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-info/10 text-info rounded-lg border border-info/20">
                   <GraduationCap className="h-4 w-4" />
                   <span className="text-sm font-semibold">معلم</span>
@@ -736,7 +736,7 @@ const BookingsPage = () => {
             isLoading={isLoading}
             emptyMessage="لم يتم إنشاء أي مجموعات بعد"
             emptyIcon={<Users className="h-16 w-16 mx-auto text-muted-foreground" />}
-            emptyAction={(profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin) ? { label: 'إنشاء مجموعة جديدة', onClick: () => navigate('/class-management'), icon: <Plus className="h-4 w-4 mr-2" /> } : undefined}
+            emptyAction={(profile?.role === 'admin' || profile?.role === 'manager' || isAdmin) ? { label: 'إنشاء مجموعة جديدة', onClick: () => navigate('/class-management'), icon: <Plus className="h-4 w-4 mr-2" /> } : undefined}
             getRowKey={(booking) => booking.id}
             expandedContent={renderExpandedBookingContent}
             itemsPerPage={50}

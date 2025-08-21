@@ -162,8 +162,8 @@ export const FastRegistrationModal = ({ isOpen, onClose }: FastRegistrationModal
         studentRegistrationsApi.create({
           student_id: reg.student_id,
           booking_id: reg.booking_id,
-          total_fees: reg.total_fees,
-          notes: reg.paid_amount > 0 ? `دفع سريع: ${reg.paid_amount} LE` : undefined
+          total_fees: reg.total_fees
+          // notes removed from simplified schema
         })
       );
       

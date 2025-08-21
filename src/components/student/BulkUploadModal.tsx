@@ -183,7 +183,7 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
 
       // Find existing booking by class_code first (this is the most reliable way)
       const bookings = await bookingsApi.getAll();
-      let targetBooking = bookings.find(b => b.class_code === classCode);
+      let targetBooking = bookings.find(b => b.id === classCode); // Use booking ID for now
 
       // Get hall selection for this class
       const hallSelection = selectedHalls.find(h => h.sheetName === classData.sheetName);
@@ -202,7 +202,7 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
           number_of_students: classData.students.length,
           start_time: formatTimeForDB(classData.time),
           days_of_week: [classData.dayOfWeek],
-          class_code: classCode,
+          // class_code removed from simplified schema
           status: 'active' as const
         });
       } else {
@@ -217,10 +217,10 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
           start_date: new Date().toISOString().split('T')[0],
           end_date: null,
           days_of_week: [classData.dayOfWeek],
-          class_code: classCode,
+          // class_code removed from simplified schema
           class_fees: 0,
-          status: 'active' as const,
-          is_custom_fee: false
+          status: 'active' as const
+          // is_custom_fee removed from simplified schema
         });
       }
 
@@ -252,8 +252,8 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
         const registration = await studentRegistrationsApi.create({
           student_id: student.id,
           booking_id: targetBooking.id,
-          total_fees: targetBooking.class_fees || 0, // Use booking's class fees, not individual payment
-          notes: `Bulk upload from ${classData.sheetName} - ${new Date().toISOString().split('T')[0]}`
+          total_fees: targetBooking.class_fees || 0 // Use booking's class fees, not individual payment
+          // notes removed from simplified schema
         });
 
         // Monthly payments: if provided, create one payment per month; else create a single payment for current month
@@ -315,8 +315,7 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
     return await studentsApi.create({
       name: studentData.name,
       mobile_phone: studentData.mobile,
-      parent_phone: studentData.home,
-      city: studentData.city
+      // parent_phone and city removed from simplified schema
     });
   };
 
