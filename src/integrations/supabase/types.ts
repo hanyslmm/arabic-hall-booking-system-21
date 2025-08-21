@@ -127,6 +127,7 @@ export type Database = {
           class_code: string | null
           class_fees: number | null
           created_at: string | null
+          created_by: string | null
           days_of_week: string[]
           end_date: string | null
           hall_id: string
@@ -144,6 +145,7 @@ export type Database = {
           class_code?: string | null
           class_fees?: number | null
           created_at?: string | null
+          created_by?: string | null
           days_of_week?: string[]
           end_date?: string | null
           hall_id: string
@@ -161,6 +163,7 @@ export type Database = {
           class_code?: string | null
           class_fees?: number | null
           created_at?: string | null
+          created_by?: string | null
           days_of_week?: string[]
           end_date?: string | null
           hall_id?: string
