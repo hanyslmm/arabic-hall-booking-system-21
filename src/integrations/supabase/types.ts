@@ -331,15 +331,7 @@ export type Database = {
           user_role?: Database["public"]["Enums"]["user_role"] | null
           username?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       settings: {
         Row: {
