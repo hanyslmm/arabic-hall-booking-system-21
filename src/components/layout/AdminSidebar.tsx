@@ -411,7 +411,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
               </Avatar>
               <div className="grid gap-0.5">
                 <p className="text-sm font-semibold leading-none">{profile?.full_name || "مستخدم"}</p>
-                {getRoleBadge(profile?.user_role)}
+                {getRoleBadge(profile?.role)}
               </div>
             </div>
             <LogoutButton />

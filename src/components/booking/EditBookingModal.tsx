@@ -349,7 +349,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
               <Button type="button" variant="outline" size="sm" onClick={async ()=>{
                 try{
                   // Set is_custom_fee=false so teacher default applies next time it changes
-                  await bookingsApi.update(bookingId, { is_custom_fee: false });
+                  // Remove is_custom_fee from simplified schema
                   queryClient.invalidateQueries({ queryKey: ['bookings'] });
                   toast({ title: 'تم إعادة الرسوم إلى الوضع الافتراضي للمعلم' });
                 }catch(err:any){

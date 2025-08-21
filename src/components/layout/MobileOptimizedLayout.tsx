@@ -13,9 +13,9 @@ export function MobileOptimizedLayout({ children }: MobileOptimizedLayoutProps) 
   const isMobile = useIsMobile();
   const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
   
-  const userRole = profile?.user_role;
+  const userRole = profile?.role;
   const isOwnerOrAdmin = isAdmin || isOwner || canManageUsers;
-  const isTeacher = userRole === 'teacher';
+  const isTeacher = userRole === 'user';
 
   // Build navigation based on role - ensuring admin/owner can see everything
   const navigation = [

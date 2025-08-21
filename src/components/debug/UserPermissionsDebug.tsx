@@ -18,7 +18,7 @@ export const UserPermissionsDebug = () => {
           <div>
             <p><strong>User ID:</strong> {user.id}</p>
             <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Profile User Role:</strong> {profile?.user_role || 'N/A'}</p>
+            <p><strong>User Role:</strong> {profile?.role || 'N/A'}</p>
             <p><strong>Profile Role:</strong> {(profile as any)?.role || 'N/A'}</p>
           </div>
           <div className="space-y-2">

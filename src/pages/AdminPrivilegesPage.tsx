@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const AdminPrivilegesPage = () => {
   const { profile, isAdmin } = useAuth();
 
-  if (!isAdmin && profile?.user_role !== 'owner' && profile?.user_role !== 'manager') {
+  if (!isAdmin && profile?.role !== 'admin' && profile?.role !== 'manager') {
     return (
       <UnifiedLayout>
         <div className="flex items-center justify-center min-h-[400px]">

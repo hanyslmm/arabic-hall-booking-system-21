@@ -21,7 +21,7 @@ export function AdminDashboard() {
   const can = (permission: string) => {
     if (permission === 'create:registrations') {
       // Allow all non-teacher roles (consistent with registrations page)
-      return profile?.user_role !== 'teacher';
+      return profile?.role !== 'user';
     }
     return false;
   };

@@ -68,8 +68,6 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
               serial_number: newStudent.serial_number || '',
               name: newStudent.name,
               mobile_phone: newStudent.mobile_phone,
-              parent_phone: newStudent.parent_phone,
-              city: newStudent.city,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             }, ...(old as any).data],
@@ -83,8 +81,6 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
             serial_number: newStudent.serial_number || '',
             name: newStudent.name,
             mobile_phone: newStudent.mobile_phone,
-            parent_phone: newStudent.parent_phone,
-            city: newStudent.city,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }, ...old];
@@ -148,10 +144,8 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
 
     createMutation.mutate({
       name: formData.name.trim(),
-      mobile_phone: formData.mobile_phone.trim(),
-      parent_phone: formData.parent_phone.trim() || undefined,
-      city: formData.city.trim() || undefined,
-      serial_number: formData.serial_number.trim() || undefined,
+        mobile_phone: formData.mobile_phone.trim(),
+        serial_number: formData.serial_number.trim() || undefined,
     });
   };
 

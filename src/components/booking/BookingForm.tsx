@@ -62,16 +62,8 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   const navigate = useNavigate();
 
   // Fetch default booking duration from settings
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  // No settings table in simplified schema - remove this query
+  const { data: settings } = { data: [] };
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -152,7 +144,6 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
         status: 'active' as const,
         class_code: data.class_code || null,
         class_fees: defaultFee,
-        is_custom_fee: false,
       };
 
       const { data: result, error } = await supabase

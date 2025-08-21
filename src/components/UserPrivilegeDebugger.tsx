@@ -47,7 +47,7 @@ export const UserPrivilegeDebugger = () => {
           id: user.id,
           email: user.email,
           full_name: profile?.full_name || 'Administrator',
-          user_role: 'owner',
+          role: 'admin',
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'id'
@@ -94,7 +94,7 @@ export const UserPrivilegeDebugger = () => {
           <div className="space-y-1 text-sm">
             <p><strong>Email:</strong> {user?.email || 'Not logged in'}</p>
             <p><strong>User ID:</strong> {user?.id || 'N/A'}</p>
-            <p><strong>User Role:</strong> {profile?.user_role || 'N/A'}</p>
+            <p><strong>User Role:</strong> {profile?.role || 'N/A'}</p>
             <div className="flex gap-2 mt-2">
               <Badge variant={isAdmin ? "default" : "outline"}>
                 isAdmin: {isAdmin ? "✓" : "✗"}

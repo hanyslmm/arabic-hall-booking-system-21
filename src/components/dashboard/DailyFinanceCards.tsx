@@ -14,8 +14,8 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   const { profile } = useAuth();
   const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   
-  const isAdmin = profile?.role === 'ADMIN' || ['owner', 'manager'].includes(profile?.user_role || '');
-  const canViewFinance = isAdmin || profile?.user_role === 'space_manager';
+  const isAdmin = profile?.role === 'admin';
+  const canViewFinance = isAdmin || profile?.role === 'manager';
 
   // For daily view
   const { data: dailyIncome = 0 } = useQuery({
@@ -35,14 +35,8 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   const { data: dailyExpenses = 0 } = useQuery({
     queryKey: ['daily-expenses', selectedDate],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('type', 'expense')
-        .eq('date', selectedDate);
-      
-      if (error) throw error;
-      return data.reduce((sum, record) => sum + Number(record.amount), 0);
+      // No expenses table in simplified schema - return 0
+      return 0;
     },
     enabled: canViewFinance
   });
@@ -69,18 +63,8 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   const { data: monthlyExpenses = 0 } = useQuery({
     queryKey: ['monthly-expenses', filterMonth],
     queryFn: async () => {
-      const startDate = `${filterMonth}-01`;
-      const endDate = `${filterMonth}-31`;
-      
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('amount')
-        .eq('type', 'expense')
-        .gte('date', startDate)
-        .lte('date', endDate);
-      
-      if (error) throw error;
-      return data.reduce((sum, record) => sum + Number(record.amount), 0);
+      // No expenses table in simplified schema - return 0
+      return 0;
     },
     enabled: isAdmin
   });

@@ -106,7 +106,7 @@ export const AdminDataDiagnostic = () => {
           results.push({
             name: "User Profile",
             status: 'success',
-            message: `Profile loaded: ${profileData.user_role} role`,
+            message: `Profile loaded: ${profileData.role} role`,
             details: profileData
           });
         }
@@ -120,7 +120,9 @@ export const AdminDataDiagnostic = () => {
         let primaryError: any = null;
         let fallbackError: any = null;
 
-        const { data: adminTestV2, error: adminErrorV2 } = await supabase.rpc('is_admin');
+        // Skip RPC function check - not implemented in simplified schema
+        const adminTestV2 = null;
+        const adminErrorV2 = { message: 'RPC functions not implemented in simplified schema' };
         if (adminErrorV2) {
           primaryError = adminErrorV2;
           adminCheckFunctionUsed = 'is_admin';
@@ -156,7 +158,7 @@ export const AdminDataDiagnostic = () => {
         'subjects',
         'student_registrations',
         'payment_records',
-        'attendance_records'
+        'academic_stages'
       ];
       
       for (const table of tables) {
@@ -262,7 +264,7 @@ export const AdminDataDiagnostic = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .update({ user_role: 'owner' })
+        .update({ role: 'admin' })
         .eq('id', user.id)
         .select()
         .single();
@@ -342,7 +344,7 @@ export const AdminDataDiagnostic = () => {
               {isAdmin ? "Admin" : "User"}
             </Badge>
             <Badge variant="outline">
-              {profile?.user_role || "Unknown"}
+              {profile?.role || "Unknown"}
             </Badge>
           </div>
           <Button 

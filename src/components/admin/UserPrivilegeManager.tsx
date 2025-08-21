@@ -13,33 +13,28 @@ interface UserProfile {
   id: string;
   email: string;
   full_name?: string;
-  user_role: 'owner' | 'manager' | 'space_manager' | 'read_only' | 'teacher';
-  phone?: string;
+  role: 'admin' | 'manager' | 'user';
   created_at: string;
 }
 
 export const UserPrivilegeManager = () => {
   const [email, setEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState<'owner' | 'manager' | 'space_manager' | 'read_only'>('space_manager');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'manager' | 'user'>('user');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const { toast } = useToast();
 
   const roleDisplayNames = {
-    owner: 'مالك النظام',
+    admin: 'مدير النظام',
     manager: 'مدير',
-    space_manager: 'مدير قاعات',
-    read_only: 'قراءة فقط',
-    teacher: 'معلم'
+    user: 'مستخدم'
   };
 
   const roleVariants = {
-    owner: 'destructive' as const,
+    admin: 'destructive' as const,
     manager: 'default' as const,
-    space_manager: 'secondary' as const,
-    read_only: 'outline' as const,
-    teacher: 'outline' as const
+    user: 'outline' as const
   };
 
   const loadUsers = async () => {
@@ -47,11 +42,11 @@ export const UserPrivilegeManager = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, user_role, phone, created_at')
+        .select('id, email, full_name, role, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+      setUsers(data as UserProfile[] || []);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({
@@ -83,7 +78,7 @@ export const UserPrivilegeManager = () => {
       // First check if user exists
       const { data: existingUser, error: userError } = await supabase
         .from('profiles')
-        .select('id, email, user_role')
+        .select('id, email, role')
         .eq('email', email.trim())
         .single();
 
@@ -104,7 +99,7 @@ export const UserPrivilegeManager = () => {
       const { data: updatedUser, error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          user_role: selectedRole,
+          role: selectedRole,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingUser.id)
@@ -139,14 +134,14 @@ export const UserPrivilegeManager = () => {
       const { data: allUsers, error: fetchError } = await supabase
         .from('profiles')
         .select('id')
-        .neq('user_role', 'owner');
+        .neq('role', 'admin');
 
       if (fetchError) throw fetchError;
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ user_role: 'manager' })
-        .neq('user_role', 'owner');
+        .update({ role: 'manager' })
+        .neq('role', 'admin');
 
       if (updateError) throw updateError;
 
@@ -204,10 +199,9 @@ export const UserPrivilegeManager = () => {
                 <SelectValue placeholder="اختر نوع الصلاحية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="owner">مالك النظام - صلاحيات كاملة</SelectItem>
+                <SelectItem value="admin">مدير النظام - صلاحيات كاملة</SelectItem>
                 <SelectItem value="manager">مدير - صلاحيات إدارية</SelectItem>
-                <SelectItem value="space_manager">مدير قاعات - إدارة القاعات فقط</SelectItem>
-                <SelectItem value="read_only">قراءة فقط - عرض البيانات فقط</SelectItem>
+                <SelectItem value="user">مستخدم - صلاحيات محدودة</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -234,7 +228,7 @@ export const UserPrivilegeManager = () => {
         <CardContent>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              ترقية جميع المستخدمين الحاليين إلى صلاحيات مدير (باستثناء المالكين)
+              ترقية جميع المستخدمين الحاليين إلى صلاحيات مدير (باستثناء المديرين)
             </p>
             <Button
               onClick={handleBulkUpgrade}
@@ -276,16 +270,13 @@ export const UserPrivilegeManager = () => {
                     <div>
                       <div className="font-medium">{user.full_name || 'بدون اسم'}</div>
                       <div className="text-sm text-muted-foreground" dir="ltr">{user.email}</div>
-                      {user.phone && (
-                        <div className="text-xs text-muted-foreground" dir="ltr">{user.phone}</div>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={roleVariants[user.user_role]}>
-                      {roleDisplayNames[user.user_role]}
+                    <Badge variant={roleVariants[user.role]}>
+                      {roleDisplayNames[user.role]}
                     </Badge>
-                    {(user.user_role === 'owner' || user.user_role === 'manager') && (
+                    {(user.role === 'admin' || user.role === 'manager') && (
                       <UserCheck className="h-4 w-4 text-green-600" />
                     )}
                   </div>
