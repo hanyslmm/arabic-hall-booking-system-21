@@ -113,13 +113,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       // AUTO-FIX: If this is the admin user but doesn't have proper role, upgrade them
-      if (data && (data.email === 'admin@system.local' || data.username === 'admin')) {
-        if (data.user_role !== 'owner' && data.user_role !== 'manager') {
-          console.log("Auto-upgrading admin user to owner role...");
+      if (data && data.email === 'admin@system.local') {
+        if (data.role !== 'admin') {
+          console.log("Auto-upgrading admin user to admin role...");
           
           const { data: updatedProfile, error: updateError } = await supabase
             .from("profiles")
-            .update({ user_role: 'owner' })
+            .update({ role: 'admin' })
             .eq("id", userId)
             .select()
             .single();
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.error("Error upgrading admin role:", updateError);
             setProfile(data); // Use original profile if update fails
           } else {
-            console.log("✓ Admin user upgraded to owner role successfully");
+            console.log("✓ Admin user upgraded to admin role successfully");
             setProfile(updatedProfile);
             
             // Show a notification to the user

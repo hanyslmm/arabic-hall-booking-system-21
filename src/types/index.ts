@@ -2,20 +2,12 @@ import { Tables } from "@/integrations/supabase/types";
 
 // Base types from database
 export type Hall = Tables<"halls">;
-export interface Teacher {
-  id: string;
-  name: string;
-  mobile_phone?: string | null;
-  subject_id?: string | null;
-  created_at: string;
-  subjects?: { name: string } | null;
-  teacher_academic_stages?: Array<{ academic_stages: { name: string } }>;
-  teacher_code?: string | null;
-  default_class_fee?: number | null;
-}
+export type Teacher = Tables<"teachers">;
 export type Subject = Tables<"subjects">;
 export type AcademicStage = Tables<"academic_stages">;
-export type WorkingHour = Tables<"working_hours">;
+export type Student = Tables<"students">;
+export type StudentRegistration = Tables<"student_registrations">;
+export type PaymentRecord = Tables<"payment_records">;
 export type Booking = Tables<"bookings"> & {
   halls?: { name: string };
   teachers?: { name: string };

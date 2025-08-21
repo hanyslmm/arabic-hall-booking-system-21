@@ -72,7 +72,7 @@ function RootRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  const role = profile?.user_role;
+  const role = profile?.role;
   const isOwnerOrAdmin = isAdmin || isOwner || canManageUsers;
 
   let dashboard: ReactNode = <ReceptionistDashboard />;

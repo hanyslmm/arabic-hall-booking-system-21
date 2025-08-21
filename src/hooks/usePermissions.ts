@@ -28,21 +28,19 @@ export const usePermissions = (profile: UserProfile | null): AuthPermissions => 
       };
     }
 
-    const userRole = profile.user_role;
-    const appRole = (profile as any).role as string | undefined;
+    const role = profile.role;
 
-    const isOwner = userRole === USER_ROLES.OWNER || appRole === 'ADMIN';
-    const isManager = userRole === USER_ROLES.MANAGER;
-    const isSpaceManager = userRole === 'space_manager';
-    const isAdmin = isOwner; // Only owner has full admin privileges, manager is limited
+    const isAdmin = role === 'admin';
+    const isManager = role === 'manager';
+    const isUser = role === 'user';
 
     return {
-      isOwner,
+      isOwner: isAdmin, // Admin is the owner
       isAdmin,
-      isManager: isManager || isOwner, // Manager includes owner
-      canManageBookings: isAdmin || isManager || isSpaceManager, // All roles can manage bookings
-      canManageData: isAdmin || isManager || isSpaceManager, // All roles can manage data  
-      canManageUsers: isOwner // Only owner can manage users (not manager)
+      isManager: isManager || isAdmin, // Admin has manager privileges
+      canManageBookings: isAdmin || isManager, // Admins and managers can manage bookings
+      canManageData: isAdmin || isManager, // Admins and managers can manage data  
+      canManageUsers: isAdmin // Only admin can manage users
     };
   }, [profile]);
 };

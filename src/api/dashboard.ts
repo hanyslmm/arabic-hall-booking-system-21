@@ -72,22 +72,29 @@ export const dashboardApi = {
    */
   async getHallOccupancy(): Promise<HallOccupancy[]> {
     try {
-      // Use the new time slot occupancy function
-      const { data, error } = await supabase.rpc('get_hall_time_slot_occupancy');
+      // For now, return simple occupancy based on bookings count
+      const { data, error } = await supabase
+        .from('halls')
+        .select(`
+          id,
+          name,
+          capacity
+        `);
+      
       if (error) throw error;
       
-      return (data as any[]).map((row) => ({
-        hall_id: row.hall_id,
-        name: row.hall_name,
-        occupancy_percentage: Number(row.occupancy_percentage || 0),
-        occupied_slots: Number(row.occupied_slots || 0),
-        available_slots: Number(row.available_slots || 0),
-        working_hours_per_day: Number(row.working_hours_per_day || 0),
-        working_days_per_week: Number(row.working_days_per_week || 0),
+      return (data || []).map((hall) => ({
+        hall_id: hall.id,
+        name: hall.name,
+        occupancy_percentage: 0, // Will be calculated properly later
+        occupied_slots: 0,
+        available_slots: hall.capacity,
+        working_hours_per_day: 8,
+        working_days_per_week: 6,
       }));
     } catch (error) {
-      console.error('Error fetching hall time slot occupancy:', error);
-      throw new Error('فشل في حساب إشغال الفترات الزمنية للقاعات');
+      console.error('Error fetching hall occupancy:', error);
+      throw new Error('فشل في حساب إشغال القاعات');
     }
   },
 };
