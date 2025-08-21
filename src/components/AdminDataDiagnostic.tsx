@@ -115,21 +115,17 @@ export const AdminDataDiagnostic = () => {
       // Test 4: Admin permissions
       if (session?.user) {
         // Try the new function first, then fall back to the legacy one
-        let adminCheckFunctionUsed: 'check_user_admin_status' | 'check_is_admin' = 'check_user_admin_status';
+        let adminCheckFunctionUsed: string = 'is_admin';
         let adminResult: boolean | null = null;
         let primaryError: any = null;
         let fallbackError: any = null;
 
-        const { data: adminTestV2, error: adminErrorV2 } = await supabase.rpc('check_user_admin_status');
+        const { data: adminTestV2, error: adminErrorV2 } = await supabase.rpc('is_admin');
         if (adminErrorV2) {
           primaryError = adminErrorV2;
-          adminCheckFunctionUsed = 'check_is_admin';
-          const { data: adminTestLegacy, error: adminErrorLegacy } = await supabase.rpc('check_is_admin');
-          if (adminErrorLegacy) {
-            fallbackError = adminErrorLegacy;
-          } else {
-            adminResult = Boolean(adminTestLegacy);
-          }
+          adminCheckFunctionUsed = 'is_admin';
+          // No fallback needed - is_admin is the only function now
+          fallbackError = adminErrorV2;
         } else {
           adminResult = Boolean(adminTestV2);
         }

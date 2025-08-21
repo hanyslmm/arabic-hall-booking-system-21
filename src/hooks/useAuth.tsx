@@ -67,6 +67,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (session?.user) {
         fetchProfile(session.user.id);
+        
+        // Force JWT refresh after sign in to ensure custom claims are loaded
+        if (event === 'SIGNED_IN') {
+          setTimeout(async () => {
+            console.log("Refreshing session to load custom JWT claims...");
+            await supabase.auth.refreshSession();
+          }, 1000);
+        }
       } else {
         setProfile(null);
         // Only end loading if the initial session has been processed or this is explicitly INITIAL_SESSION
@@ -118,11 +126,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           if (updateError) {
             console.error("Error upgrading admin role:", updateError);
-            // Try to call the verify_admin_access function to check permissions
-            const { data: accessCheck } = await supabase.rpc('check_is_admin');
-            if (accessCheck && accessCheck[0]) {
-              console.log("Admin access verification:", accessCheck[0]);
-            }
             setProfile(data); // Use original profile if update fails
           } else {
             console.log("✓ Admin user upgraded to owner role successfully");

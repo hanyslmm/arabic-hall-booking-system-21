@@ -737,14 +737,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      check_is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      check_user_admin_status: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
       copy_default_categories_for_user: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -827,6 +819,10 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       is_super_admin: {
         Args: { user_id: string }
