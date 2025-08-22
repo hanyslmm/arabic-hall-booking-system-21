@@ -66,22 +66,18 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     
     // Set canvas size for portrait barcode generation (will be rotated)
     canvas.width = 150;  // Portrait width
-    canvas.height = 400; // Portrait height
+    canvas.height = 300; // Portrait height
 
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: 'CODE128',
         lineColor: '#000',
         background: '#fff',
-        width: 1.5,
-        height: 80,
-        displayValue: true,
-        font: 'monospace',
-        fontOptions: 'bold',
-        fontSize: 14,
-        margin: 10,
-        textAlign: 'center',
-        textMargin: 8
+        width: 2,
+        height: 120,  // Increased height to fill more space
+        displayValue: false,  // Remove text under barcode
+        margin: 5,
+        textAlign: 'center'
       });
     }
 
@@ -92,21 +88,22 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
       <html>
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title></title>
+        <title>Barcode Label</title>
         <style>
           * { 
             -webkit-print-color-adjust: exact; 
             print-color-adjust: exact; 
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
           }
           html, body { 
             margin: 0; 
             padding: 0; 
             background: #fff; 
-            font-family: monospace;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
           }
           body { 
             width: ${labelWidthMm}mm; 
@@ -120,9 +117,10 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             justify-content: center;
             overflow: hidden;
             position: relative;
+            background: white;
           }
           .barcode {
-            height: 20mm;  /* Fit to label height with margin */
+            height: ${labelHeightMm - 2}mm;  /* Fill almost entire label height */
             width: auto;
             display: block;
             margin: 0;
@@ -141,16 +139,25 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
               padding: 0; 
               overflow: hidden;
             }
+            .label {
+              background: white !important;
+            }
           }
         </style>
       </head>
       <body>
         <div class="label">
-          <img src="${barcodeDataURL}" alt="Barcode" class="barcode" />
+          <img src="${barcodeDataURL}" alt="" class="barcode" />
         </div>
         <script>
-          // Auto-print then close
-          setTimeout(function(){ window.print(); setTimeout(function(){ window.close(); }, 200); }, 100);
+          window.addEventListener('load', function() {
+            setTimeout(function(){
+              window.print();
+              setTimeout(function(){ 
+                window.close(); 
+              }, 500);
+            }, 200);
+          });
         <\/script>
       </body>
       </html>
