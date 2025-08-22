@@ -11,7 +11,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis 
 } from '@/components/ui/pagination';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePagination } from '@/hooks/usePagination';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -24,6 +24,8 @@ export interface TableColumn<T> {
   className?: string;
   mobileLabel?: string; // Label to show in mobile card view
   hideOnMobile?: boolean; // Hide this column on mobile
+  sortable?: boolean;
+  sortKey?: string; // optional override for sorting key
 }
 
 export interface TableAction<T> {
@@ -53,6 +55,10 @@ interface MobileResponsiveTableProps<T> {
   totalItems?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  // Sorting (optional, typically for server-side sorting)
+  sortKey?: string;
+  sortDirection?: 'asc' | 'desc';
+  onSortChange?: (sort: { key: string; direction: 'asc' | 'desc' }) => void;
 }
 
 export function MobileResponsiveTable<T>({
@@ -72,6 +78,9 @@ export function MobileResponsiveTable<T>({
   totalItems: totalItemsProp,
   currentPage: currentPageProp,
   onPageChange,
+  sortKey,
+  sortDirection,
+  onSortChange,
 }: MobileResponsiveTableProps<T>) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
@@ -272,6 +281,15 @@ export function MobileResponsiveTable<T>({
   };
 
   const renderDesktopTable = () => {
+    const handleHeaderClick = (col: TableColumn<T>) => {
+      if (!onSortChange || !col.sortable) return;
+      const activeKey = sortKey;
+      const targetKey = col.sortKey || col.key;
+      const isActive = activeKey === targetKey;
+      const nextDirection: 'asc' | 'desc' = isActive ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc';
+      onSortChange({ key: targetKey, direction: nextDirection });
+    };
+
     return (
       <div className="overflow-x-auto">
         <Table>
@@ -279,9 +297,41 @@ export function MobileResponsiveTable<T>({
             <TableRow>
               {/* Expand column for mobile parity */}
               <TableHead className="w-[40px]">#</TableHead>
-              {columns.map((col) => (
-                <TableHead key={col.key} className={col.className}>{col.header}</TableHead>
-              ))}
+              {columns.map((col) => {
+                const isActive = (!!sortKey && (sortKey === (col.sortKey || col.key)));
+                const isAsc = sortDirection === 'asc';
+                return (
+                  <TableHead key={col.key} className={col.className}>
+                    {col.sortable && onSortChange ? (
+                      <button
+                        type="button"
+                        onClick={() => handleHeaderClick(col)}
+                        className={cn(
+                          'inline-flex items-center gap-1 select-none',
+                          'text-right',
+                          'hover:text-foreground',
+                          'transition-colors',
+                          'cursor-pointer'
+                        )}
+                        aria-label={`ترتيب حسب ${col.header}`}
+                      >
+                        <span>{col.header}</span>
+                        {isActive ? (
+                          isAsc ? (
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    ) : (
+                      col.header
+                    )}
+                  </TableHead>
+                );
+              })}
               {actions && <TableHead className="w-1/5">الإجراءات</TableHead>}
             </TableRow>
           </TableHeader>

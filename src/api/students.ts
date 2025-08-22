@@ -23,15 +23,20 @@ export const studentsApi = {
     return data || [];
   },
 
-  async getPaginated(params: { page: number; pageSize: number; searchTerm?: string }): Promise<{ data: Student[]; total: number; }>{
-    const { page, pageSize, searchTerm } = params;
+  async getPaginated(params: { page: number; pageSize: number; searchTerm?: string; sortKey?: string; sortDirection?: 'asc' | 'desc' }): Promise<{ data: Student[]; total: number; }>{
+    const { page, pageSize, searchTerm, sortKey, sortDirection } = params;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
+
+    // Allowlist of sortable columns to prevent SQL errors or misuse
+    const allowedSortKeys = new Set<string>(["created_at", "name", "serial_number", "mobile_phone"]);
+    const effectiveSortKey = (sortKey && allowedSortKeys.has(sortKey)) ? sortKey : "created_at";
+    const effectiveAscending = (sortDirection || 'desc') === 'asc';
 
     let query = supabase
       .from("students")
       .select("*", { count: 'exact' })
-      .order("created_at", { ascending: false })
+      .order(effectiveSortKey, { ascending: effectiveAscending })
       .range(from, to);
 
     if (searchTerm && searchTerm.trim().length > 0) {
@@ -401,7 +406,6 @@ export const paymentsApi = {
       .eq("id", id)
       .select()
       .single();
-    
     if (error) throw error;
     return data;
   },
@@ -410,21 +414,5 @@ export const paymentsApi = {
     const { error } = await supabase.from("payment_records").delete().eq("id", id);
     if (error) throw error;
     return id;
-  },
-
-  async bulkCreate(paymentRecords: {
-    student_registration_id: string;
-    amount: number;
-    payment_date?: string;
-    payment_method?: string;
-    notes?: string;
-  }[]): Promise<PaymentRecord[]> {
-    const { data, error } = await supabase
-      .from("payment_records")
-      .insert(paymentRecords)
-      .select();
-    
-    if (error) throw error;
-    return data || [];
   }
 };

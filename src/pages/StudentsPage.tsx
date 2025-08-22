@@ -34,12 +34,14 @@ const StudentsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const { data, isLoading, error, isFetching } = useQuery({
-    queryKey: ["students", page, debouncedSearch],
+    queryKey: ["students", page, debouncedSearch, sortKey, sortDirection],
     queryFn: async () => {
-      return await studentsApi.getPaginated({ page, pageSize: PAGE_SIZE, searchTerm: debouncedSearch || undefined });
+      return await studentsApi.getPaginated({ page, pageSize: PAGE_SIZE, searchTerm: debouncedSearch || undefined, sortKey, sortDirection });
     },
     placeholderData: (previousData) => previousData,
   });
@@ -49,7 +51,7 @@ const StudentsPage = () => {
   const searchMutation = useMutation({
     mutationFn: studentsApi.search,
     onSuccess: (searchResults) => {
-      queryClient.setQueryData(["students", page, debouncedSearch], { data: searchResults, total: searchResults.length });
+      queryClient.setQueryData(["students", page, debouncedSearch, sortKey, sortDirection], { data: searchResults, total: searchResults.length });
     },
     onError: () => {
       toast.error("فشل في البحث عن الطالب");
@@ -114,6 +116,7 @@ const StudentsPage = () => {
       key: 'serial_number',
       header: 'الرقم التسلسلي',
       mobileLabel: 'الرقم',
+      sortable: true,
       render: (student) => (
         <Badge variant="secondary">{student.serial_number || '-'}</Badge>
       ),
@@ -122,6 +125,7 @@ const StudentsPage = () => {
       key: 'name',
       header: 'الاسم',
       mobileLabel: 'الاسم',
+      sortable: true,
       render: (student) => (
         <span className="font-medium">{student.name}</span>
       ),
@@ -130,6 +134,7 @@ const StudentsPage = () => {
       key: 'mobile_phone',
       header: 'رقم الهاتف',
       mobileLabel: 'الهاتف',
+      sortable: true,
       render: (student) => (
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground sm:inline hidden" />
@@ -142,6 +147,7 @@ const StudentsPage = () => {
       header: 'تاريخ التسجيل',
       mobileLabel: 'التاريخ',
       hideOnMobile: true,
+      sortable: true,
       render: (student) => (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -356,6 +362,13 @@ const StudentsPage = () => {
           totalItems={total}
           currentPage={page}
           onPageChange={setPage}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSortChange={({ key, direction }) => {
+            setSortKey(key);
+            setSortDirection(direction);
+            setPage(1);
+          }}
         />
 
         {/* Modals */}
@@ -401,11 +414,9 @@ const StudentsPage = () => {
                   if (confirmDeleteStudent) {
                     deleteMutation.mutate(confirmDeleteStudent.id);
                   }
-                  setConfirmDeleteStudent(null);
                 }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                حذف
+                تأكيد الحذف
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
