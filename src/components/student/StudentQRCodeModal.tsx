@@ -60,24 +60,23 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     const labelWidthMm = 50;   // 5cm width
     const labelHeightMm = 25;  // 2.5cm height
 
-    // Generate barcode using JsBarcode with portrait canvas to rotate later
+    // Generate barcode using JsBarcode - create large barcode to fill label
     const canvas = document.createElement('canvas');
     const JsBarcode = (window as any).JsBarcode;
     
-    // Set canvas size for portrait barcode generation (will be rotated)
-    canvas.width = 150;  // Portrait width
-    canvas.height = 300; // Portrait height
+    // Set large canvas size for high quality barcode
+    canvas.width = 600;  // Large width for crisp barcode
+    canvas.height = 200; // Height for landscape barcode
 
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: 'CODE128',
         lineColor: '#000',
         background: '#fff',
-        width: 2,
-        height: 120,  // Increased height to fill more space
-        displayValue: false,  // Remove text under barcode
-        margin: 5,
-        textAlign: 'center'
+        width: 3,        // Wider bars
+        height: 150,     // Tall bars to fill label
+        displayValue: false,  // No text under barcode
+        margin: 10,      // Small margin only
       });
     }
 
@@ -88,7 +87,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Barcode Label</title>
+        <title>Barcode</title>
         <style>
           * { 
             -webkit-print-color-adjust: exact; 
@@ -118,14 +117,15 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             overflow: hidden;
             position: relative;
             background: white;
+            padding: 1mm;
+            box-sizing: border-box;
           }
           .barcode {
-            height: ${labelHeightMm - 2}mm;  /* Fill almost entire label height */
-            width: auto;
+            width: ${labelWidthMm - 2}mm;  /* Fill entire width minus small margin */
+            height: ${labelHeightMm - 2}mm; /* Fill entire height minus small margin */
             display: block;
             margin: 0;
-            transform: rotate(90deg);  /* Rotate 90 degrees clockwise */
-            transform-origin: center center;
+            object-fit: contain;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: crisp-edges;
           }
