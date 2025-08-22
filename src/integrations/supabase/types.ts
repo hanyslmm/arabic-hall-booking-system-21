@@ -674,6 +674,18 @@ export type Database = {
           total_booked_hours: number
         }[]
       }
+      get_hall_occupancy_data: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          available_slots: number
+          hall_id: string
+          hall_name: string
+          occupancy_percentage: number
+          occupied_slots: number
+          working_days_per_week: number
+          working_hours_per_day: number
+        }[]
+      }
       get_hall_occupancy_rates: {
         Args: Record<PropertyKey, never>
         Returns: {

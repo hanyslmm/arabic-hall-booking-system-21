@@ -10,7 +10,7 @@ export interface FinancialSummary {
 
 export interface HallOccupancy {
   hall_id: string;
-  name: string;
+  hall_name: string;
   occupancy_percentage: number;
   occupied_slots: number;
   available_slots: number;
@@ -86,18 +86,18 @@ export const dashboardApi = {
   async getHallOccupancy(): Promise<HallOccupancy[]> {
     try {
       // Use the new RPC function to get real occupancy data
-      const { data, error } = await supabase.rpc('get_hall_booking_hours');
+      const { data, error } = await supabase.rpc('get_hall_occupancy_data');
       
       if (error) throw error;
       
       return (data || []).map((hall: any) => ({
         hall_id: hall.hall_id,
-        name: hall.hall_name,
+        hall_name: hall.hall_name,
         occupancy_percentage: Number(hall.occupancy_percentage || 0),
-        occupied_slots: Number(hall.total_booked_hours || 0),
-        available_slots: Number(hall.total_available_hours || 24),
-        working_hours_per_day: 12, // 9am-9pm
-        working_days_per_week: 2,  // Saturday + Sunday
+        occupied_slots: Number(hall.occupied_slots || 0),
+        available_slots: Number(hall.available_slots || 24),
+        working_hours_per_day: Number(hall.working_hours_per_day || 12),
+        working_days_per_week: Number(hall.working_days_per_week || 2),
       }));
     } catch (error) {
       console.error('Error fetching hall occupancy:', error);

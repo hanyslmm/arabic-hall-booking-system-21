@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
@@ -25,7 +25,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -219,8 +218,36 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, isAdmin, isOwner, canManageUsers, canManageData } = useAuth();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const navGroups = navigation ?? defaultNavigation;
+
+  // Preserve scroll position when navigating
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (scrollArea) {
+      const savedScrollPosition = sessionStorage.getItem('sidebar-scroll-position');
+      if (savedScrollPosition) {
+        scrollArea.scrollTop = parseInt(savedScrollPosition, 10);
+      }
+    }
+  }, []);
+
+  // Save scroll position when scrolling
+  const handleScroll = (event: Event) => {
+    const scrollTop = (event.target as HTMLElement)?.scrollTop;
+    if (scrollTop !== undefined) {
+      sessionStorage.setItem('sidebar-scroll-position', scrollTop.toString());
+    }
+  };
+
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (scrollArea) {
+      scrollArea.addEventListener('scroll', handleScroll);
+      return () => scrollArea.removeEventListener('scroll', handleScroll);
+    }
+  }, [sidebarOpen]);
 
 
   // Generate breadcrumbs from current path
@@ -336,12 +363,15 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
       )}
 
       {/* Sidebar Content with improved scrolling and spacing */}
-      <ScrollArea className={cn(
-        "flex-1 px-3 sm:px-4 py-5",
-        showHeader 
-          ? "h-[calc(100vh-20rem)] sm:h-[calc(100vh-22rem)]" 
-          : "h-[calc(100vh-16rem)] sm:h-[calc(100vh-18rem)]"
-      )}>
+      <ScrollArea 
+        ref={scrollAreaRef}
+        className={cn(
+          "flex-1 px-3 sm:px-4 py-5",
+          showHeader 
+            ? "h-[calc(100vh-20rem)] sm:h-[calc(100vh-22rem)]" 
+            : "h-[calc(100vh-16rem)] sm:h-[calc(100vh-18rem)]"
+        )}
+      >
         {navGroups.map((group, groupIndex) => (
           <div key={group.title} className={cn(
             "mb-7 pb-5",

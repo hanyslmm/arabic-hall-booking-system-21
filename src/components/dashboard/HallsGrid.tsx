@@ -16,7 +16,7 @@ interface Hall {
 
 interface OccupancyData {
   hall_id: string;
-  name: string;
+  hall_name: string;
   occupancy_percentage: number;
   occupied_slots: number;
   available_slots: number;
@@ -67,9 +67,7 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
     // Use the actual data from the RPC function
     const occupied = Number(hallOccupancy.occupied_slots || 0);
     const available = Number(hallOccupancy.available_slots || 24);
-    
-    // Ensure percentage doesn't exceed 100% and handle edge cases
-    const percentage = available > 0 ? Math.min(Math.round((occupied / available) * 100), 100) : 0;
+    const percentage = Number(hallOccupancy.occupancy_percentage || 0);
     
     return {
       percentage,
