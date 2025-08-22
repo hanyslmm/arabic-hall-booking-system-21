@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { UnifiedLayout } from '@/components/layout/UnifiedLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { Plus, Edit, Trash2, DollarSign, Calendar, TrendingDown } from 'lucide-react';
+import { Plus, Edit, Trash2, DollarSign, Calendar, TrendingDown, Search, Filter, X } from 'lucide-react';
 import { expensesApi, type Expense, type CreateExpenseData } from '@/api/expenses';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -25,11 +25,13 @@ export default function ExpensesPage() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [formData, setFormData] = useState<CreateExpenseData>({
     description: '',
     amount: 0,
     category: '',
-    date: new Date().toISOString().split('T')[0],
     payment_method: 'cash',
     notes: ''
   });
@@ -92,15 +94,43 @@ export default function ExpensesPage() {
     setSelectedYear(year);
   };
 
+  // Filter and search expenses
+  useEffect(() => {
+    if (!expenses) {
+      setFilteredExpenses([]);
+      return;
+    }
+
+    let filtered = expenses;
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(expense => 
+        expense.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply category filter
+    if (selectedCategory) {
+      filtered = filtered.filter(expense => expense.category === selectedCategory);
+    }
+
+    setFilteredExpenses(filtered);
+  }, [expenses, searchTerm, selectedCategory]);
+
   const resetForm = () => {
     setFormData({
       description: '',
       amount: 0,
       category: '',
-      date: new Date().toISOString().split('T')[0],
       payment_method: 'cash',
       notes: ''
     });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('');
   };
 
   const handleAddExpense = () => {
@@ -125,7 +155,6 @@ export default function ExpensesPage() {
       description: expense.description,
       amount: expense.amount,
       category: expense.category,
-      date: expense.date,
       payment_method: expense.payment_method,
       notes: expense.notes || ''
     });
@@ -190,28 +219,18 @@ export default function ExpensesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>المبلغ (جنيه) *</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        amount: Number(e.target.value) || 0 
-                      }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>التاريخ</Label>
-                    <Input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
+                <div>
+                  <Label>المبلغ (جنيه) *</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      amount: Number(e.target.value) || 0 
+                    }))}
+                  />
                 </div>
                 <div>
                   <Label>طريقة الدفع</Label>
@@ -253,7 +272,7 @@ export default function ExpensesPage() {
                     onClick={editingExpense ? handleUpdateExpense : handleAddExpense}
                     disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
                   >
-                    {editingExpense ? 'تحديث' : 'إضافة'}
+                    {editingExpense ? 'تحديث' : 'حفظ'}
                   </Button>
                 </div>
               </div>
@@ -286,14 +305,67 @@ export default function ExpensesPage() {
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">عدد المصروفات</p>
-                <p className="text-2xl font-bold">{expenses?.length || 0}</p>
+                <p className="text-2xl font-bold">{filteredExpenses?.length || 0}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">متوسط المصروف</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(expenses?.length ? (monthlyTotal || 0) / expenses.length : 0)}
+                  {formatCurrency(filteredExpenses?.length ? (monthlyTotal || 0) / filteredExpenses.length : 0)}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Search and Filter */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              البحث والتصفية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <Label>البحث في الوصف</Label>
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="ابحث في وصف المصروفات..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-10"
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <Label>التصفية بالفئة</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر فئة للتصفية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expensesApi.getCategories().map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(searchTerm || selectedCategory) && (
+                <div className="flex items-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={clearFilters}
+                    className="flex items-center gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    مسح التصفية
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -304,6 +376,11 @@ export default function ExpensesPage() {
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               قائمة المصروفات
+              {(searchTerm || selectedCategory) && (
+                <Badge variant="secondary" className="mr-2">
+                  {filteredExpenses?.length || 0} من {expenses?.length || 0} مصروف
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -311,9 +388,9 @@ export default function ExpensesPage() {
               <div className="text-center py-8">
                 <LoadingSpinner />
               </div>
-            ) : expenses && expenses.length > 0 ? (
+            ) : filteredExpenses && filteredExpenses.length > 0 ? (
               <div className="space-y-4">
-                {expenses.map((expense) => (
+                {filteredExpenses.map((expense) => (
                   <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -360,8 +437,15 @@ export default function ExpensesPage() {
             ) : (
               <div className="text-center py-12">
                 <TrendingDown className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">لا توجد مصروفات</h3>
-                <p className="text-muted-foreground">لم يتم تسجيل أي مصروفات لهذا الشهر</p>
+                <h3 className="text-lg font-semibold mb-2">
+                  {(searchTerm || selectedCategory) ? 'لا توجد نتائج' : 'لا توجد مصروفات'}
+                </h3>
+                <p className="text-muted-foreground">
+                  {(searchTerm || selectedCategory) 
+                    ? 'لم يتم العثور على مصروفات مطابقة للبحث أو التصفية' 
+                    : 'لم يتم تسجيل أي مصروفات لهذا الشهر'
+                  }
+                </p>
               </div>
             )}
           </CardContent>

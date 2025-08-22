@@ -9,6 +9,7 @@ import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
+import { ExpenseCategoryManager } from "@/components/settings/ExpenseCategoryManager";
 
 export function SettingsPage() {
   const { user, profile, loading } = useAuth();
@@ -232,6 +233,9 @@ export function SettingsPage() {
                 </form>
               </CardContent>
             </Card>
+
+            {/* Expense Category Management */}
+            <ExpenseCategoryManager />
           </div>
       </div>
     </UnifiedLayout>

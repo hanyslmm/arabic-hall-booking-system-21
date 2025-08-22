@@ -89,20 +89,68 @@ export const expensesApi = {
     return deleteRecord('expenses', id);
   },
 
-  // Get expense categories (predefined list)
+  // Get expense categories (as per user requirements)
   getCategories(): string[] {
     return [
-      'رواتب',
-      'إيجار',
-      'مرافق',
+      'شحن كهرباء',
+      'شحن نت',
+      'مرتبات موظفين',
+      'مرتبات عمال',
+      'منظفات',
+      'مشروبات',
       'صيانة',
-      'مواد تنظيف',
-      'قرطاسية',
+      'إيجار',
       'تسويق',
-      'نقل ومواصلات',
-      'وجبات وضيافة',
-      'أخرى'
+      'اخرى'
     ];
+  },
+
+  // Search expenses by description
+  async searchExpenses(searchTerm: string, startDate?: string, endDate?: string): Promise<Expense[]> {
+    try {
+      let query = supabase
+        .from('expenses')
+        .select('*')
+        .ilike('description', `%${searchTerm}%`)
+        .order('date', { ascending: false });
+
+      if (startDate) {
+        query = query.gte('date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('date', endDate);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Expense[];
+    } catch (error) {
+      throw new ApiError("فشل في البحث عن المصروفات", error);
+    }
+  },
+
+  // Filter expenses by category
+  async filterByCategory(category: string, startDate?: string, endDate?: string): Promise<Expense[]> {
+    try {
+      let query = supabase
+        .from('expenses')
+        .select('*')
+        .eq('category', category)
+        .order('date', { ascending: false });
+
+      if (startDate) {
+        query = query.gte('date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('date', endDate);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Expense[];
+    } catch (error) {
+      throw new ApiError("فشل في تصفية المصروفات", error);
+    }
   },
 
   // Get payment methods
