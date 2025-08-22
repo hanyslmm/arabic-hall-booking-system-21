@@ -713,6 +713,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      update_registration_payment_status: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       username_to_email: {
         Args: { username: string }
         Returns: string
