@@ -6,9 +6,13 @@ import { dashboardApi } from '@/api/dashboard';
 interface StatsCardsProps {
   selectedMonth: number; // 1-12
   selectedYear: number;  // four-digit year
+  dateRange?: {
+    startDate?: Date;
+    endDate?: Date;
+  };
 }
 
-const StatsCards = ({ selectedMonth, selectedYear }: StatsCardsProps) => {
+const StatsCards = ({ selectedMonth, selectedYear, dateRange }: StatsCardsProps) => {
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['financial-summary', selectedMonth, selectedYear],
     queryFn: () => dashboardApi.getFinancialSummary(selectedMonth, selectedYear),

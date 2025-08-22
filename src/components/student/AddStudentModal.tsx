@@ -26,14 +26,24 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
   const [fieldErrors, setFieldErrors] = useState<{ mobile_phone?: string; serial_number?: string }>({});
   const [isChecking, setIsChecking] = useState<{ mobile_phone: boolean; serial_number: boolean }>({ mobile_phone: false, serial_number: false });
 
+  // Normalize mobile number by removing leading zeros
+  const normalizeMobileNumber = (phone: string) => {
+    if (!phone) return phone;
+    return phone.replace(/^0+/, ''); // Remove leading zeros
+  };
+
   const checkDuplicatePhone = async (phone: string) => {
     if (!phone.trim()) return false;
-    const { count, error } = await supabase
+    const normalizedPhone = normalizeMobileNumber(phone.trim());
+    
+    // Check for both original and normalized versions
+    const { data, error } = await supabase
       .from('students')
-      .select('*', { count: 'exact', head: true })
-      .eq('mobile_phone', phone.trim());
+      .select('mobile_phone')
+      .or(`mobile_phone.eq.${phone.trim()},mobile_phone.eq.${normalizedPhone}`);
+    
     if (error) return false;
-    return (count || 0) > 0;
+    return (data?.length || 0) > 0;
   };
 
   const checkDuplicateSerial = async (serial: string) => {
@@ -144,8 +154,8 @@ export const AddStudentModal = ({ isOpen, onClose }: AddStudentModalProps) => {
 
     createMutation.mutate({
       name: formData.name.trim(),
-        mobile_phone: formData.mobile_phone.trim(),
-        serial_number: formData.serial_number.trim() || undefined,
+      mobile_phone: normalizeMobileNumber(formData.mobile_phone.trim()),
+      serial_number: formData.serial_number.trim() || undefined,
     });
   };
 

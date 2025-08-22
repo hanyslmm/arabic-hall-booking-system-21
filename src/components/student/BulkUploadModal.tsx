@@ -308,19 +308,46 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
     return `${hourNum.toString().padStart(2, '0')}:00:00`;
   };
 
+  // Normalize mobile number by removing leading zeros
+  const normalizeMobileNumber = (phone: string) => {
+    if (!phone) return phone;
+    return phone.replace(/^0+/, ''); // Remove leading zeros
+  };
+
   const findOrCreateStudent = async (studentData: StudentDataRow) => {
-    // Search for existing student by mobile
-    const existingStudents = await studentsApi.search(studentData.mobile);
+    const normalizedMobile = normalizeMobileNumber(studentData.mobile);
     
-    if (existingStudents.length > 0) {
+    // Search for existing student by both original and normalized mobile
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: existingStudents } = await supabase
+      .from('students')
+      .select('*')
+      .or(`mobile_phone.eq.${studentData.mobile},mobile_phone.eq.${normalizedMobile}`)
+      .limit(1);
+    
+    if (existingStudents && existingStudents.length > 0) {
       return existingStudents[0];
     }
 
-    // Create new student
+    // Generate next serial number for new students
+    const { data: maxSerialData } = await supabase
+      .from('students')
+      .select('serial_number')
+      .not('serial_number', 'is', null)
+      .order('serial_number', { ascending: false })
+      .limit(1);
+
+    let nextSerial = '00001';
+    if (maxSerialData && maxSerialData[0]) {
+      const maxSerial = parseInt(maxSerialData[0].serial_number || '0');
+      nextSerial = (maxSerial + 1).toString().padStart(5, '0');
+    }
+
+    // Create new student with normalized mobile and generated serial
     return await studentsApi.create({
       name: studentData.name,
-      mobile_phone: studentData.mobile,
-      // parent_phone and city removed from simplified schema
+      mobile_phone: normalizedMobile,
+      serial_number: nextSerial,
     });
   };
 
@@ -444,10 +471,10 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
             if (!name) continue;
 
             const mobileRaw = mobileIdx !== -1 ? row[mobileIdx] : row[2];
-            const mobile = normalizeMobileNumber(mobileRaw);
+            const mobile = mobileRaw ? mobileRaw.toString().trim() : '';
 
             const homeRaw = homeIdx !== -1 ? row[homeIdx] : row[3];
-            const home = normalizeMobileNumber(homeRaw);
+            const home = homeRaw ? homeRaw.toString().trim() : '';
 
             const city = cityIdx !== -1 ? (row[cityIdx]?.toString().trim() || '') : (row[4]?.toString().trim() || '');
 
@@ -566,14 +593,7 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
     }
   };
 
-  const normalizeMobileNumber = (mobile: any): string => {
-    if (!mobile) return '';
-    const digits = mobile.toString().replace(/\D/g, '');
-    if (digits.length === 10 && !digits.startsWith('0')) {
-      return '0' + digits;
-    }
-    return digits;
-  };
+  // Delete duplicate function - this is handled elsewhere
 
   const getPaymentValue = (row: any, primaryColumn: string): number => {
     // Only consider columns that explicitly indicate a payment/fees value

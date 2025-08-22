@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { generateSerialNumbers } from "@/utils/serialNumberGenerator";
+import { exportStudentsToExcel } from "@/utils/exportUtils";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { AddStudentModal } from "@/components/student/AddStudentModal";
 import { EditStudentModal } from "@/components/student/EditStudentModal";
 import { BulkUploadModal } from "@/components/student/BulkUploadModal";
 import { studentsApi, Student } from "@/api/students";
-import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar, QrCode } from "lucide-react";
+import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar, QrCode, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
@@ -65,27 +67,29 @@ const StudentsPage = () => {
     }
   });
 
-  const bulkUploadMutation = useMutation({
-    mutationFn: async (students: any[]) => {
-      const results = [];
-      for (const studentData of students) {
-        const student = await studentsApi.create({
-          name: studentData.name,
-          mobile_phone: studentData.mobile,
-          // Note: parent_phone and city fields not available in simplified schema
-        });
-        results.push(student);
-      }
-      return results;
-    },
-    onSuccess: (results) => {
+  const generateMutation = useMutation({
+    mutationFn: generateSerialNumbers,
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
-      toast.success(`تم إضافة ${results.length} طالب بنجاح`);
+      toast.success(result.message);
     },
-    onError: () => {
-      toast.error("فشل في رفع بيانات الطلاب");
+    onError: (error: Error) => {
+      toast.error(error.message || "فشل في توليد الأرقام التسلسلية");
     }
   });
+
+  const handleGenerateSerials = async () => {
+    generateMutation.mutate();
+  };
+
+  const handleExportStudents = () => {
+    const result = exportStudentsToExcel(students);
+    if (result.success) {
+      toast.success(`تم تصدير البيانات إلى ${result.filename}`);
+    } else {
+      toast.error(result.error || 'فشل في تصدير البيانات');
+    }
+  };
 
   const handleSearch = () => {
     setPage(1);
@@ -245,14 +249,26 @@ const StudentsPage = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setShowAddStudent(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              إضافة طالب
-            </Button>
-            <Button onClick={() => setShowBulkUpload(true)} variant="outline" className="gap-2">
-              <Upload className="h-4 w-4" />
-              رفع CSV
-            </Button>
+            {canManageStudents && (
+              <>
+                <Button onClick={() => setShowAddStudent(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  إضافة طالب
+                </Button>
+                <Button onClick={() => setShowBulkUpload(true)} variant="outline" className="gap-2">
+                  <Upload className="h-4 w-4" />
+                  رفع CSV
+                </Button>
+                <Button onClick={handleGenerateSerials} variant="outline" className="gap-2" disabled={generateMutation.isPending}>
+                  <Users className="h-4 w-4" />
+                  {generateMutation.isPending ? 'جاري التوليد...' : 'توليد أرقام تلقائية'}
+                </Button>
+                <Button onClick={handleExportStudents} variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  تصدير إلى Excel
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

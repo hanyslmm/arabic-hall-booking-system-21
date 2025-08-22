@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { FastReceptionistModal } from "@/components/receptionist/FastReceptionistModal";
 import StatsCards from "@/components/dashboard/StatsCards";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,9 +15,9 @@ export function AdminDashboard() {
   const { profile } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [dateRange, setDateRange] = useState<{ startDate?: Date; endDate?: Date }>({});
   const [isFastReceptionistOpen, setIsFastReceptionistOpen] = useState(false);
   
-
   // Local permission helper to align with `can('create:registrations')`
   const can = (permission: string) => {
     if (permission === 'create:registrations') {
@@ -29,6 +30,12 @@ export function AdminDashboard() {
   const handleMonthChange = (month: number, year: number) => {
     setSelectedMonth(month);
     setSelectedYear(year);
+    // Clear date range when month changes
+    setDateRange({});
+  };
+
+  const handleDateRangeChange = (startDate: Date | undefined, endDate: Date | undefined) => {
+    setDateRange({ startDate, endDate });
   };
 
   // Fetch per-hall occupancy for the grid using the new API layer
@@ -55,14 +62,24 @@ export function AdminDashboard() {
         </div>
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <MonthSelector 
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={handleMonthChange}
+        />
+        <DateRangeFilter
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onDateRangeChange={handleDateRangeChange}
+        />
+      </div>
 
-      <MonthSelector 
-        selectedMonth={selectedMonth}
+      <StatsCards 
+        selectedMonth={selectedMonth} 
         selectedYear={selectedYear}
-        onMonthChange={handleMonthChange}
+        dateRange={dateRange}
       />
-
-      <StatsCards selectedMonth={selectedMonth} selectedYear={selectedYear} />
 
       <HallsGrid occupancyData={occupancyData || []} />
 

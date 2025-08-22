@@ -34,13 +34,17 @@ export const usePermissions = (profile: UserProfile | null): AuthPermissions => 
     const isManager = role === 'manager';
     const isUser = role === 'user';
 
+    // Simplified permission system: full access for all roles except teacher
+    const isTeacher = role === 'teacher';
+    const hasFullAccess = !isTeacher;
+
     return {
       isOwner: isAdmin, // Admin is the owner
       isAdmin,
-      isManager: isManager || isAdmin, // Admin has manager privileges
-      canManageBookings: isAdmin || isManager, // Admins and managers can manage bookings
-      canManageData: isAdmin || isManager, // Admins and managers can manage data  
-      canManageUsers: isAdmin // Only admin can manage users
+      isManager: hasFullAccess, // All non-teacher roles have manager privileges
+      canManageBookings: hasFullAccess, // All non-teacher roles can manage bookings
+      canManageData: hasFullAccess, // All non-teacher roles can manage data  
+      canManageUsers: hasFullAccess // All non-teacher roles can manage users
     };
   }, [profile]);
 };

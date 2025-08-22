@@ -353,9 +353,13 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
             <div className="space-y-1">
               {group.items
                 .filter((item) => {
-                  // Show daily expenses for all authorized users
-                  if (item.url === '/daily-expenses') {
-                    return isAdmin || isOwner || canManageData;
+                  // Show expenses pages for owner/admin roles only
+                  if (item.url === '/expenses' || item.url === '/daily-expenses') {
+                    return isAdmin || isOwner;
+                  }
+                  // Show audit logs for admin/owner only
+                  if (item.url === '/audit-logs') {
+                    return isAdmin || isOwner;
                   }
                   return true;
                 })

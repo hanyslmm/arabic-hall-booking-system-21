@@ -11,33 +11,39 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 import { ConfigurationCheck } from "@/components/ConfigurationCheck";
-import BookingPage from "./pages/BookingPage";
-import UsersPage from "./pages/UsersPage";
-import TeachersPage from "./pages/TeachersPage";
-import HallsPage from "./pages/HallsPage";
-import StagesPage from "./pages/StagesPage";
-import SubjectsPage from "./pages/SubjectsPage";
-import BookingsPage from "./pages/BookingsPage";
-import StudentsPage from "./pages/StudentsPage";
-import StudentRegistrationsPage from "./pages/StudentRegistrationsPage";
-import ClassManagementPage from "./pages/ClassManagementPage";
-import AttendanceManagementPage from "./pages/AttendanceManagementPage";
-import ClassFinancialReportsPage from "./pages/ClassFinancialReportsPage";
-import NotFound from "./pages/NotFound";
-import LoginPage from "./pages/LoginPage";
-import AdminPrivilegesPage from "./pages/AdminPrivilegesPage";
-import DailyExpensesPage from "./pages/DailyExpensesPage";
-import ExpensesPage from "./pages/ExpensesPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { ReportsPage } from "./pages/ReportsPage";
-import { AuditLogPage } from "./pages/AuditLogPage";
+import { AuditLogProvider } from "@/components/audit/AuditLogProvider";
 import { StyleShowcase } from "./components/StyleShowcase";
-import DiagnosticsPage from "./pages/DiagnosticsPage";
 import { ReceptionistDashboard } from "./components/receptionist/ReceptionistDashboard";
-import TeacherDashboard from "./pages/TeacherDashboard";
 import { AdminDashboard } from "./components/dashboard/AdminDashboard";
 import { ReactNode, Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+
+// Lazy imports for better performance
+import {
+  LazyBookingPage,
+  LazyUsersPage,
+  LazyTeachersPage,
+  LazyHallsPage,
+  LazyStagesPage,
+  LazySubjectsPage,
+  LazyBookingsPage,
+  LazyStudentsPage,
+  LazyStudentRegistrationsPage,
+  LazyClassManagementPage,
+  LazyAttendanceManagementPage,
+  LazyClassFinancialReportsPage,
+  LazyAdminPrivilegesPage,
+  LazyDailyExpensesPage,
+  LazyExpensesPage,
+  LazyTeacherDashboard,
+  LazyNotFound
+} from "@/utils/lazyLoading";
+
+import LoginPage from "./pages/LoginPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import { AuditLogPage } from "./pages/AuditLogPage";
+import DiagnosticsPage from "./pages/DiagnosticsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,7 +84,7 @@ function RootRoute() {
 
   let dashboard: ReactNode = <ReceptionistDashboard />;
   if (role === "teacher") {
-    dashboard = <TeacherDashboard />;
+    dashboard = <LazyTeacherDashboard />;
   } else if (isOwnerOrAdmin) {
     dashboard = <AdminDashboard />;
   }
@@ -130,6 +136,8 @@ function ToastEventListener() {
   return null;
 }
 
+import { AuditLogProvider } from "@/components/audit/AuditLogProvider";
+
 const App = () => {
    // Check if Supabase is configured
    if (!isSupabaseConfigured) {
@@ -139,45 +147,47 @@ const App = () => {
    return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <ToastEventListener />
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
+        <AuditLogProvider>
+          <TooltipProvider>
+            <ToastEventListener />
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
 
-              {/* Protected routes with a single, top-level layout */}
-              <Route element={<ProtectedLayout />}>
-                <Route index element={<RootRoute />} />
-                <Route path="booking" element={<BookingPage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="teachers" element={<TeachersPage />} />
-                <Route path="halls" element={<HallsPage />} />
-                <Route path="stages" element={<StagesPage />} />
-                <Route path="subjects" element={<SubjectsPage />} />
-                <Route path="bookings" element={<BookingsPage />} />
-                <Route path="students" element={<StudentsPage />} />
-                <Route path="student-registrations" element={<StudentRegistrationsPage />} />
-                <Route path="attendance" element={<AttendanceManagementPage />} />
-                <Route path="class-management/:bookingId" element={<ClassManagementPage />} />
-                <Route path="financial-reports" element={<ClassFinancialReportsPage />} />
-                <Route path="admin-privileges" element={<AdminPrivilegesPage />} />
-                <Route path="expenses" element={<ExpensesPage />} />
-                <Route path="daily-expenses" element={<DailyExpensesPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="audit-logs" element={<AuditLogPage />} />
-                <Route path="diagnostics" element={<DiagnosticsPage />} />
-                <Route path="style-showcase" element={<StyleShowcase />} />
+                {/* Protected routes with a single, top-level layout */}
+                <Route element={<ProtectedLayout />}>
+                  <Route index element={<RootRoute />} />
+                  <Route path="booking" element={<LazyBookingPage />} />
+                  <Route path="users" element={<LazyUsersPage />} />
+                  <Route path="teachers" element={<LazyTeachersPage />} />
+                  <Route path="halls" element={<LazyHallsPage />} />
+                  <Route path="stages" element={<LazyStagesPage />} />
+                  <Route path="subjects" element={<LazySubjectsPage />} />
+                  <Route path="bookings" element={<LazyBookingsPage />} />
+                  <Route path="students" element={<LazyStudentsPage />} />
+                  <Route path="student-registrations" element={<LazyStudentRegistrationsPage />} />
+                  <Route path="attendance" element={<LazyAttendanceManagementPage />} />
+                  <Route path="class-management/:bookingId" element={<LazyClassManagementPage />} />
+                  <Route path="financial-reports" element={<LazyClassFinancialReportsPage />} />
+                  <Route path="admin-privileges" element={<LazyAdminPrivilegesPage />} />
+                  <Route path="expenses" element={<LazyExpensesPage />} />
+                  <Route path="daily-expenses" element={<LazyDailyExpensesPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="audit-logs" element={<AuditLogPage />} />
+                  <Route path="diagnostics" element={<DiagnosticsPage />} />
+                  <Route path="style-showcase" element={<StyleShowcase />} />
 
-                {/* Catch-all inside protected layout */}
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-        <GlobalNotifications />
+                  {/* Catch-all inside protected layout */}
+                  <Route path="*" element={<LazyNotFound />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+          <GlobalNotifications />
+        </AuditLogProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
