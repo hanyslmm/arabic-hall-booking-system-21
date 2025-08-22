@@ -1,17 +1,31 @@
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
-import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { AddStageModal } from "@/components/stages/AddStageModal";
-import { formatShortArabicDate } from "@/utils/dateUtils";
+// import { useState } from "react";
+// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// import { supabase } from "@/integrations/supabase/client";
+// import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
+// import { useAuth } from "@/hooks/useAuth";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Button } from "@/components/ui/button";
+// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+// import { useToast } from "@/hooks/use-toast";
+// import { Plus, Trash2, Users } from "lucide-react";
+// import { Badge } from "@/components/ui/badge";
+// import { AddStageModal } from "@/components/stages/AddStageModal";
+// import { formatShortArabicDate } from "@/utils/dateUtils";
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Plus, ArrowUpDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { studentsApi } from '@/api/students';
+import { stagesApi } from '@/api/stages';
+import AddStudentModal from '@/components/student/AddStudentModal';
+import EditStudentModal from '@/components/student/EditStudentModal';
+import StudentQRCodeModal from '@/components/student/StudentQRCodeModal';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 interface AcademicStage {
   id: string;
