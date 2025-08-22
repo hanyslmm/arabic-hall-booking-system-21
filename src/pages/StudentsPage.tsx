@@ -14,7 +14,7 @@ import { AddStudentModal } from "@/components/student/AddStudentModal";
 import { EditStudentModal } from "@/components/student/EditStudentModal";
 import { BulkUploadModal } from "@/components/student/BulkUploadModal";
 import { studentsApi, Student } from "@/api/students";
-import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, Calendar, QrCode, Download, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, Calendar, QrCode, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
@@ -52,6 +52,7 @@ const StudentsPage = () => {
     },
     placeholderData: (previousData) => previousData,
   });
+
   const students = (data as any)?.data || [];
   const total = (data as any)?.total || 0;
 
@@ -122,6 +123,7 @@ const StudentsPage = () => {
       setSortColumn(columnKey);
       setSortDirection('asc');
     }
+    setPage(1); // Reset to first page on sort change
   };
 
   const canManageStudents = profile?.role === 'admin' || profile?.user_role === 'owner' || profile?.user_role === 'manager';
@@ -418,11 +420,9 @@ const StudentsPage = () => {
                   if (confirmDeleteStudent) {
                     deleteMutation.mutate(confirmDeleteStudent.id);
                   }
-                  setConfirmDeleteStudent(null);
                 }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                حذف
+                تأكيد الحذف
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
