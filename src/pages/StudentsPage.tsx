@@ -106,7 +106,7 @@ const StudentsPage = () => {
     setPage(1);
   };
 
-  const canManageStudents = profile?.role === 'ADMIN'; // Fixed: use 'role' instead of 'user_role'
+  const canManageStudents = profile?.role === 'admin' || profile?.user_role === 'owner' || profile?.user_role === 'manager';
 
   // Define table columns with mobile optimization
   const studentColumns: TableColumn<Student>[] = [

@@ -353,13 +353,13 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
             <div className="space-y-1">
               {group.items
                 .filter((item) => {
-                  // Show expenses pages for owner/admin roles only
+                  // Show expenses pages for owner/admin/manager roles
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {
-                    return isAdmin || isOwner;
+                    return profile?.role === 'admin' || profile?.user_role === 'owner' || profile?.user_role === 'manager';
                   }
                   // Show audit logs for admin/owner only
                   if (item.url === '/audit-logs') {
-                    return isAdmin || isOwner;
+                    return profile?.role === 'admin' || profile?.user_role === 'owner';
                   }
                   return true;
                 })

@@ -183,9 +183,30 @@ export const BookingForm = ({ onSuccess }: BookingFormProps) => {
   });
 
   const handleDayToggle = (day: string) => {
-    const updatedDays = selectedDays.includes(day)
-      ? selectedDays.filter(d => d !== day)
-      : [...selectedDays, day];
+    let updatedDays: string[];
+    
+    if (selectedDays.includes(day)) {
+      // Remove the day and any related days
+      updatedDays = selectedDays.filter(d => d !== day);
+    } else {
+      // Add the day and auto-select related days based on common patterns
+      updatedDays = [...selectedDays, day];
+      
+      // Auto-select related days for common patterns
+      if (day === 'saturday' && !selectedDays.includes('monday') && !selectedDays.includes('wednesday')) {
+        updatedDays = [...updatedDays, 'monday', 'wednesday'];
+      } else if (day === 'sunday' && !selectedDays.includes('tuesday') && !selectedDays.includes('thursday')) {
+        updatedDays = [...updatedDays, 'tuesday', 'thursday'];
+      } else if (day === 'monday' && selectedDays.includes('saturday') && !selectedDays.includes('wednesday')) {
+        updatedDays = [...updatedDays, 'wednesday'];
+      } else if (day === 'wednesday' && selectedDays.includes('saturday') && !selectedDays.includes('monday')) {
+        updatedDays = [...updatedDays, 'monday'];
+      } else if (day === 'tuesday' && selectedDays.includes('sunday') && !selectedDays.includes('thursday')) {
+        updatedDays = [...updatedDays, 'thursday'];
+      } else if (day === 'thursday' && selectedDays.includes('sunday') && !selectedDays.includes('tuesday')) {
+        updatedDays = [...updatedDays, 'tuesday'];
+      }
+    }
     
     setSelectedDays(updatedDays);
     form.setValue('days_of_week', updatedDays);
