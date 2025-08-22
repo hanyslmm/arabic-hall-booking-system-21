@@ -52,26 +52,47 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
   };
 
   const handlePrintBarcode = () => {
-    // Create a new window for printing the barcode label
-    const printWindow = window.open('', '_blank', 'width=400,height=300');
+    // Create a new window for printing the barcode label (approx sized for 50mm x 25mm)
+    const printWindow = window.open('', '_blank', 'width=240,height=140');
     if (!printWindow) return;
 
-    // Generate barcode using JsBarcode
+    // Utility to convert millimeters to pixels at 300 DPI for crisp print
+    const mmToPx = (mm: number) => Math.round((mm / 25.4) * 300);
+
+    // Target label size
+    const labelWidthMm = 50;
+    const labelHeightMm = 25;
+
+    // Inner padding
+    const paddingMm = 1; // 1mm padding
+
+    // Render barcode to a high-res canvas
     const canvas = document.createElement('canvas');
     const JsBarcode = (window as any).JsBarcode;
-    
+
+    // Compute canvas size for print quality
+    const canvasWidth = mmToPx(labelWidthMm - paddingMm * 2);
+    const canvasHeight = mmToPx(labelHeightMm - paddingMm * 2);
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
-        format: "CODE128",
-        width: 2,
-        height: 50,
+        format: 'CODE128',
+        lineColor: '#000',
+        background: '#fff',
+        width: Math.max(1, Math.floor(canvasWidth / 220)), // dynamic bar width
+        height: Math.floor(canvasHeight * 0.65), // occupy ~65% for bars
         displayValue: true,
-        fontSize: 10,
-        margin: 0
+        font: 'monospace',
+        fontOptions: 'bold',
+        fontSize: Math.floor(canvasHeight * 0.20), // ~20% for text
+        margin: 0,
+        textMargin: Math.floor(canvasHeight * 0.05)
       });
     }
 
-    const barcodeDataURL = canvas.toDataURL();
+    const barcodeDataURL = canvas.toDataURL('image/png');
 
     const printContent = `
       <!DOCTYPE html>
@@ -82,28 +103,23 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         <title></title>
         <style>
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          html, body {
-            margin: 0;
-            padding: 0;
-            background: white;
-          }
+          html, body { margin: 0; padding: 0; background: #fff; }
+          body { width: 50mm; height: 25mm; }
           .label {
             width: 50mm;
             height: 25mm;
-            border: none;
-            padding: 0;
-            margin: 0;
-            background: white;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             overflow: hidden;
           }
           .barcode {
-            width: 48mm;
+            width: ${labelWidthMm - paddingMm * 2}mm;
             height: auto;
-            margin: 0;
             display: block;
+            margin: 0;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
           }
           @media print {
             @page { size: 50mm 25mm; margin: 0; }
@@ -115,17 +131,16 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         <div class="label">
           <img src="${barcodeDataURL}" alt="Barcode" class="barcode" />
         </div>
+        <script>
+          // Auto-print then close
+          setTimeout(function(){ window.print(); setTimeout(function(){ window.close(); }, 200); }, 100);
+        <\/script>
       </body>
       </html>
     `;
 
     printWindow.document.write(printContent);
     printWindow.document.close();
-    
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
   };
 
   return (
