@@ -656,6 +656,14 @@ export type Database = {
         Args: { password: string; username: string }
         Returns: Json
       }
+      generate_class_code: {
+        Args: {
+          p_days_of_week: string[]
+          p_start_time: string
+          p_teacher_id: string
+        }
+        Returns: string
+      }
       get_hall_booking_hours: {
         Args: Record<PropertyKey, never>
         Returns: {
