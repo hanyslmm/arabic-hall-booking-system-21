@@ -14,7 +14,7 @@ import { AddStudentModal } from "@/components/student/AddStudentModal";
 import { EditStudentModal } from "@/components/student/EditStudentModal";
 import { BulkUploadModal } from "@/components/student/BulkUploadModal";
 import { studentsApi, Student } from "@/api/students";
-import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar, QrCode, Download } from "lucide-react";
+import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, Calendar, QrCode, Download, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
@@ -23,6 +23,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { StudentQRCodeModal } from '@/components/student/StudentQRCodeModal';
 
 const PAGE_SIZE = 50;
+
 const StudentsPage = () => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
@@ -34,12 +35,20 @@ const StudentsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [page, setPage] = useState(1);
+  const [sortColumn, setSortColumn] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const debouncedSearch = useDebounce(searchTerm, 300);
 
   const { data, isLoading, error, isFetching } = useQuery({
-    queryKey: ["students", page, debouncedSearch],
+    queryKey: ["students", page, debouncedSearch, sortColumn, sortDirection],
     queryFn: async () => {
-      return await studentsApi.getPaginated({ page, pageSize: PAGE_SIZE, searchTerm: debouncedSearch || undefined });
+      return await studentsApi.getPaginated({ 
+        page, 
+        pageSize: PAGE_SIZE, 
+        searchTerm: debouncedSearch || undefined,
+        sortBy: sortColumn,
+        sortOrder: sortDirection,
+      });
     },
     placeholderData: (previousData) => previousData,
   });
@@ -49,7 +58,7 @@ const StudentsPage = () => {
   const searchMutation = useMutation({
     mutationFn: studentsApi.search,
     onSuccess: (searchResults) => {
-      queryClient.setQueryData(["students", page, debouncedSearch], { data: searchResults, total: searchResults.length });
+      queryClient.setQueryData(["students", page, debouncedSearch, sortColumn, sortDirection], { data: searchResults, total: searchResults.length });
     },
     onError: () => {
       toast.error("فشل في البحث عن الطالب");
@@ -105,15 +114,24 @@ const StudentsPage = () => {
     setSearchTerm("");
     setPage(1);
   };
+  
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(columnKey);
+      setSortDirection('asc');
+    }
+  };
 
   const canManageStudents = profile?.role === 'admin' || profile?.user_role === 'owner' || profile?.user_role === 'manager';
 
-  // Define table columns with mobile optimization
   const studentColumns: TableColumn<Student>[] = [
     {
       key: 'serial_number',
       header: 'الرقم التسلسلي',
       mobileLabel: 'الرقم',
+      sortable: true,
       render: (student) => (
         <Badge variant="secondary">{student.serial_number || '-'}</Badge>
       ),
@@ -122,6 +140,7 @@ const StudentsPage = () => {
       key: 'name',
       header: 'الاسم',
       mobileLabel: 'الاسم',
+      sortable: true,
       render: (student) => (
         <span className="font-medium">{student.name}</span>
       ),
@@ -130,6 +149,7 @@ const StudentsPage = () => {
       key: 'mobile_phone',
       header: 'رقم الهاتف',
       mobileLabel: 'الهاتف',
+      sortable: true,
       render: (student) => (
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground sm:inline hidden" />
@@ -142,6 +162,7 @@ const StudentsPage = () => {
       header: 'تاريخ التسجيل',
       mobileLabel: 'التاريخ',
       hideOnMobile: true,
+      sortable: true,
       render: (student) => (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -151,7 +172,6 @@ const StudentsPage = () => {
     },
   ];
 
-  // Table actions for edit/delete
   const baseActions: TableAction<Student>[] = [
     {
       label: 'QR',
@@ -181,7 +201,6 @@ const StudentsPage = () => {
 
   const studentActions: TableAction<Student>[] = canManageStudents ? [...baseActions, ...manageActions] : baseActions;
 
-  // Render expanded content for each student (details only)
   const renderExpandedStudentContent = (student: Student) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-2">
       <div className="space-y-2">
@@ -237,7 +256,6 @@ const StudentsPage = () => {
   return (
     <UnifiedLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
@@ -272,7 +290,6 @@ const StudentsPage = () => {
           </div>
         </div>
 
-        {/* Search */}
         <Card>
           <CardHeader>
             <CardTitle>البحث عن طالب</CardTitle>
@@ -339,7 +356,6 @@ const StudentsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Students Table */}
         <MobileResponsiveTable
           data={students}
           columns={studentColumns}
@@ -356,9 +372,11 @@ const StudentsPage = () => {
           totalItems={total}
           currentPage={page}
           onPageChange={setPage}
+          onSort={handleSort}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
         />
 
-        {/* Modals */}
         <AddStudentModal 
           isOpen={showAddStudent}
           onClose={() => setShowAddStudent(false)}
@@ -385,7 +403,6 @@ const StudentsPage = () => {
           />
         )}
 
-        {/* Delete confirmation */}
         <AlertDialog open={!!confirmDeleteStudent} onOpenChange={(open) => { if (!open) setConfirmDeleteStudent(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
