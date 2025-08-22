@@ -666,6 +666,14 @@ export type Database = {
           total_booked_hours: number
         }[]
       }
+      get_hall_occupancy_rates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          hall_id: string
+          name: string
+          occupancy_percentage: number
+        }[]
+      }
       get_monthly_expenses: {
         Args: { p_month: number; p_year: number }
         Returns: number
