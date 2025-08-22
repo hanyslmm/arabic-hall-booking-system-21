@@ -53,23 +53,30 @@ export const HallsGrid = ({ occupancyData }: HallsGridProps) => {
 
   const getOccupancyForHall = (hallId: string) => {
     const hallOccupancy = occupancyData?.find(item => item.hall_id === hallId);
-    const occupied = Number(hallOccupancy?.occupied_slots || 0);
     
-    // Fixed calculation: 12 hours Saturday + 12 hours Sunday = 24 total available slots
-    // Each time slot is 1 hour, and we work Saturday and Sunday only
-    const working_hours_per_day = 12; // 9am-9pm = 12 hours
-    const working_days_per_week = 2; // Saturday + Sunday = 2 days
-    const available = working_hours_per_day * working_days_per_week; // 12 * 2 = 24 slots
+    if (!hallOccupancy) {
+      return {
+        percentage: 0,
+        occupied_slots: 0,
+        available_slots: 24,
+        working_hours_per_day: 12,
+        working_days_per_week: 2,
+      };
+    }
     
-    // Calculate proper percentage (round to nearest integer)
-    const percentage = available > 0 ? Math.round((occupied / available) * 100) : 0;
+    // Use the actual data from the RPC function
+    const occupied = Number(hallOccupancy.occupied_slots || 0);
+    const available = Number(hallOccupancy.available_slots || 24);
+    
+    // Ensure percentage doesn't exceed 100% and handle edge cases
+    const percentage = available > 0 ? Math.min(Math.round((occupied / available) * 100), 100) : 0;
     
     return {
       percentage,
       occupied_slots: occupied,
       available_slots: available,
-      working_hours_per_day,
-      working_days_per_week,
+      working_hours_per_day: Number(hallOccupancy.working_hours_per_day || 12),
+      working_days_per_week: Number(hallOccupancy.working_days_per_week || 2),
     };
   };
 
