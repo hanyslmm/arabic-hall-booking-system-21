@@ -485,3 +485,4 @@ export function MobileResponsiveTable<T>({
     </Card>
   );
 }
+
