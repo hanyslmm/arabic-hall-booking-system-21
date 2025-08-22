@@ -678,6 +678,17 @@ export type Database = {
         Args: { p_month: number; p_year: number }
         Returns: number
       }
+      get_teacher_statistics_by_month: {
+        Args: { p_month?: number; p_teacher_id: string; p_year?: number }
+        Returns: {
+          attendance_rate: number
+          monthly_earnings: number
+          pending_payments: number
+          total_classes: number
+          total_earnings: number
+          total_students: number
+        }[]
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
