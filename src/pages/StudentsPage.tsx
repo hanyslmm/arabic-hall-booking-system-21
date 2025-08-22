@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,13 +14,15 @@ import { AddStudentModal } from "@/components/student/AddStudentModal";
 import { EditStudentModal } from "@/components/student/EditStudentModal";
 import { BulkUploadModal } from "@/components/student/BulkUploadModal";
 import { studentsApi, Student } from "@/api/students";
-import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar, QrCode, Download } from "lucide-react";
+import { Plus, Search, Scan, Upload, Edit, Trash2, Users, Phone, MapPin, Calendar, QrCode, Download, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
 import { Scanner } from '@alzera/react-scanner';
 import { useDebounce } from '@/hooks/useDebounce';
 import { StudentQRCodeModal } from '@/components/student/StudentQRCodeModal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getStages } from "@/api/stages";
 
 const PAGE_SIZE = 50;
 const StudentsPage = () => {
@@ -36,6 +38,17 @@ const StudentsPage = () => {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(searchTerm, 300);
 
+  // Client-side sorting and filtering state
+  const [stageFilter, setStageFilter] = useState<string>("");
+  const [clientSearchTerm, setClientSearchTerm] = useState<string>("");
+  const [sortConfig, setSortConfig] = useState<null | { key: 'name' | 'serial_number'; direction: 'asc' | 'desc' }>(null);
+
+  // Fetch stages for filter dropdown
+  const { data: stages } = useQuery({
+    queryKey: ["academic-stages"],
+    queryFn: getStages,
+  });
+
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["students", page, debouncedSearch],
     queryFn: async () => {
@@ -45,6 +58,48 @@ const StudentsPage = () => {
   });
   const students = (data as any)?.data || [];
   const total = (data as any)?.total || 0;
+
+  // Apply client-side filtering and sorting on current page of students
+  const filteredAndSortedStudents = useMemo(() => {
+    let result = [...students];
+
+    // Filter by client search (name or code)
+    const term = clientSearchTerm.trim().toLowerCase();
+    if (term) {
+      result = result.filter((s) =>
+        (s.name || '').toLowerCase().includes(term) ||
+        (s.serial_number || '').toLowerCase().includes(term)
+      );
+    }
+
+    // Filter by stage
+    if (stageFilter) {
+      result = result.filter((s) => (s.academic_stage_id || '') === stageFilter);
+    }
+
+    // Sort
+    if (sortConfig) {
+      const { key, direction } = sortConfig;
+      result.sort((a, b) => {
+        const aVal = ((a as any)[key] || '').toString().toLowerCase();
+        const bVal = ((b as any)[key] || '').toString().toLowerCase();
+        if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [students, clientSearchTerm, stageFilter, sortConfig]);
+
+  const handleSort = (key: 'name' | 'serial_number') => {
+    setSortConfig((prev) => {
+      if (prev && prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
 
   const searchMutation = useMutation({
     mutationFn: studentsApi.search,
@@ -112,7 +167,12 @@ const StudentsPage = () => {
   const studentColumns: TableColumn<Student>[] = [
     {
       key: 'serial_number',
-      header: 'الرقم التسلسلي',
+      header: (
+        <Button variant="ghost" className="px-0 font-semibold hover:text-primary" onClick={() => handleSort('serial_number')}>
+          <span>الكود</span>
+          <ArrowUpDown className="h-4 w-4 mr-1 ml-2 inline" />
+        </Button>
+      ),
       mobileLabel: 'الرقم',
       render: (student) => (
         <Badge variant="secondary">{student.serial_number || '-'}</Badge>
@@ -120,7 +180,12 @@ const StudentsPage = () => {
     },
     {
       key: 'name',
-      header: 'الاسم',
+      header: (
+        <Button variant="ghost" className="px-0 font-semibold hover:text-primary" onClick={() => handleSort('name')}>
+          <span>الاسم</span>
+          <ArrowUpDown className="h-4 w-4 mr-1 ml-2 inline" />
+        </Button>
+      ),
       mobileLabel: 'الاسم',
       render: (student) => (
         <span className="font-medium">{student.name}</span>
@@ -339,9 +404,32 @@ const StudentsPage = () => {
           </CardContent>
         </Card>
 
+        {/* Table Controls: client-side search and stage filter */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+          <Input
+            placeholder="ابحث بالاسم أو الكود..."
+            value={clientSearchTerm}
+            onChange={(e) => setClientSearchTerm(e.target.value)}
+            className="sm:max-w-xs"
+          />
+          <div className="flex items-center gap-2">
+            <Select value={stageFilter} onValueChange={(v) => setStageFilter(v)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="كل المراحل" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">كل المراحل</SelectItem>
+                {(stages || []).map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Students Table */}
         <MobileResponsiveTable
-          data={students}
+          data={filteredAndSortedStudents}
           columns={studentColumns}
           actions={studentActions}
           title={`قائمة الطلاب (${total})`}

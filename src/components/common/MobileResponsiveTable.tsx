@@ -19,7 +19,7 @@ import { TableSkeleton } from '@/components/common/LoadingSpinner';
 
 export interface TableColumn<T> {
   key: string;
-  header: string;
+  header: React.ReactNode;
   render: (item: T) => React.ReactNode;
   className?: string;
   mobileLabel?: string; // Label to show in mobile card view
