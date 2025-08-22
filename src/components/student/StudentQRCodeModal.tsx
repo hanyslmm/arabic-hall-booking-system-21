@@ -60,28 +60,28 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     const labelWidthMm = 50;   // 5cm width
     const labelHeightMm = 25;  // 2.5cm height
 
-    // Generate barcode using JsBarcode
+    // Generate barcode using JsBarcode with portrait canvas to rotate later
     const canvas = document.createElement('canvas');
     const JsBarcode = (window as any).JsBarcode;
     
-    // Set canvas size for optimal barcode generation
-    canvas.width = 400;  // Fixed width for good quality
-    canvas.height = 150; // Reduced height for landscape format
+    // Set canvas size for portrait barcode generation (will be rotated)
+    canvas.width = 150;  // Portrait width
+    canvas.height = 400; // Portrait height
 
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: 'CODE128',
         lineColor: '#000',
         background: '#fff',
-        width: 2,
-        height: 60,  // Reduced height for landscape
+        width: 1.5,
+        height: 80,
         displayValue: true,
         font: 'monospace',
         fontOptions: 'bold',
-        fontSize: 12,
-        margin: 5,
+        fontSize: 14,
+        margin: 10,
         textAlign: 'center',
-        textMargin: 5
+        textMargin: 8
       });
     }
 
@@ -95,12 +95,18 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title></title>
         <style>
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          * { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
+            margin: 0;
+            padding: 0;
+          }
           html, body { 
             margin: 0; 
             padding: 0; 
             background: #fff; 
             font-family: monospace;
+            overflow: hidden;
           }
           body { 
             width: ${labelWidthMm}mm; 
@@ -110,18 +116,18 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             width: ${labelWidthMm}mm;
             height: ${labelHeightMm}mm;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            padding: 2mm;
-            box-sizing: border-box;
+            position: relative;
           }
           .barcode {
-            width: 46mm;  /* 5cm - 4mm padding */
-            height: auto;
+            height: 20mm;  /* Fit to label height with margin */
+            width: auto;
             display: block;
             margin: 0;
+            transform: rotate(90deg);  /* Rotate 90 degrees clockwise */
+            transform-origin: center center;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: crisp-edges;
           }
@@ -130,7 +136,11 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
               size: ${labelWidthMm}mm ${labelHeightMm}mm; 
               margin: 0; 
             }
-            html, body { margin: 0; padding: 0; }
+            html, body { 
+              margin: 0; 
+              padding: 0; 
+              overflow: hidden;
+            }
           }
         </style>
       </head>
