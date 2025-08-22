@@ -16,9 +16,5 @@ export const LazyClassFinancialReportsPage = lazy(() => import('@/pages/ClassFin
 export const LazyAdminPrivilegesPage = lazy(() => import('@/pages/AdminPrivilegesPage'));
 export const LazyDailyExpensesPage = lazy(() => import('@/pages/DailyExpensesPage'));
 export const LazyExpensesPage = lazy(() => import('@/pages/ExpensesPage'));
-export const LazySettingsPage = lazy(() => import('@/pages/SettingsPage'));
-export const LazyReportsPage = lazy(() => import('@/pages/ReportsPage'));
-export const LazyAuditLogPage = lazy(() => import('@/pages/AuditLogPage'));
-export const LazyDiagnosticsPage = lazy(() => import('@/pages/DiagnosticsPage'));
 export const LazyTeacherDashboard = lazy(() => import('@/pages/TeacherDashboard'));
 export const LazyNotFound = lazy(() => import('@/pages/NotFound'));

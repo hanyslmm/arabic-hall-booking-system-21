@@ -136,8 +136,6 @@ function ToastEventListener() {
   return null;
 }
 
-import { AuditLogProvider } from "@/components/audit/AuditLogProvider";
-
 const App = () => {
    // Check if Supabase is configured
    if (!isSupabaseConfigured) {

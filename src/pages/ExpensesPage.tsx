@@ -11,14 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { UnifiedLayout } from '@/components/layout/UnifiedLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { Plus, Edit, Trash2, DollarSign, Calendar, TrendingDown, Search, Filter, X } from 'lucide-react';
+import { exportExpensesToExcel } from "@/utils/exportUtils";
+import { cn } from "@/lib/utils";
+import { Download, Plus, Search, X, Calendar, Users, TrendingUp, BarChart3, Edit, Trash2 } from "lucide-react";
 import { expensesApi, type Expense, type CreateExpenseData } from '@/api/expenses';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
+import { toast } from "sonner";
 
 export default function ExpensesPage() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
@@ -55,10 +57,10 @@ export default function ExpensesPage() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       setIsAddExpenseOpen(false);
       resetForm();
-      toast({ title: 'تم إضافة المصروف بنجاح' });
+      toast.success('تم إضافة المصروف بنجاح');
     },
     onError: () => {
-      toast({ title: 'خطأ في إضافة المصروف', variant: 'destructive' });
+      toast.error('خطأ في إضافة المصروف');
     },
   });
 
@@ -70,10 +72,10 @@ export default function ExpensesPage() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       setEditingExpense(null);
       resetForm();
-      toast({ title: 'تم تحديث المصروف بنجاح' });
+      toast.success('تم تحديث المصروف بنجاح');
     },
     onError: () => {
-      toast({ title: 'خطأ في تحديث المصروف', variant: 'destructive' });
+      toast.error('خطأ في تحديث المصروف');
     },
   });
 
@@ -82,10 +84,10 @@ export default function ExpensesPage() {
     mutationFn: expensesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast({ title: 'تم حذف المصروف بنجاح' });
+      toast.success('تم حذف المصروف بنجاح');
     },
     onError: () => {
-      toast({ title: 'خطأ في حذف المصروف', variant: 'destructive' });
+      toast.error('خطأ في حذف المصروف');
     },
   });
 
@@ -134,19 +136,31 @@ export default function ExpensesPage() {
   };
 
   const handleAddExpense = () => {
-    if (!formData.description || !formData.category || formData.amount <= 0) {
-      toast({ title: 'يرجى ملء جميع الحقول المطلوبة', variant: 'destructive' });
-      return;
-    }
-    createExpenseMutation.mutate(formData);
+    setIsAddExpenseOpen(true);
+    setEditingExpense(null);
+    resetForm();
   };
 
-  const handleUpdateExpense = () => {
-    if (!editingExpense || !formData.description || !formData.category || formData.amount <= 0) {
-      toast({ title: 'يرجى ملء جميع الحقول المطلوبة', variant: 'destructive' });
+  const handleExportExpenses = () => {
+    const result = exportExpensesToExcel(filteredExpenses || []);
+    if (result.success) {
+      toast.success(`تم تصدير البيانات إلى ${result.filename}`);
+    } else {
+      toast.error(result.error || 'فشل في تصدير البيانات');
+    }
+  };
+
+  const handleSubmitExpense = () => {
+    if (!formData.description || !formData.category || formData.amount <= 0) {
+      toast.error('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
-    updateExpenseMutation.mutate({ id: editingExpense.id, data: formData });
+
+    if (editingExpense) {
+      updateExpenseMutation.mutate({ id: editingExpense.id, data: formData });
+    } else {
+      createExpenseMutation.mutate(formData);
+    }
   };
 
   const handleEditExpense = (expense: Expense) => {
@@ -158,6 +172,7 @@ export default function ExpensesPage() {
       payment_method: expense.payment_method,
       notes: expense.notes || ''
     });
+    setIsAddExpenseOpen(true);
   };
 
   const formatCurrency = (amount: number) => {
@@ -174,110 +189,16 @@ export default function ExpensesPage() {
       <div className="py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">إدارة المصروفات</h1>
-          <Dialog open={isAddExpenseOpen || !!editingExpense} onOpenChange={(open) => {
-            if (!open) {
-              setIsAddExpenseOpen(false);
-              setEditingExpense(null);
-              resetForm();
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setIsAddExpenseOpen(true)}>
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة مصروف
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingExpense ? 'تعديل المصروف' : 'إضافة مصروف جديد'}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>الوصف *</Label>
-                  <Input
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="وصف المصروف"
-                  />
-                </div>
-                <div>
-                  <Label>الفئة *</Label>
-                  <Select value={formData.category} onValueChange={(value) => 
-                    setFormData(prev => ({ ...prev, category: value }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر فئة المصروف" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {expensesApi.getCategories().map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>المبلغ (جنيه) *</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      amount: Number(e.target.value) || 0 
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label>طريقة الدفع</Label>
-                  <Select value={formData.payment_method} onValueChange={(value) => 
-                    setFormData(prev => ({ ...prev, payment_method: value }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {expensesApi.getPaymentMethods().map(method => (
-                        <SelectItem key={method.value} value={method.value}>
-                          {method.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>ملاحظات</Label>
-                  <Textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="ملاحظات إضافية..."
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsAddExpenseOpen(false);
-                      setEditingExpense(null);
-                      resetForm();
-                    }}
-                  >
-                    إلغاء
-                  </Button>
-                  <Button 
-                    onClick={editingExpense ? handleUpdateExpense : handleAddExpense}
-                    disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
-                  >
-                    {editingExpense ? 'تحديث' : 'حفظ'}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button onClick={handleAddExpense}>
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة مصروف
+            </Button>
+            <Button onClick={handleExportExpenses} variant="outline">
+              <Download className="h-4 w-4 ml-2" />
+              تصدير إلى Excel
+            </Button>
+          </div>
         </div>
 
         {/* Month Selector */}
@@ -291,7 +212,7 @@ export default function ExpensesPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5" />
+              <TrendingUp className="h-5 w-5" />
               ملخص المصروفات الشهرية
             </CardTitle>
           </CardHeader>
@@ -374,7 +295,7 @@ export default function ExpensesPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <BarChart3 className="h-5 w-5" />
               قائمة المصروفات
               {(searchTerm || selectedCategory) && (
                 <Badge variant="secondary" className="mr-2">
@@ -436,7 +357,7 @@ export default function ExpensesPage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <TrendingDown className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">
                   {(searchTerm || selectedCategory) ? 'لا توجد نتائج' : 'لا توجد مصروفات'}
                 </h3>
@@ -450,6 +371,100 @@ export default function ExpensesPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Add/Edit Expense Dialog */}
+        <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingExpense ? 'تعديل المصروف' : 'إضافة مصروف جديد'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>الوصف *</Label>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="وصف المصروف"
+                />
+              </div>
+              <div>
+                <Label>الفئة *</Label>
+                <Select value={formData.category} onValueChange={(value) => 
+                  setFormData(prev => ({ ...prev, category: value }))
+                }>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر فئة المصروف" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expensesApi.getCategories().map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>المبلغ (جنيه) *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    amount: Number(e.target.value) || 0 
+                  }))}
+                />
+              </div>
+              <div>
+                <Label>طريقة الدفع</Label>
+                <Select value={formData.payment_method} onValueChange={(value) => 
+                  setFormData(prev => ({ ...prev, payment_method: value }))
+                }>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expensesApi.getPaymentMethods().map(method => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>ملاحظات</Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="ملاحظات إضافية..."
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsAddExpenseOpen(false);
+                    setEditingExpense(null);
+                    resetForm();
+                  }}
+                >
+                  إلغاء
+                </Button>
+                <Button 
+                  onClick={handleSubmitExpense}
+                  disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
+                >
+                  {editingExpense ? 'تحديث' : 'حفظ'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </UnifiedLayout>
   );
