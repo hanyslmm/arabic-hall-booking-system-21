@@ -200,6 +200,45 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          created_by: string | null
+          date: string
+          description: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          description: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       halls: {
         Row: {
           capacity: number
@@ -616,6 +655,20 @@ export type Database = {
       custom_login: {
         Args: { password: string; username: string }
         Returns: Json
+      }
+      get_hall_booking_hours: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          hall_id: string
+          hall_name: string
+          occupancy_percentage: number
+          total_available_hours: number
+          total_booked_hours: number
+        }[]
+      }
+      get_monthly_expenses: {
+        Args: { p_month: number; p_year: number }
+        Returns: number
       }
       is_admin_user: {
         Args: Record<PropertyKey, never>

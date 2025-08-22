@@ -139,10 +139,10 @@ const defaultNavigation: NavigationGroup[] = [
         description: "عرض التقارير المالية",
       },
       {
-        title: "المصروفات اليومية",
-        url: "/daily-expenses",
+        title: "إدارة المصروفات",
+        url: "/expenses",
         icon: FileText,
-        description: "إدارة المصروفات اليومية",
+        description: "إدارة وتتبع المصروفات",
       },
       {
         title: "تقارير المجموعات",

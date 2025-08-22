@@ -26,7 +26,20 @@ export const dashboardApi = {
     try {
       // Use the existing robust monthly earnings function
       const totalIncome = await fetchMonthlyEarnings(month, year);
-      const totalExpenses = 0; // No expenses table yet
+      
+      // Get expenses using RPC function
+      let totalExpenses = 0;
+      try {
+        const { data, error } = await supabase.rpc('get_monthly_expenses', {
+          p_month: month,
+          p_year: year
+        });
+        if (!error) {
+          totalExpenses = Number(data || 0);
+        }
+      } catch (expenseError) {
+        console.warn('Could not fetch expenses:', expenseError);
+      }
 
       // Calculate occupancy: proportion of halls with active bookings in the month
       const startOfMonth = new Date(year, month - 1, 1);
@@ -68,29 +81,23 @@ export const dashboardApi = {
   },
 
   /**
-   * Get hall time slot occupancy data for the dashboard grid
+   * Get hall time slot occupancy data using actual booking data
    */
   async getHallOccupancy(): Promise<HallOccupancy[]> {
     try {
-      // For now, return simple occupancy based on bookings count
-      const { data, error } = await supabase
-        .from('halls')
-        .select(`
-          id,
-          name,
-          capacity
-        `);
+      // Use the new RPC function to get real occupancy data
+      const { data, error } = await supabase.rpc('get_hall_booking_hours');
       
       if (error) throw error;
       
-      return (data || []).map((hall) => ({
-        hall_id: hall.id,
-        name: hall.name,
-        occupancy_percentage: 0, // Will be calculated properly later
-        occupied_slots: 0,
-        available_slots: hall.capacity,
-        working_hours_per_day: 8,
-        working_days_per_week: 6,
+      return (data || []).map((hall: any) => ({
+        hall_id: hall.hall_id,
+        name: hall.hall_name,
+        occupancy_percentage: Number(hall.occupancy_percentage || 0),
+        occupied_slots: Number(hall.total_booked_hours || 0),
+        available_slots: Number(hall.total_available_hours || 24),
+        working_hours_per_day: 12, // 9am-9pm
+        working_days_per_week: 2,  // Saturday + Sunday
       }));
     } catch (error) {
       console.error('Error fetching hall occupancy:', error);

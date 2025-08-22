@@ -585,94 +585,200 @@ export default function ClassManagementPage() {
                   )}
                 </div>
 
-                {/* Students Table */}
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="text-center p-3">
-                          <Checkbox
-                            checked={selectedStudents.size === filteredRegistrations.length && filteredRegistrations.length > 0}
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </th>
-                        <th className="text-right p-3">الطالب</th>
-                        <th className="text-right p-3">الرقم التسلسلي</th>
-                        <th className="text-right p-3">الموبايل</th>
-                        <th className="text-right p-3">الرسوم</th>
-                        <th className="text-right p-3">المدفوع</th>
-                        <th className="text-right p-3">حالة الدفع</th>
-                        <th className="text-center p-3">QR Code</th>
-                        <th className="text-center p-3">إجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRegistrations.map((registration) => (
-                        <tr key={registration.id} className="border-t">
-                          <td className="p-3 text-center">
+                {/* Students Table - Mobile Responsive */}
+                <div className="space-y-4">
+                  {/* Desktop Table */}
+                  <div className="hidden lg:block border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-center p-3">
+                            <Checkbox
+                              checked={selectedStudents.size === filteredRegistrations.length && filteredRegistrations.length > 0}
+                              onCheckedChange={handleSelectAll}
+                            />
+                          </th>
+                          <th className="text-right p-3">الطالب</th>
+                          <th className="text-right p-3">الرقم التسلسلي</th>
+                          <th className="text-right p-3">الموبايل</th>
+                          <th className="text-right p-3">الرسوم</th>
+                          <th className="text-right p-3">المدفوع</th>
+                          <th className="text-right p-3">حالة الدفع</th>
+                          <th className="text-center p-3">QR Code</th>
+                          <th className="text-center p-3">إجراءات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredRegistrations.map((registration) => (
+                          <tr key={registration.id} className="border-t">
+                            <td className="p-3 text-center">
+                              <Checkbox
+                                checked={selectedStudents.has(registration.id)}
+                                onCheckedChange={(checked) => handleStudentSelection(registration.id, checked as boolean)}
+                              />
+                            </td>
+                            <td 
+                              className="p-3 font-medium cursor-pointer hover:text-primary"
+                              onClick={() => setViewingStudentDetails(registration)}
+                            >
+                              {registration.student?.name}
+                            </td>
+                            <td className="p-3">{registration.student?.serial_number}</td>
+                            <td className="p-3">{registration.student?.mobile_phone}</td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  className="w-28"
+                                  type="number"
+                                  value={editingFees[registration.id] ?? registration.total_fees}
+                                  onChange={(e)=> setEditingFees(prev=> ({...prev, [registration.id]: Number(e.target.value) || 0}))}
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updateStudentFeeMutation.mutate({ id: registration.id, fees: editingFees[registration.id] ?? registration.total_fees })}
+                                >حفظ</Button>
+                              </div>
+                            </td>
+                            <td className="p-3">{registration.paid_amount} جنيه</td>
+                            <td className="p-3">
+                              <Badge 
+                                variant={
+                                  registration.payment_status === 'paid' ? 'default' :
+                                  registration.payment_status === 'partial' ? 'secondary' : 'destructive'
+                                }
+                              >
+                                {registration.payment_status === 'paid' ? 'مدفوع' :
+                                 registration.payment_status === 'partial' ? 'جزئي' : 'غير مدفوع'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-center">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setQrCodeStudent(registration.student)}
+                                title="عرض QR Code"
+                              >
+                                <QrCode className="w-4 h-4" />
+                              </Button>
+                            </td>
+                            <td className="p-3 text-center">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeStudentMutation.mutate(registration.id)}
+                              >
+                                حذف
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="lg:hidden space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Checkbox
+                        checked={selectedStudents.size === filteredRegistrations.length && filteredRegistrations.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                      <span className="text-sm text-muted-foreground">تحديد الكل</span>
+                      {selectedStudents.size > 0 && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={handleBulkRemove}
+                          className="mr-auto"
+                        >
+                          <Trash2 className="h-4 w-4 ml-2" />
+                          حذف المحدد ({selectedStudents.size})
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {filteredRegistrations.map((registration) => (
+                      <Card key={registration.id} className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
                             <Checkbox
                               checked={selectedStudents.has(registration.id)}
                               onCheckedChange={(checked) => handleStudentSelection(registration.id, checked as boolean)}
                             />
-                          </td>
-                          <td 
-                            className="p-3 font-medium cursor-pointer hover:text-primary"
-                            onClick={() => setViewingStudentDetails(registration)}
-                          >
-                            {registration.student?.name}
-                          </td>
-                          <td className="p-3">{registration.student?.serial_number}</td>
-                          <td className="p-3">{registration.student?.mobile_phone}</td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <Input
-                                className="w-28"
-                                type="number"
-                                value={editingFees[registration.id] ?? registration.total_fees}
-                                onChange={(e)=> setEditingFees(prev=> ({...prev, [registration.id]: Number(e.target.value) || 0}))}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateStudentFeeMutation.mutate({ id: registration.id, fees: editingFees[registration.id] ?? registration.total_fees })}
-                              >حفظ</Button>
+                            <div>
+                              <h3 
+                                className="font-semibold cursor-pointer hover:text-primary"
+                                onClick={() => setViewingStudentDetails(registration)}
+                              >
+                                {registration.student?.name}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {registration.student?.mobile_phone}
+                              </p>
                             </div>
-                          </td>
-                          <td className="p-3">{registration.paid_amount} جنيه</td>
-                          <td className="p-3">
-                            <Badge 
-                              variant={
-                                registration.payment_status === 'paid' ? 'default' :
-                                registration.payment_status === 'partial' ? 'secondary' : 'destructive'
-                              }
-                            >
-                              {registration.payment_status === 'paid' ? 'مدفوع' :
-                               registration.payment_status === 'partial' ? 'جزئي' : 'غير مدفوع'}
-                            </Badge>
-                          </td>
-                          <td className="p-3 text-center">
+                          </div>
+                          <Badge 
+                            variant={
+                              registration.payment_status === 'paid' ? 'default' :
+                              registration.payment_status === 'partial' ? 'secondary' : 'destructive'
+                            }
+                          >
+                            {registration.payment_status === 'paid' ? 'مدفوع' :
+                             registration.payment_status === 'partial' ? 'جزئي' : 'غير مدفوع'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                          <div>
+                            <span className="text-muted-foreground">الرقم التسلسلي:</span>
+                            <p className="font-medium">{registration.student?.serial_number}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">المدفوع:</span>
+                            <p className="font-medium">{registration.paid_amount} جنيه</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-3">
+                          <Label className="text-sm">الرسوم:</Label>
+                          <Input
+                            className="flex-1"
+                            type="number"
+                            value={editingFees[registration.id] ?? registration.total_fees}
+                            onChange={(e)=> setEditingFees(prev=> ({...prev, [registration.id]: Number(e.target.value) || 0}))}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateStudentFeeMutation.mutate({ id: registration.id, fees: editingFees[registration.id] ?? registration.total_fees })}
+                          >
+                            حفظ
+                          </Button>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <div className="flex gap-2">
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="outline"
                               onClick={() => setQrCodeStudent(registration.student)}
-                              title="عرض QR Code"
                             >
-                              <QrCode className="w-4 h-4" />
+                              <QrCode className="w-4 h-4 ml-2" />
+                              QR Code
                             </Button>
-                          </td>
-                          <td className="p-3 text-center">
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeStudentMutation.mutate(registration.id)}
-                            >
-                              حذف
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeStudentMutation.mutate(registration.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (

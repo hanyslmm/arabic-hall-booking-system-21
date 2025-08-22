@@ -208,6 +208,10 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
       } else {
         // Create new booking
         const { bookingsApi: bookingApi } = await import('@/api/bookings');
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        const currentUser = await supabase.auth.getUser();
+        
         targetBooking = await bookingApi.create({
           teacher_id: teacher.id,
           hall_id: selectedHall.id,
@@ -220,7 +224,8 @@ export function BulkUploadModal({ isOpen, onClose }: BulkUploadModalProps) {
           class_fees: 0,
           status: 'active' as const,
           class_code: `${teacher.name.substring(0,3)}-${classData.dayOfWeek}`,
-          is_custom_fee: false
+          is_custom_fee: false,
+          created_by: currentUser.data.user?.id || null,
         });
       }
 
