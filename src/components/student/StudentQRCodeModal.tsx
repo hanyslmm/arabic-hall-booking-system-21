@@ -63,11 +63,11 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: "CODE128",
-        width: 2.5,
-        height: 60,
+        width: 2,
+        height: 50,
         displayValue: true,
-        fontSize: 14,
-        margin: 2
+        fontSize: 10,
+        margin: 0
       });
     }
 
@@ -79,56 +79,41 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Barcode Label - ${student.serial_number}</title>
+        <title></title>
         <style>
-          body {
-            font-family: 'Courier New', monospace;
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          html, body {
             margin: 0;
             padding: 0;
             background: white;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
           }
           .label {
-            width: 60mm;
-            height: 90mm;
+            width: 50mm;
+            height: 25mm;
             border: none;
             padding: 0;
             margin: 0;
             background: white;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
-            box-sizing: border-box;
+            overflow: hidden;
           }
           .barcode {
-            max-width: 55mm;
-            max-height: 65mm;
+            width: 48mm;
+            height: auto;
             margin: 0;
-          }
-          .serial-text {
-            font-size: 10pt;
-            margin: 5mm 0 0 0;
-            font-weight: bold;
-            color: black;
-            max-width: 55mm;
-            word-break: break-all;
+            display: block;
           }
           @media print {
-            body { margin: 0; padding: 0; }
-            .label { margin: 0; border: none; }
-            @page { margin: 0; size: 60mm 90mm; }
+            @page { size: 50mm 25mm; margin: 0; }
+            html, body { margin: 0; padding: 0; }
           }
         </style>
       </head>
       <body>
         <div class="label">
           <img src="${barcodeDataURL}" alt="Barcode" class="barcode" />
-          <div class="serial-text">${student.serial_number}</div>
         </div>
       </body>
       </html>
