@@ -46,8 +46,8 @@ const StudentsPage = () => {
         page, 
         pageSize: PAGE_SIZE, 
         searchTerm: debouncedSearch || undefined,
-        sortBy: sortColumn,
-        sortOrder: sortDirection,
+        sortKey: sortColumn,
+        sortDirection: sortDirection,
       });
     },
     placeholderData: (previousData) => previousData,
@@ -374,9 +374,6 @@ const StudentsPage = () => {
           totalItems={total}
           currentPage={page}
           onPageChange={setPage}
-          onSort={handleSort}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
         />
 
         <AddStudentModal 
