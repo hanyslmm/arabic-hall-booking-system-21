@@ -84,7 +84,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
           lineColor: '#000000',
           background: '#ffffff',
           width: 2,
-          height: 220,        // Taller barcode (priority for scanning)
+          height: 110,        // Taller barcode (priority for scanning)
           displayValue: true, // Show serial number below
           fontSize: 16,       // Smaller text
           textMargin: 2,
