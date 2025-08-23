@@ -87,11 +87,8 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Barcode</title>
         <style>
           * { 
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact; 
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -99,56 +96,33 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
           html, body { 
             margin: 0; 
             padding: 0; 
-            background: #fff; 
+            background: white; 
             overflow: hidden;
-            width: 100%;
-            height: 100%;
-          }
-          body { 
-            width: ${labelWidthMm}mm; 
-            height: ${labelHeightMm}mm; 
-          }
-          .label {
             width: ${labelWidthMm}mm;
             height: ${labelHeightMm}mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
-            background: white;
-            padding: 1mm;
-            box-sizing: border-box;
           }
           .barcode {
-            width: ${labelWidthMm - 2}mm;  /* Fill entire width minus small margin */
-            height: ${labelHeightMm - 2}mm; /* Fill entire height minus small margin */
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
             display: block;
             margin: 0;
-            object-fit: contain;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
+            padding: 0;
+            object-fit: fill;
           }
           @media print {
             @page { 
               size: ${labelWidthMm}mm ${labelHeightMm}mm; 
               margin: 0; 
             }
-            html, body { 
-              margin: 0; 
-              padding: 0; 
-              overflow: hidden;
-            }
-            .label {
-              background: white !important;
+            * {
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
             }
           }
         </style>
       </head>
       <body>
-        <div class="label">
-          <img src="${barcodeDataURL}" alt="" class="barcode" />
-        </div>
+        <img src="${barcodeDataURL}" class="barcode" />
         <script>
           window.addEventListener('load', function() {
             setTimeout(function(){

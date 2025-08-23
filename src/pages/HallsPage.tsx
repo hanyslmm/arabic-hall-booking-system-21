@@ -10,6 +10,7 @@ import { Users, Calendar, Building } from "lucide-react";
 import { HallScheduleModal } from "@/components/hall/HallScheduleModal";
 import { formatShortArabicDate } from "@/utils/dateUtils";
 import { AddHallModal } from "@/components/hall/AddHallModal";
+import { GlobalHallSettingsModal } from "@/components/hall/GlobalHallSettingsModal";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -151,7 +152,12 @@ const HallsPage = () => {
               <Building className="h-5 w-5" />
               <span className="font-semibold">{halls?.length || 0} قاعة</span>
             </div>
-            {canManageData && <AddHallModal />}
+            {canManageData && (
+              <div className="flex items-center gap-2">
+                <GlobalHallSettingsModal />
+                <AddHallModal />
+              </div>
+            )}
           </div>
         </div>
 
