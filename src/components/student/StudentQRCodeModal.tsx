@@ -61,35 +61,37 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
   };
 
   const handlePrintBarcode = () => {
-    const printWindow = window.open('', '_blank', 'width=200,height=100');
+    const printWindow = window.open('', '_blank', 'width=400,height=200');
     if (!printWindow) {
       alert('Please allow pop-ups to print the barcode.');
       return;
     }
 
-    // Label dimensions in millimeters (50mm wide x 25mm tall -> landscape)
+    // **FIXED**: Proper horizontal label dimensions
+    // Standard label size: 50mm x 25mm (2:1 ratio) - LANDSCAPE orientation
     const labelWidthMm = 50;
     const labelHeightMm = 25;
-
-    // Create a canvas for the barcode image.
-    // **FIX**: The canvas aspect ratio MUST match the label aspect ratio.
-    // Label aspect ratio = 50 / 25 = 2.
-    // We'll use 600x300 pixels to maintain this 2:1 ratio for good quality.
+    
+    // **FIXED**: Canvas dimensions that maintain proper aspect ratio for horizontal layout
+    // Using higher resolution for better print quality while maintaining 2:1 ratio
     const canvas = document.createElement('canvas');
-    canvas.width = 600; // Matches the aspect ratio (600/300 = 2)
-    canvas.height = 300;
+    canvas.width = 800;  // Width is larger than height for horizontal layout
+    canvas.height = 400; // Maintains 2:1 aspect ratio (800:400 = 2:1)
 
     const JsBarcode = window.JsBarcode;
     if (JsBarcode) {
       try {
+        // **FIXED**: Barcode configuration optimized for horizontal printing
         JsBarcode(canvas, student.serial_number, {
           format: 'CODE128',
           lineColor: '#000000',
           background: '#ffffff',
-          width: 3,           // Bar width. Adjust as needed for scanner readability.
-          height: 250,        // Bar height, leaving some margin within the 300px canvas height.
-          displayValue: false, // Do not show the number below the barcode.
-          margin: 10          // Small margin around the barcode inside the canvas.
+          width: 2,            // **FIXED**: Reduced bar width for horizontal fit
+          height: 320,         // **FIXED**: Adjusted height to fit within canvas with margin
+          displayValue: true,  // **FIXED**: Show the serial number below barcode
+          fontSize: 16,        // **FIXED**: Added font size for readable text
+          textMargin: 8,       // **FIXED**: Margin between barcode and text
+          margin: 20           // **FIXED**: Adequate margin for horizontal layout
         });
       } catch (e) {
         console.error("JsBarcode error:", e);
@@ -98,69 +100,103 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         return;
       }
     } else {
-        console.error("JsBarcode library not found.");
-        printWindow.close();
-        alert("Barcode generation library is not available.");
-        return;
+      console.error("JsBarcode library not found.");
+      printWindow.close();
+      alert("Barcode generation library is not available.");
+      return;
     }
 
     const barcodeDataURL = canvas.toDataURL('image/png');
 
-    // Create the HTML content for the new window.
+    // **FIXED**: Complete overhaul of print styles for proper horizontal orientation
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Print Barcode</title>
+        <title>Print Horizontal Barcode</title>
         <style>
-          /* This CSS is critical for correct label printing */
+          /* **FIXED**: Critical CSS for horizontal label printing */
           @page {
-            /* Set the page size to match the physical label */
+            /* Horizontal orientation: width > height */
             size: ${labelWidthMm}mm ${labelHeightMm}mm;
             margin: 0;
+            padding: 0;
+          }
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
           }
           
           html, body {
-            /* Ensure the body fills the entire page without extra space */
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .label-container {
+            /* **FIXED**: Container that enforces horizontal layout */
             width: 100%;
             height: 100%;
-            margin: 0;
-            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: white;
-            overflow: hidden; /* Hide any potential scrollbars */
           }
           
           .barcode-img {
-            /* **FIX**: This forces the image to stretch to the exact dimensions of the body,
-              which is sized to the label. This resolves the orientation issue.
-              Using 'fill' instead of 'cover' prevents incorrect scaling.
-            */
-            width: 100%;
-            height: 100%;
+            /* **FIXED**: Image sizing for horizontal labels */
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain; /* **FIXED**: Changed from 'fill' to 'contain' */
             display: block;
-            object-fit: fill; 
           }
           
           @media print {
-            /* Ensures colors and background are printed correctly */
+            @page {
+              size: ${labelWidthMm}mm ${labelHeightMm}mm;
+              margin: 0;
+            }
+            
             * {
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            html, body {
+              width: ${labelWidthMm}mm !important;
+              height: ${labelHeightMm}mm !important;
+            }
+            
+            .label-container {
+              width: ${labelWidthMm}mm !important;
+              height: ${labelHeightMm}mm !important;
             }
           }
         </style>
       </head>
       <body>
-        <img src="${barcodeDataURL}" class="barcode-img" />
+        <div class="label-container">
+          <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode" />
+        </div>
         <script>
-          // Automatically trigger print and then close the window
+          // **FIXED**: Improved print handling
           window.addEventListener('load', function() {
+            // Small delay to ensure image is fully loaded
             setTimeout(function() {
               window.print();
+              // Close window after printing (with longer delay for print dialog)
               setTimeout(function() { 
                 window.close(); 
-              }, 100);
-            }, 500); // Increased timeout slightly for stability
+              }, 1000);
+            }, 800);
           });
         <\/script>
       </body>
