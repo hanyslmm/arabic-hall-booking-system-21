@@ -74,7 +74,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     // Create canvas for barcode
     const canvas = document.createElement('canvas');
     canvas.width = 50; 
-    canvas.height = 100;
+    canvas.height = 25;
 
     const JsBarcode = window.JsBarcode;
     if (JsBarcode) {
