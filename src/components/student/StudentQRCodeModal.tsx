@@ -60,21 +60,21 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     const labelWidthMm = 50;   // 5cm width
     const labelHeightMm = 25;  // 2.5cm height
 
-    // Generate barcode in PORTRAIT orientation (tall), then rotate it
+    // Generate barcode directly in LANDSCAPE orientation to fit label
     const canvas = document.createElement('canvas');
     const JsBarcode = (window as any).JsBarcode;
     
-    // Create portrait barcode (height > width) to be rotated 90 degrees
-    canvas.width = 200;  // Will become height after rotation
-    canvas.height = 400; // Will become width after rotation
+    // Canvas dimensions for landscape barcode (wide format)
+    canvas.width = 500;  // Wide canvas for landscape barcode
+    canvas.height = 200; // Shorter height for landscape
 
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: 'CODE128',
         lineColor: '#000000',
         background: '#ffffff',
-        width: 2,           // Bar width
-        height: 350,        // Tall bars to fill label after rotation
+        width: 4,           // Thicker bars to fill width
+        height: 180,        // Full height minus small margin
         displayValue: false, // No text
         margin: 0,          // Zero margins
         textMargin: 0,      // No text margins
@@ -92,105 +92,53 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         <meta charset="UTF-8">
         <title></title>
         <style>
-          * { 
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            outline: none !important;
-            box-sizing: border-box !important;
+          @page { 
+            size: ${labelWidthMm}mm ${labelHeightMm}mm; 
+            margin: 0; 
           }
           
-          @page { 
-            size: ${labelWidthMm}mm ${labelHeightMm}mm !important; 
-            margin: 0 !important; 
-            padding: 0 !important;
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
           }
           
           html, body { 
-            margin: 0 !important; 
-            padding: 0 !important; 
-            background: white !important; 
-            overflow: hidden !important;
-            width: ${labelWidthMm}mm !important;
-            height: ${labelHeightMm}mm !important;
-            display: block !important;
-          }
-          
-          .barcode-container {
-            width: ${labelWidthMm}mm !important;
-            height: ${labelHeightMm}mm !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            overflow: hidden !important;
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
+            margin: 0;
+            padding: 0;
+            background: white;
+            overflow: hidden;
           }
           
           .barcode {
-            transform: rotate(90deg) !important;
-            transform-origin: center center !important;
-            width: ${labelHeightMm}mm !important; /* Swap dimensions for rotation */
-            height: ${labelWidthMm}mm !important;
-            display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            object-fit: contain !important;
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
+            display: block;
+            object-fit: cover;
+            margin: 0;
+            padding: 0;
           }
           
           @media print {
             * {
-              -webkit-print-color-adjust: exact !important; 
-              print-color-adjust: exact !important; 
-              color-adjust: exact !important;
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-            
-            html, body {
-              width: ${labelWidthMm}mm !important;
-              height: ${labelHeightMm}mm !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              background: white !important;
-            }
-            
-            .barcode-container {
-              width: ${labelWidthMm}mm !important;
-              height: ${labelHeightMm}mm !important;
-            }
-            
-            .barcode {
-              width: ${labelHeightMm}mm !important;
-              height: ${labelWidthMm}mm !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
           }
         </style>
       </head>
       <body>
-        <div class="barcode-container">
-          <img src="${barcodeDataURL}" class="barcode" alt="" />
-        </div>
+        <img src="${barcodeDataURL}" class="barcode" />
         <script>
-          // Remove all browser UI and headers
           window.addEventListener('load', function() {
-            // Hide all browser elements
-            document.documentElement.style.overflow = 'hidden';
-            document.body.style.overflow = 'hidden';
-            
             setTimeout(function(){
               window.print();
               setTimeout(function(){ 
                 window.close(); 
-              }, 50);
-            }, 100);
-          });
-          
-          // Prevent any default browser behavior
-          window.addEventListener('beforeprint', function() {
-            document.title = '';
+              }, 100);
+            }, 200);
           });
         <\/script>
       </body>
