@@ -61,37 +61,34 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
   };
 
   const handlePrintBarcode = () => {
-    const printWindow = window.open('', '_blank', 'width=400,height=200');
+    const printWindow = window.open('', '_blank', 'width=600,height=300');
     if (!printWindow) {
       alert('Please allow pop-ups to print the barcode.');
       return;
     }
 
-    // **FIXED**: Proper horizontal label dimensions
-    // Standard label size: 50mm x 25mm (2:1 ratio) - LANDSCAPE orientation
+    // Label dimensions: 50mm x 25mm (landscape/horizontal)
     const labelWidthMm = 50;
     const labelHeightMm = 25;
     
-    // **FIXED**: Canvas dimensions that maintain proper aspect ratio for horizontal layout
-    // Using higher resolution for better print quality while maintaining 2:1 ratio
+    // Create canvas with correct aspect ratio for landscape orientation
     const canvas = document.createElement('canvas');
-    canvas.width = 800;  // Width is larger than height for horizontal layout
-    canvas.height = 400; // Maintains 2:1 aspect ratio (800:400 = 2:1)
+    canvas.width = 500;  // Landscape: width > height
+    canvas.height = 250; // Maintains 2:1 ratio (50:25)
 
     const JsBarcode = window.JsBarcode;
     if (JsBarcode) {
       try {
-        // **FIXED**: Barcode configuration optimized for horizontal printing
         JsBarcode(canvas, student.serial_number, {
           format: 'CODE128',
           lineColor: '#000000',
           background: '#ffffff',
-          width: 2,            // **FIXED**: Reduced bar width for horizontal fit
-          height: 320,         // **FIXED**: Adjusted height to fit within canvas with margin
-          displayValue: true,  // **FIXED**: Show the serial number below barcode
-          fontSize: 16,        // **FIXED**: Added font size for readable text
-          textMargin: 8,       // **FIXED**: Margin between barcode and text
-          margin: 20           // **FIXED**: Adequate margin for horizontal layout
+          width: 2,
+          height: 180,        // Leaves space for margins and text
+          displayValue: true,
+          fontSize: 14,
+          textMargin: 5,
+          margin: 10
         });
       } catch (e) {
         console.error("JsBarcode error:", e);
@@ -108,19 +105,18 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
 
     const barcodeDataURL = canvas.toDataURL('image/png');
 
-    // **FIXED**: Complete overhaul of print styles for proper horizontal orientation
+    // Print content with landscape orientation
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Print Horizontal Barcode</title>
+        <title>Print Barcode Label</title>
         <style>
-          /* **FIXED**: Critical CSS for horizontal label printing */
           @page {
-            /* Horizontal orientation: width > height */
-            size: ${labelWidthMm}mm ${labelHeightMm}mm;
+            size: landscape;
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
             margin: 0;
-            padding: 0;
           }
           
           * {
@@ -130,38 +126,26 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
           }
           
           html, body {
-            width: 100vw;
-            height: 100vh;
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: white;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          
-          .label-container {
-            /* **FIXED**: Container that enforces horizontal layout */
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
           }
           
           .barcode-img {
-            /* **FIXED**: Image sizing for horizontal labels */
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain; /* **FIXED**: Changed from 'fill' to 'contain' */
-            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
           }
           
           @media print {
             @page {
-              size: ${labelWidthMm}mm ${labelHeightMm}mm;
+              size: landscape;
+              width: ${labelWidthMm}mm;
+              height: ${labelHeightMm}mm;
               margin: 0;
             }
             
@@ -174,29 +158,19 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
               width: ${labelWidthMm}mm !important;
               height: ${labelHeightMm}mm !important;
             }
-            
-            .label-container {
-              width: ${labelWidthMm}mm !important;
-              height: ${labelHeightMm}mm !important;
-            }
           }
         </style>
       </head>
       <body>
-        <div class="label-container">
-          <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode" />
-        </div>
+        <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode" />
         <script>
-          // **FIXED**: Improved print handling
           window.addEventListener('load', function() {
-            // Small delay to ensure image is fully loaded
             setTimeout(function() {
               window.print();
-              // Close window after printing (with longer delay for print dialog)
               setTimeout(function() { 
                 window.close(); 
-              }, 1000);
-            }, 800);
+              }, 500);
+            }, 300);
           });
         <\/script>
       </body>
