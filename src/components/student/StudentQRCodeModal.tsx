@@ -68,13 +68,13 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     }
 
     // Label dimensions: 50mm x 25mm (landscape)
-    const labelWidthMm = 12;
+    const labelWidthMm = 50;
     const labelHeightMm = 25;
 
     // Create canvas for barcode
     const canvas = document.createElement('canvas');
-    canvas.width = 50; 
-    canvas.height = 25;
+    canvas.width = 600; 
+    canvas.height = 300;
 
     const JsBarcode = window.JsBarcode;
     if (JsBarcode) {
