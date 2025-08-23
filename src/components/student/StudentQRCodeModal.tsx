@@ -6,6 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Download, Printer, QrCode, Maximize2 } from 'lucide-react';
 import { FullScreenQRModal } from './FullScreenQRModal';
 
+// JsBarcode is expected to be loaded via a <script> tag in your main HTML file
+declare global {
+  interface Window {
+    JsBarcode: any;
+  }
+}
+
 interface Student {
   id: string;
   name: string;
@@ -40,88 +47,102 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     canvas.height = 400;
 
     img.onload = () => {
-      ctx?.drawImage(img, 0, 0, 400, 400);
-      const pngFile = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.download = `student-qr-${student.serial_number}.png`;
-      downloadLink.href = pngFile;
-      downloadLink.click();
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, 400, 400);
+        const pngFile = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.download = `student-qr-${student.serial_number}.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+      }
     };
 
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   };
 
   const handlePrintBarcode = () => {
-    // Create a new window for printing the barcode label (landscape 50mm x 25mm)
     const printWindow = window.open('', '_blank', 'width=200,height=100');
-    if (!printWindow) return;
+    if (!printWindow) {
+      alert('Please allow pop-ups to print the barcode.');
+      return;
+    }
 
-    // Target label size (landscape orientation)
-    const labelWidthMm = 25// 50;   // 5cm width
-    const labelHeightMm = 50 //25;  // 2.5cm height
+    // Label dimensions in millimeters (50mm wide x 25mm tall -> landscape)
+    const labelWidthMm = 50;
+    const labelHeightMm = 25;
 
-    // Generate barcode directly in LANDSCAPE orientation to fit label
+    // Create a canvas for the barcode image.
+    // **FIX**: The canvas aspect ratio MUST match the label aspect ratio.
+    // Label aspect ratio = 50 / 25 = 2.
+    // We'll use 600x300 pixels to maintain this 2:1 ratio for good quality.
     const canvas = document.createElement('canvas');
-    const JsBarcode = (window as any).JsBarcode;
-    
-    // Canvas dimensions for landscape barcode (wide format)
-    canvas.width = 500;  // Wide canvas for landscape barcode
-    canvas.height = 200; // Shorter height for landscape
+    canvas.width = 600; // Matches the aspect ratio (600/300 = 2)
+    canvas.height = 300;
 
+    const JsBarcode = window.JsBarcode;
     if (JsBarcode) {
-      JsBarcode(canvas, student.serial_number, {
-        format: 'CODE128',
-        lineColor: '#000000',
-        background: '#ffffff',
-        width: 4,           // Thicker bars to fill width
-        height: 180,        // Full height minus small margin
-        displayValue: false, // No text
-        margin: 0,          // Zero margins
-        textMargin: 0,      // No text margins
-        fontSize: 0,        // No font
-        textPosition: 'none' // No text position
-      });
+      try {
+        JsBarcode(canvas, student.serial_number, {
+          format: 'CODE128',
+          lineColor: '#000000',
+          background: '#ffffff',
+          width: 3,           // Bar width. Adjust as needed for scanner readability.
+          height: 250,        // Bar height, leaving some margin within the 300px canvas height.
+          displayValue: false, // Do not show the number below the barcode.
+          margin: 10          // Small margin around the barcode inside the canvas.
+        });
+      } catch (e) {
+        console.error("JsBarcode error:", e);
+        printWindow.close();
+        alert("Failed to generate barcode. The serial number might contain invalid characters.");
+        return;
+      }
+    } else {
+        console.error("JsBarcode library not found.");
+        printWindow.close();
+        alert("Barcode generation library is not available.");
+        return;
     }
 
     const barcodeDataURL = canvas.toDataURL('image/png');
 
+    // Create the HTML content for the new window.
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <meta charset="UTF-8">
-        <title></title>
+        <title>Print Barcode</title>
         <style>
-          @page { 
-            size: ${labelWidthMm}mm ${labelHeightMm}mm; 
-            margin: 0; 
-          }
-          
-          * {
+          /* This CSS is critical for correct label printing */
+          @page {
+            /* Set the page size to match the physical label */
+            size: ${labelWidthMm}mm ${labelHeightMm}mm;
             margin: 0;
-            padding: 0;
-            box-sizing: border-box;
           }
           
-          html, body { 
-            width: ${labelWidthMm}mm;
-            height: ${labelHeightMm}mm;
+          html, body {
+            /* Ensure the body fills the entire page without extra space */
+            width: 100%;
+            height: 100%;
             margin: 0;
             padding: 0;
             background: white;
-            overflow: hidden;
+            overflow: hidden; /* Hide any potential scrollbars */
           }
           
-          .barcode {
-            width: ${labelWidthMm}mm;
-            height: ${labelHeightMm}mm;
+          .barcode-img {
+            /* **FIX**: This forces the image to stretch to the exact dimensions of the body,
+              which is sized to the label. This resolves the orientation issue.
+              Using 'fill' instead of 'cover' prevents incorrect scaling.
+            */
+            width: 100%;
+            height: 100%;
             display: block;
-            object-fit: cover;
-            margin: 0;
-            padding: 0;
+            object-fit: fill; 
           }
           
           @media print {
+            /* Ensures colors and background are printed correctly */
             * {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
@@ -130,15 +151,16 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         </style>
       </head>
       <body>
-        <img src="${barcodeDataURL}" class="barcode" />
+        <img src="${barcodeDataURL}" class="barcode-img" />
         <script>
+          // Automatically trigger print and then close the window
           window.addEventListener('load', function() {
-            setTimeout(function(){
+            setTimeout(function() {
               window.print();
-              setTimeout(function(){ 
+              setTimeout(function() { 
                 window.close(); 
               }, 100);
-            }, 200);
+            }, 500); // Increased timeout slightly for stability
           });
         <\/script>
       </body>
