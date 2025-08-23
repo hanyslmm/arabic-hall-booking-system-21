@@ -57,8 +57,8 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     if (!printWindow) return;
 
     // Target label size (landscape orientation)
-    const labelWidthMm = 50;   // 5cm width
-    const labelHeightMm = 25;  // 2.5cm height
+    const labelWidthMm = 25// 50;   // 5cm width
+    const labelHeightMm = 50 //25;  // 2.5cm height
 
     // Generate barcode directly in LANDSCAPE orientation to fit label
     const canvas = document.createElement('canvas');
