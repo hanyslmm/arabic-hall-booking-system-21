@@ -53,34 +53,33 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
 
   const handlePrintBarcode = () => {
     // Create a new window for printing the barcode label (landscape 50mm x 25mm)
-    const printWindow = window.open('', '_blank', 'width=280,height=160');
+    const printWindow = window.open('', '_blank', 'width=200,height=100');
     if (!printWindow) return;
 
     // Target label size (landscape orientation)
     const labelWidthMm = 50;   // 5cm width
     const labelHeightMm = 25;  // 2.5cm height
 
-    // Generate barcode using JsBarcode to fill entire label
+    // Generate barcode in PORTRAIT orientation (tall), then rotate it
     const canvas = document.createElement('canvas');
     const JsBarcode = (window as any).JsBarcode;
     
-    // Set canvas to match label dimensions at high DPI (300 DPI)
-    const dpi = 300;
-    const widthPx = Math.round((labelWidthMm / 25.4) * dpi);  // Convert mm to pixels at 300 DPI
-    const heightPx = Math.round((labelHeightMm / 25.4) * dpi); // Convert mm to pixels at 300 DPI
-    
-    canvas.width = widthPx;   // ~590px for 50mm at 300 DPI
-    canvas.height = heightPx; // ~295px for 25mm at 300 DPI
+    // Create portrait barcode (height > width) to be rotated 90 degrees
+    canvas.width = 200;  // Will become height after rotation
+    canvas.height = 400; // Will become width after rotation
 
     if (JsBarcode) {
       JsBarcode(canvas, student.serial_number, {
         format: 'CODE128',
         lineColor: '#000000',
         background: '#ffffff',
-        width: Math.floor(widthPx / 120), // Calculate bar width to fill canvas width
-        height: heightPx - 20,           // Fill almost entire height, leaving small margin
-        displayValue: false,             // No text under barcode
-        margin: 0,                       // No margins - fill entire space
+        width: 2,           // Bar width
+        height: 350,        // Tall bars to fill label after rotation
+        displayValue: false, // No text
+        margin: 0,          // Zero margins
+        textMargin: 0,      // No text margins
+        fontSize: 0,        // No font
+        textPosition: 'none' // No text position
       });
     }
 
@@ -91,67 +90,107 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
       <html>
       <head>
         <meta charset="UTF-8">
+        <title></title>
         <style>
           * { 
             margin: 0 !important;
             padding: 0 !important;
-            border: 0 !important;
-            box-sizing: border-box;
+            border: none !important;
+            outline: none !important;
+            box-sizing: border-box !important;
           }
-          html, body { 
-            margin: 0 !important; 
-            padding: 0 !important; 
-            background: white !important; 
-            overflow: hidden;
-            width: ${labelWidthMm}mm !important;
-            height: ${labelHeightMm}mm !important;
-          }
-          .barcode {
-            width: ${labelWidthMm}mm !important;
-            height: ${labelHeightMm}mm !important;
-            display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 0 !important;
-            object-fit: fill !important;
-            max-width: none !important;
-            max-height: none !important;
-          }
+          
           @page { 
             size: ${labelWidthMm}mm ${labelHeightMm}mm !important; 
             margin: 0 !important; 
             padding: 0 !important;
           }
+          
+          html, body { 
+            margin: 0 !important; 
+            padding: 0 !important; 
+            background: white !important; 
+            overflow: hidden !important;
+            width: ${labelWidthMm}mm !important;
+            height: ${labelHeightMm}mm !important;
+            display: block !important;
+          }
+          
+          .barcode-container {
+            width: ${labelWidthMm}mm !important;
+            height: ${labelHeightMm}mm !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
+          }
+          
+          .barcode {
+            transform: rotate(90deg) !important;
+            transform-origin: center center !important;
+            width: ${labelHeightMm}mm !important; /* Swap dimensions for rotation */
+            height: ${labelWidthMm}mm !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            object-fit: contain !important;
+          }
+          
           @media print {
             * {
               -webkit-print-color-adjust: exact !important; 
               print-color-adjust: exact !important; 
+              color-adjust: exact !important;
               margin: 0 !important;
               padding: 0 !important;
             }
+            
             html, body {
               width: ${labelWidthMm}mm !important;
               height: ${labelHeightMm}mm !important;
               margin: 0 !important;
               padding: 0 !important;
+              background: white !important;
             }
-            .barcode {
+            
+            .barcode-container {
               width: ${labelWidthMm}mm !important;
               height: ${labelHeightMm}mm !important;
+            }
+            
+            .barcode {
+              width: ${labelHeightMm}mm !important;
+              height: ${labelWidthMm}mm !important;
             }
           }
         </style>
       </head>
       <body>
-        <img src="${barcodeDataURL}" class="barcode" alt="Barcode" />
+        <div class="barcode-container">
+          <img src="${barcodeDataURL}" class="barcode" alt="" />
+        </div>
         <script>
+          // Remove all browser UI and headers
           window.addEventListener('load', function() {
+            // Hide all browser elements
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+            
             setTimeout(function(){
               window.print();
               setTimeout(function(){ 
                 window.close(); 
-              }, 100);
-            }, 300);
+              }, 50);
+            }, 100);
+          });
+          
+          // Prevent any default browser behavior
+          window.addEventListener('beforeprint', function() {
+            document.title = '';
           });
         <\/script>
       </body>
