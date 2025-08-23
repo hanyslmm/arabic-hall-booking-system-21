@@ -68,7 +68,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     }
 
     // Label dimensions: 50mm x 25mm (landscape)
-    const labelWidthMm = 50;
+    const labelWidthMm = 12;
     const labelHeightMm = 25;
 
     // Create canvas for barcode
@@ -84,7 +84,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
           lineColor: '#000000',
           background: '#ffffff',
           width: 2,
-          height: 110,        // Taller barcode (priority for scanning)
+          height: 220,        // Taller barcode (priority for scanning)
           displayValue: true, // Show serial number below
           fontSize: 16,       // Smaller text
           textMargin: 2,
