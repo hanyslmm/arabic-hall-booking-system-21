@@ -19,12 +19,11 @@ const handlePrintBarcode = () => {
         format: 'CODE128',
         lineColor: "#000000",
         background: "#ffffff",
-        width: 3,
-        height: 160,       // Barcode height (leave room for text)
-        displayValue: true, // Show serial number text
-        fontSize: 40,      // Serial number font size
-        fontOptions: "bold", // Make text bolder
-        textMargin: 5,     // Space between barcode and text
+        width: 3,             // narrow bar width for better readability
+        height: 220,          // barcode taller (priority to scanning)
+        displayValue: true,   // show serial number
+        fontSize: 18,         // small text under barcode
+        textMargin: 2,        // minimal gap between barcode & text
         margin: 5
       });
     } catch (e) {
@@ -63,7 +62,7 @@ const handlePrintBarcode = () => {
           height: 100%;
           display: block;
           object-fit: contain;
-          transform: rotate(90deg); /* Horizontal orientation */
+          transform: rotate(90deg); /* force horizontal */
           transform-origin: center;
         }
         @media print {
