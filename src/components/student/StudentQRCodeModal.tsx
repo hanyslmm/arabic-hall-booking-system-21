@@ -74,7 +74,7 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     // Create canvas for barcode
     const canvas = document.createElement('canvas');
     canvas.width = 50; 
-    canvas.height = 300;
+    canvas.height = 100;
 
     const JsBarcode = window.JsBarcode;
     if (JsBarcode) {
@@ -83,8 +83,8 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
           format: 'CODE128',
           lineColor: '#000000',
           background: '#ffffff',
-          width: 50,
-          height: 25,        // Taller barcode (priority for scanning)
+          width: 2,
+          height: 220,        // Taller barcode (priority for scanning)
           displayValue: true, // Show serial number below
           fontSize: 16,       // Smaller text
           textMargin: 2,
