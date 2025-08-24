@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
+import { formatCurrency } from "@/utils/currency";
 
 export default function MonthlyReportsPage() {
   const { profile } = useAuth();
@@ -87,13 +88,7 @@ export default function MonthlyReportsPage() {
     }
   });
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
-      style: 'currency',
-      currency: 'SAR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrencyLocal = (amount: number) => formatCurrency(amount);
 
   const monthlyProfit = monthlyIncome - monthlyExpenses;
 
@@ -130,9 +125,9 @@ export default function MonthlyReportsPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(monthlyIncome)}
-              </div>
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrencyLocal(monthlyIncome)}
+            </div>
               <p className="text-xs text-muted-foreground">
                 إجمالي المبلغ المحصل
               </p>
@@ -145,9 +140,9 @@ export default function MonthlyReportsPage() {
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {formatCurrency(monthlyExpenses)}
-              </div>
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrencyLocal(monthlyExpenses)}
+            </div>
               <p className="text-xs text-muted-foreground">
                 إجمالي المصروفات
               </p>
@@ -160,9 +155,9 @@ export default function MonthlyReportsPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${monthlyProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(monthlyProfit)}
-              </div>
+            <div className={`text-2xl font-bold ${monthlyProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrencyLocal(monthlyProfit)}
+            </div>
               <p className="text-xs text-muted-foreground">
                 الإيرادات - المصروفات
               </p>
@@ -197,15 +192,15 @@ export default function MonthlyReportsPage() {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">إجمالي المبلغ المستحق</span>
-                <span className="font-medium">{formatCurrency(monthlyIncome * 1.2)}</span>
+                <span className="font-medium">{formatCurrencyLocal(monthlyIncome * 1.2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">المبلغ المحصل</span>
-                <span className="font-medium text-green-600">{formatCurrency(monthlyIncome)}</span>
+                <span className="font-medium text-green-600">{formatCurrencyLocal(monthlyIncome)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">المبلغ المتبقي</span>
-                <span className="font-medium text-orange-600">{formatCurrency(monthlyIncome * 0.2)}</span>
+                <span className="font-medium text-orange-600">{formatCurrencyLocal(monthlyIncome * 0.2)}</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
                 <div 

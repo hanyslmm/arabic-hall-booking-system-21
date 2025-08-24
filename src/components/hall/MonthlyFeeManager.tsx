@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { DollarSign, Calendar, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { formatCurrency } from "@/utils/currency";
 import { toast } from "sonner";
 
 export function MonthlyFeeManager() {
@@ -139,15 +140,15 @@ export function MonthlyFeeManager() {
 
           {selectedTeacherData && (
             <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-              <div>
-                <p className="font-medium">{selectedTeacherData.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  الرسوم الحالية: {selectedTeacherData.default_class_fee} ريال
-                </p>
-              </div>
-              <Badge variant="secondary">
-                {selectedTeacherData.default_class_fee || 0} ريال
-              </Badge>
+                <div>
+                  <p className="font-medium">{selectedTeacherData.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    الرسوم الحالية: {formatCurrency(selectedTeacherData.default_class_fee || 0)}
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  {formatCurrency(selectedTeacherData.default_class_fee || 0)}
+                </Badge>
             </div>
           )}
 
@@ -182,7 +183,7 @@ export function MonthlyFeeManager() {
                       </p>
                     </div>
                     <Badge variant="outline">
-                      {booking.class_fees || 0} ريال
+                      {formatCurrency(booking.class_fees || 0)}
                     </Badge>
                   </div>
                 ))}

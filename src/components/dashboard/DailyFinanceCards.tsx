@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { formatCurrency } from "@/utils/currency";
 
 interface DailyFinanceCardsProps {
   selectedDate?: string;
@@ -49,14 +48,6 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   if (!canViewFinance) {
     return null;
   }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
-      style: 'currency',
-      currency: 'SAR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const dailyProfit = dailyIncome - dailyExpenses;
 
@@ -113,7 +104,6 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }

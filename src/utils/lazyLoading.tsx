@@ -13,6 +13,8 @@ export const LazyStudentRegistrationsPage = lazy(() => import('@/pages/StudentRe
 export const LazyClassManagementPage = lazy(() => import('@/pages/ClassManagementPage'));
 export const LazyAttendanceManagementPage = lazy(() => import('@/pages/AttendanceManagementPage'));
 export const LazyMonthlyReportsPage = lazy(() => import('@/pages/MonthlyReportsPage'));
+export const LazyMonthlyFeeManager = lazy(() => import('@/pages/MonthlyFeeManagerPage'));
+export const LazyStudentRelocationManager = lazy(() => import('@/pages/StudentRelocationPage'));
 export const LazyClassFinancialReportsPage = lazy(() => import('@/pages/ClassFinancialReportsPage'));
 export const LazyAdminPrivilegesPage = lazy(() => import('@/pages/AdminPrivilegesPage'));
 export const LazyDailyExpensesPage = lazy(() => import('@/pages/DailyExpensesPage'));

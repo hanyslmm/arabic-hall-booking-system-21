@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '@/api/dashboard';
+import { formatCurrency } from '@/utils/currency';
 
 interface StatsCardsProps {
   selectedMonth: number; // 1-12
@@ -18,11 +19,6 @@ const StatsCards = ({ selectedMonth, selectedYear, dateRange }: StatsCardsProps)
     queryFn: () => dashboardApi.getFinancialSummary(selectedMonth, selectedYear),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-
-  const formatCurrency = (value: number) => {
-    // Use English digits formatting and append Arabic currency label for consistency with reports page
-    return `${Number(value || 0).toLocaleString('en-EG')} جنيه`;
-  };
 
   if (isLoading) {
     return (

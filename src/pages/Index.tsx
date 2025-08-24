@@ -1,26 +1,22 @@
-import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ReceptionistDashboard } from "@/components/receptionist/ReceptionistDashboard";
 import { DailyFinanceCards } from "@/components/dashboard/DailyFinanceCards";
-import { UserPermissionsDebug } from "@/components/debug/UserPermissionsDebug";
 
 export default function Index() {
   const { profile } = useAuth();
   
-  const isAdmin = profile?.role === 'ADMIN'; // Fixed: use 'role' instead of 'user_role'
-  const isSpaceManager = profile?.role === 'ADMIN'; // Simplified for current schema
-  const canViewFinance = isAdmin || isSpaceManager;
+  const isAdmin = profile?.role === 'admin';
+  const canViewFinance = isAdmin || profile?.role === 'manager';
 
   return (
     <div className="min-h-screen bg-background">
-      <UserPermissionsDebug />
       {isAdmin ? (
         <div className="space-y-6">
           <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
           <AdminDashboard />
         </div>
-      ) : isSpaceManager ? (
+      ) : canViewFinance ? (
         <div className="space-y-6">
           <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
           <ReceptionistDashboard />
