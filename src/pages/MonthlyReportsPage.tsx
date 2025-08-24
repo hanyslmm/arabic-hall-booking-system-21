@@ -244,5 +244,3 @@ export default function MonthlyReportsPage() {
     </UnifiedLayout>
   );
 }
-
-export default MonthlyReportsPage;
