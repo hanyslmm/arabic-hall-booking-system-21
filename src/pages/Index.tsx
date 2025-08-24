@@ -17,12 +17,12 @@ export default function Index() {
       <UserPermissionsDebug />
       {isAdmin ? (
         <div className="space-y-6">
-          <DailyFinanceCards />
+          <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
           <AdminDashboard />
         </div>
       ) : isSpaceManager ? (
         <div className="space-y-6">
-          <DailyFinanceCards />
+          <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
           <ReceptionistDashboard />
         </div>
       ) : (

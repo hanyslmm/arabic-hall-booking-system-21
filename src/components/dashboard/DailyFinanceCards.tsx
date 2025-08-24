@@ -12,7 +12,6 @@ interface DailyFinanceCardsProps {
 
 export function DailyFinanceCards({ selectedDate = new Date().toISOString().split('T')[0] }: DailyFinanceCardsProps) {
   const { profile } = useAuth();
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   
   const isAdmin = profile?.role === 'admin';
   const canViewFinance = isAdmin || profile?.role === 'manager';
@@ -35,38 +34,16 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   const { data: dailyExpenses = 0 } = useQuery({
     queryKey: ['daily-expenses', selectedDate],
     queryFn: async () => {
-      // No expenses table in simplified schema - return 0
-      return 0;
-    },
-    enabled: canViewFinance
-  });
-
-  // For monthly view (admin only)
-  const { data: monthlyIncome = 0 } = useQuery({
-    queryKey: ['monthly-income', filterMonth],
-    queryFn: async () => {
-      const startDate = `${filterMonth}-01`;
-      const endDate = `${filterMonth}-31`;
-      
+      const startDate = selectedDate;
       const { data, error } = await supabase
-        .from('payment_records')
+        .from('expenses')
         .select('amount')
-        .gte('payment_date', startDate)
-        .lte('payment_date', endDate);
+        .eq('date', startDate);
       
       if (error) throw error;
       return data.reduce((sum, record) => sum + Number(record.amount), 0);
     },
-    enabled: isAdmin
-  });
-
-  const { data: monthlyExpenses = 0 } = useQuery({
-    queryKey: ['monthly-expenses', filterMonth],
-    queryFn: async () => {
-      // No expenses table in simplified schema - return 0
-      return 0;
-    },
-    enabled: isAdmin
+    enabled: canViewFinance
   });
 
   if (!canViewFinance) {
@@ -82,33 +59,12 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   };
 
   const dailyProfit = dailyIncome - dailyExpenses;
-  const monthlyProfit = monthlyIncome - monthlyExpenses;
 
   return (
     <div className="space-y-4">
-      {isAdmin && (
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">الملخص المالي</h2>
-          <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => {
-                const date = new Date();
-                date.setMonth(date.getMonth() - i);
-                const monthValue = date.toISOString().slice(0, 7);
-                const monthName = date.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' });
-                return (
-                  <SelectItem key={monthValue} value={monthValue}>
-                    {monthName}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">الملخص المالي اليومي</h2>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Daily Cards */}
@@ -158,55 +114,6 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
         </Card>
       </div>
 
-      {/* Monthly Cards (Admin only) */}
-      {isAdmin && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <Card className="border-blue-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الإيرادات الشهرية</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(monthlyIncome)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {new Date(filterMonth).toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' })}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-orange-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">المصروفات الشهرية</CardTitle>
-              <TrendingDown className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {formatCurrency(monthlyExpenses)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {new Date(filterMonth).toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' })}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-purple-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الربح الشهري</CardTitle>
-              <DollarSign className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${monthlyProfit >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
-                {formatCurrency(monthlyProfit)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                صافي الربح الشهري
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
