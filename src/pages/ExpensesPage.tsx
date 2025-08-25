@@ -176,7 +176,7 @@ export default function ExpensesPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return `${Number(amount || 0).toLocaleString('en-EG')} جنيه`;
+    return `${Number(amount || 0).toLocaleString('en-US')} LE`;
   };
 
   const getPaymentMethodLabel = (method: string) => {
@@ -407,7 +407,7 @@ export default function ExpensesPage() {
                 </Select>
               </div>
               <div>
-                <Label>المبلغ (جنيه) *</Label>
+                <Label>المبلغ (LE) *</Label>
                 <Input
                   type="number"
                   min="0"
