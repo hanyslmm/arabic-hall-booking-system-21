@@ -2,22 +2,20 @@
  * Centralized currency formatting utilities for consistent display across the app
  */
 
-export const formatCurrency = (amount: number, currency: 'SAR' | 'EGP' = 'SAR'): string => {
+export const formatCurrency = (amount: number, currency: 'SAR' | 'EGP' = 'EGP'): string => {
   const numericAmount = Number(amount || 0);
   
   switch (currency) {
     case 'SAR':
-      return new Intl.NumberFormat('ar-SA', {
-        style: 'currency',
-        currency: 'SAR',
+      return new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 0,
-      }).format(numericAmount);
+      }).format(numericAmount) + ' ر.س';
       
     case 'EGP':
-      return `${numericAmount.toLocaleString('en-EG')} جنيه`;
+      return `${numericAmount.toLocaleString('en-US')} LE`;
       
     default:
-      return numericAmount.toLocaleString();
+      return numericAmount.toLocaleString('en-US');
   }
 };
 

@@ -129,16 +129,16 @@ const defaultNavigation: NavigationGroup[] = [
     ],
   },
   {
-    title: "التقارير المالية",
+    title: "التقارير",
     items: [
       {
-        title: "التقارير",
+        title: "التقارير المالية",
         url: "/reports",
         icon: BookOpen,
         description: "عرض التقارير المالية",
       },
       {
-        title: "إدارة المصروفات",
+        title: "ادارة المصروفات",
         url: "/expenses",
         icon: FileText,
         description: "إدارة وتتبع المصروفات",
