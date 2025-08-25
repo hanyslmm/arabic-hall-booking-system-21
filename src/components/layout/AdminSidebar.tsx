@@ -218,15 +218,6 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, isAdmin, isOwner, canManageUsers, canManageData } = useAuth();
-
-  // Debug permissions
-  console.log("AdminSidebar Debug:", {
-    profile: profile,
-    isAdmin,
-    canManageData,
-    role: profile?.role,
-    shouldShowExpenses: isAdmin || canManageData
-  });
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const navGroups = navigation ?? defaultNavigation;
