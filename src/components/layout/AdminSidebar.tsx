@@ -383,13 +383,13 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
             <div className="space-y-1">
               {group.items
                 .filter((item) => {
-                  // Show expenses pages for admin roles only
+                  // Show expenses pages for admin and manager roles
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {
-                    return profile?.role === 'admin';
+                    return isAdmin || canManageData;
                   }
                   // Show audit logs for admin only
                   if (item.url === '/audit-logs') {
-                    return profile?.role === 'admin';
+                    return isAdmin;
                   }
                   return true;
                 })
