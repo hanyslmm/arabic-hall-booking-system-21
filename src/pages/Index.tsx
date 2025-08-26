@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ReceptionistDashboard } from "@/components/receptionist/ReceptionistDashboard";
 import { DailyFinanceCards } from "@/components/dashboard/DailyFinanceCards";
+import { QuickExpenseButton } from "@/components/dashboard/QuickExpenseButton";
 
 export default function Index() {
   const { profile } = useAuth();
@@ -14,6 +15,9 @@ export default function Index() {
       {isAdmin ? (
         <div className="space-y-6">
           <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <QuickExpenseButton />
+          </div>
           <AdminDashboard />
         </div>
       ) : canViewFinance ? (

@@ -144,6 +144,12 @@ const defaultNavigation: NavigationGroup[] = [
         description: "إدارة وتتبع المصروفات",
       },
       {
+        title: "المصروفات اليومية",
+        url: "/daily-expenses",
+        icon: FileText,
+        description: "إضافة وعرض المصروفات اليومية",
+      },
+      {
         title: "تقارير المجموعات",
         url: "/financial-reports",
         icon: BookOpen,

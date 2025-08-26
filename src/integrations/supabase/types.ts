@@ -402,6 +402,44 @@ export type Database = {
         }
         Relationships: []
       }
+      student_accounts: {
+        Row: {
+          auth_user_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          student_id: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          student_id: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          student_id?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_accounts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_registrations: {
         Row: {
           booking_id: string
@@ -697,6 +735,15 @@ export type Database = {
       get_monthly_expenses: {
         Args: { p_month: number; p_year: number }
         Returns: number
+      }
+      get_student_dashboard_data: {
+        Args: { student_auth_id: string }
+        Returns: {
+          attendance_summary: Json
+          qr_code_data: Json
+          registrations: Json
+          student_info: Json
+        }[]
       }
       get_teacher_statistics_by_month: {
         Args: { p_month?: number; p_teacher_id: string; p_year?: number }
