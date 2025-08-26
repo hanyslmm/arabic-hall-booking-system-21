@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { Download, User, Calendar, DollarSign, BookOpen, LogOut, Key, Smartphone } from "lucide-react";
 
 interface StudentDashboardData {
@@ -142,18 +142,31 @@ export default function StudentDashboard() {
   };
 
   const downloadQRCode = () => {
-    const canvas = qrCodeRef.current?.querySelector('canvas');
-    if (canvas) {
-      const url = canvas.toDataURL();
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `qr-code-${studentData.student_info.serial_number}.png`;
-      a.click();
+    const svg = qrCodeRef.current?.querySelector('svg');
+    if (svg) {
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
       
-      toast({
-        title: "تم التحميل",
-        description: "تم تحميل رمز QR بنجاح"
-      });
+      canvas.width = 200;
+      canvas.height = 200;
+      
+      img.onload = () => {
+        ctx?.drawImage(img, 0, 0);
+        const url = canvas.toDataURL();
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qr-code-${studentData.student_info.serial_number}.png`;
+        a.click();
+        
+        toast({
+          title: "تم التحميل",
+          description: "تم تحميل رمز QR بنجاح"
+        });
+      };
+      
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     }
   };
 
@@ -243,7 +256,7 @@ export default function StudentDashboard() {
           <CardContent>
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div ref={qrCodeRef} className="flex-shrink-0">
-                <QRCode
+                <QRCodeSVG
                   value={studentData.qr_code_data.qr_data}
                   size={200}
                   level="H"

@@ -20,6 +20,7 @@ import { formatShortArabicDate } from "@/utils/dateUtils";
 import { MobileResponsiveTable, TableColumn, TableAction } from "@/components/common/MobileResponsiveTable";
 import { Scanner } from '@alzera/react-scanner';
 import { useDebounce } from '@/hooks/useDebounce';
+import { StudentPasswordResetButton } from "@/components/student/StudentPasswordResetButton";
 import { StudentQRCodeModal } from '@/components/student/StudentQRCodeModal';
 
 const PAGE_SIZE = 50;
@@ -228,6 +229,18 @@ const StudentsPage = () => {
           </div>
         </div>
       </div>
+      
+      {canManageStudents && (
+        <div className="space-y-2">
+          <h4 className="font-semibold text-sm">إدارة الحساب</h4>
+          <div className="space-y-2">
+            <StudentPasswordResetButton 
+              studentId={student.id}
+              studentName={student.name}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 

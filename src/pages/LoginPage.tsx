@@ -121,6 +121,16 @@ export default function LoginPage() {
               {loading ? "جاري الدخول..." : !isSupabaseConfigured ? "Configuration Required" : "دخول"}
             </Button>
           </form>
+          
+          <div className="mt-6 text-center">
+            <Button 
+              variant="link" 
+              onClick={() => navigate("/student-login")}
+              className="text-sm text-muted-foreground"
+            >
+              دخول كطالب؟ اضغط هنا
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

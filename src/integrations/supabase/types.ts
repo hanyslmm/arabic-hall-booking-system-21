@@ -760,6 +760,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      reset_student_password: {
+        Args: { new_password: string; student_auth_id: string }
+        Returns: undefined
+      }
       update_registration_payment_status: {
         Args: Record<PropertyKey, never>
         Returns: undefined

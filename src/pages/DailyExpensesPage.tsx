@@ -44,21 +44,43 @@ export default function DailyExpensesPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Update the existing expenses page to use fixed data
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['daily-expenses'],
     queryFn: async () => {
-      // Transactions table doesn't exist in simplified schema
-      return [];
+      // Use the actual expenses API
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('date', formData.date)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const addExpenseMutation = useMutation({
     mutationFn: async (expense: { amount: string; sub_category: string; description: string; date: string }) => {
-      // Transactions table doesn't exist in simplified schema
-      throw new Error('Feature not available in simplified schema');
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert([{
+          amount: parseFloat(expense.amount),
+          category: expense.sub_category,
+          description: expense.description,
+          date: expense.date,
+          payment_method: 'cash'
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['daily-expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['finance-expenses'] });
       setIsOpen(false);
       setFormData({
         amount: "",
@@ -67,15 +89,14 @@ export default function DailyExpensesPage() {
         date: new Date().toISOString().split('T')[0]
       });
       toast({
-        title: "ميزة غير متوفرة",
-        description: "ميزة المصروفات تتطلب جداول إضافية في النسخة الكاملة",
-        variant: "destructive"
+        title: "تم إضافة المصروف",
+        description: "تم حفظ المصروف بنجاح"
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "ميزة غير متوفرة", 
-        description: "ميزة المصروفات تتطلب جداول إضافية في النسخة الكاملة",
+        title: "خطأ", 
+        description: error.message || "فشل في إضافة المصروف",
         variant: "destructive"
       });
     }
@@ -220,7 +241,7 @@ export default function DailyExpensesPage() {
                       {new Date(expense.date).toLocaleDateString('ar-EG')}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{expense.sub_category}</Badge>
+                      <Badge variant="outline">{expense.category}</Badge>
                     </TableCell>
                     <TableCell className="font-medium text-destructive">
                       {expense.amount.toLocaleString('ar-EG')} ر.س

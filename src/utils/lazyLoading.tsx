@@ -20,4 +20,6 @@ export const LazyAdminPrivilegesPage = lazy(() => import('@/pages/AdminPrivilege
 export const LazyDailyExpensesPage = lazy(() => import('@/pages/DailyExpensesPage'));
 export const LazyExpensesPage = lazy(() => import('@/pages/ExpensesPage'));
 export const LazyTeacherDashboard = lazy(() => import('@/pages/TeacherDashboard'));
+export const LazyStudentLoginPage = lazy(() => import('@/pages/StudentLoginPage'));
+export const LazyStudentDashboard = lazy(() => import('@/pages/StudentDashboard'));
 export const LazyNotFound = lazy(() => import('@/pages/NotFound'));

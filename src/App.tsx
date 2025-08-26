@@ -39,6 +39,8 @@ import {
   LazyDailyExpensesPage,
   LazyExpensesPage,
   LazyTeacherDashboard,
+  LazyStudentLoginPage,
+  LazyStudentDashboard,
   LazyNotFound
 } from "@/utils/lazyLoading";
 
@@ -156,6 +158,7 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/student-login" element={<LazyStudentLoginPage />} />
 
                 {/* Protected routes with a single, top-level layout */}
                 <Route element={<ProtectedLayout />}>
@@ -178,6 +181,7 @@ const App = () => {
                   <Route path="admin-privileges" element={<LazyAdminPrivilegesPage />} />
                   <Route path="expenses" element={<LazyExpensesPage />} />
                   <Route path="daily-expenses" element={<LazyDailyExpensesPage />} />
+                  <Route path="student-dashboard" element={<LazyStudentDashboard />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="audit-logs" element={<AuditLogPage />} />
