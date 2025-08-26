@@ -9,12 +9,6 @@ interface StudentPasswordResetButtonProps {
   studentName: string;
 }
 
-interface ResetPasswordResponse {
-  success: boolean;
-  error?: string;
-  message?: string;
-}
-
 export function StudentPasswordResetButton({ studentId, studentName }: StudentPasswordResetButtonProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -27,15 +21,15 @@ export function StudentPasswordResetButton({ studentId, studentName }: StudentPa
       
       if (error) throw error;
       
-      const response = data as unknown as ResetPasswordResponse;
-      if (!response.success) throw new Error(response.error);
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || 'Reset failed');
       
-      return response;
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
         title: "تم إعادة تعيين كلمة المرور",
-        description: `تم إعادة تعيين كلمة مرور ${studentName} إلى رقم الهاتف المسجل`
+        description: `تم تحديث كلمة مرور ${studentName} بنجاح. اسم المستخدم: ${data.username || 'غير متوفر'}`
       });
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
@@ -48,19 +42,15 @@ export function StudentPasswordResetButton({ studentId, studentName }: StudentPa
     }
   });
 
-  const handleResetPassword = () => {
-    resetPasswordMutation.mutate();
-  };
-
   return (
     <Button 
       size="sm" 
-      variant="outline"
-      onClick={handleResetPassword}
+      variant="outline" 
+      onClick={() => resetPasswordMutation.mutate()}
       disabled={resetPasswordMutation.isPending}
     >
       <Key className="h-3 w-3 ml-1" />
-      {resetPasswordMutation.isPending ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
+      {resetPasswordMutation.isPending ? "جاري التحديث..." : "إعادة تعيين كلمة المرور"}
     </Button>
   );
 }
