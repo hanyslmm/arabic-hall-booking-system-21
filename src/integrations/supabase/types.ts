@@ -686,6 +686,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_reset_student_password: {
+        Args: { p_student_id: string }
+        Returns: Json
+      }
       check_user_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
