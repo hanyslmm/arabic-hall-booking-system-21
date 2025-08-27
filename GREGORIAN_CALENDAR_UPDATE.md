@@ -1,7 +1,7 @@
 # Calendar System Update: Hijri to Gregorian
 
 ## Overview
-This document outlines the changes made to convert the Arabic Hall Booking System from Hijri (هجري) to Gregorian (ميلادي) calendar system.
+This document outlines the changes made to convert the Arabic Management System from Hijri (هجري) to Gregorian (ميلادي) calendar system.
 
 ## Changes Made
 

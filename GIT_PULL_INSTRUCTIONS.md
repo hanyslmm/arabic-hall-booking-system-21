@@ -64,7 +64,7 @@ Based on the project structure, you might also want to:
 
 ## Current Project Status
 
-This appears to be an Arabic Hall Booking System with:
+This appears to be an Arabic Management System with:
 - React + TypeScript frontend
 - Supabase backend
 - Arabic RTL support

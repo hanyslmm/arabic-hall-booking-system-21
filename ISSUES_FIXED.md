@@ -1,4 +1,4 @@
-# Issues Fixed - Hall Booking System
+# Issues Fixed - Management System
 
 ## Summary of Issues Found and Fixed
 

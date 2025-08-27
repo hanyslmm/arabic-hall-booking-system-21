@@ -1,5 +1,5 @@
 /**
- * Date utilities for Arabic Hall Booking System
+ * Date utilities for Arabic Management System
  * Provides consistent Gregorian calendar date formatting
  */
 
