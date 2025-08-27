@@ -45,6 +45,7 @@ import {
 } from "@/utils/lazyLoading";
 
 import LoginPage from "./pages/LoginPage";
+import SimpleStudentDashboard from "./pages/SimpleStudentDashboard";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
@@ -159,6 +160,7 @@ const App = () => {
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/student-login" element={<LazyStudentLoginPage />} />
+                <Route path="/simple-student-dashboard" element={<SimpleStudentDashboard />} />
 
                 {/* Protected routes with a single, top-level layout */}
                 <Route element={<ProtectedLayout />}>
@@ -182,6 +184,7 @@ const App = () => {
                   <Route path="expenses" element={<LazyExpensesPage />} />
                   <Route path="daily-expenses" element={<LazyDailyExpensesPage />} />
                   <Route path="student-dashboard" element={<LazyStudentDashboard />} />
+                  <Route path="simple-student-dashboard" element={<SimpleStudentDashboard />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="audit-logs" element={<AuditLogPage />} />

@@ -24,13 +24,18 @@ export default function StudentLoginPage() {
     try {
       // Create student email format
       const email = `${username}@student.local`;
+      
+      console.log('Attempting login with:', { email, password: password.trim() });
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: password.trim()
       });
 
+      console.log('Login result:', { data, error });
+
       if (error) {
+        console.error('Login error:', error);
         throw error;
       }
 
@@ -38,12 +43,13 @@ export default function StudentLoginPage() {
         title: "تم تسجيل الدخول", 
         description: "مرحباً بك في منطقة الطلاب!" 
       });
-      navigate("/student-dashboard", { replace: true });
+      navigate("/simple-student-dashboard", { replace: true });
 
     } catch (error: any) {
+      console.error('Full login error:', error);
       toast({
         title: "فشل تسجيل الدخول",
-        description: "تأكد من رقمك التسلسلي وكلمة المرور",
+        description: `خطأ: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -55,7 +61,7 @@ export default function StudentLoginPage() {
   if (user) {
     // If it's a student account, redirect to dashboard
     if (user.email?.includes("@student.local")) {
-      return <Navigate to="/student-dashboard" replace />;
+      return <Navigate to="/simple-student-dashboard" replace />;
     }
     // If it's an admin account, redirect to main dashboard
     return <Navigate to="/" replace />;
