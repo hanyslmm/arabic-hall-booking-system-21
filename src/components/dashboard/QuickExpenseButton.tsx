@@ -18,8 +18,11 @@ export function QuickExpenseButton() {
     amount: 0,
     category: '',
     payment_method: 'cash',
-    notes: ''
+    notes: '',
+    date: getTodayLocalDate()
   });
+  const [amountText, setAmountText] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -52,21 +55,36 @@ export function QuickExpenseButton() {
       amount: 0,
       category: '',
       payment_method: 'cash',
-      notes: ''
+      notes: '',
+      date: getTodayLocalDate()
     });
+    setAmountText("");
+    setCustomCategory("");
   };
 
   const handleSubmit = () => {
-    if (!formData.description || !formData.category || formData.amount <= 0) {
+    const selectedCategory = formData.category === 'اخرى' ? customCategory.trim() : formData.category;
+
+    if (!selectedCategory || formData.amount <= 0) {
       toast({
         title: "خطأ",
-        description: "يرجى ملء جميع الحقول المطلوبة",
+        description: "يرجى إدخال المبلغ واختيار الفئة",
         variant: "destructive"
       });
       return;
     }
 
-    createExpenseMutation.mutate(formData);
+    const payload: CreateExpenseData = {
+      ...formData,
+      category: selectedCategory,
+      // اجعل الوصف غير مطلوب في الواجهة - سنحفظه تلقائياً باسم الفئة
+      description: formData.description && formData.description.trim() !== ''
+        ? formData.description
+        : selectedCategory,
+      date: formData.date || getTodayLocalDate()
+    };
+
+    createExpenseMutation.mutate(payload);
   };
 
   return (
@@ -93,14 +111,7 @@ export function QuickExpenseButton() {
           <DialogTitle>إضافة مصروف جديد</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div>
-            <Label>الوصف *</Label>
-            <Input
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف المصروف"
-            />
-          </div>
+          {/* تم إلغاء حقل الوصف بناءً على الطلب */}
           
           <div>
             <Label>الفئة *</Label>
@@ -118,19 +129,44 @@ export function QuickExpenseButton() {
                 ))}
               </SelectContent>
             </Select>
+            {formData.category === 'اخرى' && (
+              <div className="mt-2">
+                <Input
+                  placeholder="اكتب الفئة"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           
           <div>
             <Label>المبلغ (LE) *</Label>
             <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                amount: Number(e.target.value) || 0 
-              }))}
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*[.,]?[0-9]*"
+              value={amountText}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                setAmountText(raw);
+                const normalized = raw.replace(',', '.');
+                const parsed = parseFloat(normalized);
+                setFormData(prev => ({
+                  ...prev,
+                  amount: isNaN(parsed) ? 0 : parsed
+                }));
+              }}
+              placeholder="أدخل المبلغ"
+            />
+          </div>
+
+          <div>
+            <Label>التاريخ</Label>
+            <Input
+              type="date"
+              value={formData.date || getTodayLocalDate()}
+              onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
             />
           </div>
           
@@ -183,4 +219,12 @@ export function QuickExpenseButton() {
       </DialogContent>
     </Dialog>
   );
+}
+
+function getTodayLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
