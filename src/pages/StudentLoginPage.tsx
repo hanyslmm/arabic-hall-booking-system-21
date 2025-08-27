@@ -113,15 +113,6 @@ export default function StudentLoginPage() {
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <Button 
-              variant="link" 
-              onClick={() => navigate("/login")}
-              className="text-sm text-muted-foreground"
-            >
-              دخول الإدارة؟ اضغط هنا
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

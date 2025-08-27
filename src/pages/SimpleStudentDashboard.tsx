@@ -20,6 +20,7 @@ export default function SimpleStudentDashboard() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   // Fetch student dashboard data
   const { data: dashboardData, isLoading } = useQuery({
@@ -163,14 +164,18 @@ export default function SimpleStudentDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <div className="bg-white p-6 rounded-xl inline-block shadow-md">
+            <div 
+              className="bg-white p-4 rounded-xl inline-block shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setIsQRModalOpen(true)}
+            >
               <QRCodeSVG
                 value={(dashboardData?.qr_code_data as any)?.qr_data || studentSerialNumber}
-                size={200}
+                size={280}
                 level="M"
                 includeMargin={true}
               />
             </div>
+            <p className="text-xs text-muted-foreground mt-2">اضغط لعرض الرمز بحجم أكبر</p>
             <div className="mt-4">
               <p className="text-lg font-bold text-primary">
                 {(dashboardData?.student_info as any)?.name || "الطالب"}
@@ -369,8 +374,35 @@ export default function SimpleStudentDashboard() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+          </DialogContent>
+        </Dialog>
+
+        {/* QR Code Full Screen Modal */}
+        <Dialog open={isQRModalOpen} onOpenChange={setIsQRModalOpen}>
+          <DialogContent className="max-w-sm p-6">
+            <DialogHeader>
+              <DialogTitle className="text-center text-lg">رمز الطالب</DialogTitle>
+            </DialogHeader>
+            <div className="text-center">
+              <div className="bg-white p-4 rounded-xl inline-block shadow-lg">
+                <QRCodeSVG
+                  value={(dashboardData?.qr_code_data as any)?.qr_data || studentSerialNumber}
+                  size={300}
+                  level="M"
+                  includeMargin={true}
+                />
+              </div>
+              <div className="mt-4 space-y-2">
+                <p className="font-bold text-primary">
+                  {(dashboardData?.student_info as any)?.name || "الطالب"}
+                </p>
+                <p className="text-muted-foreground">
+                  الرقم التسلسلي: {studentSerialNumber}
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }

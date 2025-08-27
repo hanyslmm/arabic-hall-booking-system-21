@@ -50,6 +50,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
+import { StudentRouteGuard } from "./components/auth/StudentRouteGuard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,11 +112,13 @@ function ProtectedLayout() {
   }
   
   return (
-    <Suspense fallback={<LoadingScreen />}>
-      <UnifiedLayout>
-        <Outlet />
-      </UnifiedLayout>
-    </Suspense>
+    <StudentRouteGuard>
+      <Suspense fallback={<LoadingScreen />}>
+        <UnifiedLayout>
+          <Outlet />
+        </UnifiedLayout>
+      </Suspense>
+    </StudentRouteGuard>
   );
 }
 
@@ -158,7 +161,7 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/login" element={<LoginPage />} />
+                <Route path="/login" element={<StudentRouteGuard><LoginPage /></StudentRouteGuard>} />
                 <Route path="/student-login" element={<LazyStudentLoginPage />} />
                 <Route path="/simple-student-dashboard" element={<SimpleStudentDashboard />} />
 
