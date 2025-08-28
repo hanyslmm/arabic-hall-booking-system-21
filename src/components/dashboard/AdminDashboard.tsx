@@ -28,7 +28,7 @@ export function AdminDashboard() {
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [amountText, setAmountText] = useState<string>("");
   const [expenseForm, setExpenseForm] = useState<CreateExpenseData>({
-    description: "",
+    description: "مصروفات شهرية",
     amount: 0,
     category: "",
     payment_method: "cash",
@@ -66,7 +66,7 @@ export function AdminDashboard() {
 
   const resetExpenseForm = () => {
     setExpenseForm({
-      description: "",
+    description: "مصروفات شهرية",
       amount: 0,
       category: "",
       payment_method: "cash",
