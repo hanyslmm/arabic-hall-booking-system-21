@@ -26,6 +26,7 @@ export function AdminDashboard() {
   const [dateRange, setDateRange] = useState<{ startDate?: Date; endDate?: Date }>({});
   const [isFastReceptionistOpen, setIsFastReceptionistOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [amountText, setAmountText] = useState<string>("");
   const [expenseForm, setExpenseForm] = useState<CreateExpenseData>({
     description: "",
     amount: 0,
@@ -71,6 +72,7 @@ export function AdminDashboard() {
       payment_method: "cash",
       notes: "",
     });
+    setAmountText("");
   };
 
   const createExpenseMutation = useMutation({
@@ -179,13 +181,18 @@ export function AdminDashboard() {
             <div>
               <Label>المبلغ (LE) *</Label>
               <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={expenseForm.amount}
-                onChange={(e) =>
-                  setExpenseForm((prev) => ({ ...prev, amount: Number(e.target.value) || 0 }))
-                }
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*[.,]?[0-9]*"
+                value={amountText}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                  setAmountText(raw);
+                  const normalized = raw.replace(',', '.');
+                  const parsed = parseFloat(normalized);
+                  setExpenseForm((prev) => ({ ...prev, amount: isNaN(parsed) ? 0 : parsed }));
+                }}
+                placeholder="أدخل المبلغ"
               />
             </div>
             <div>
