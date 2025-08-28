@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus } from "lucide-react";
@@ -12,6 +12,14 @@ const LayoutAppliedContext = createContext<boolean>(false);
 
 export function UnifiedLayout({ children }: UnifiedLayoutProps) {
   const isNested = useContext(LayoutAppliedContext);
+  // Global guard to prevent duplicate sidebars if multiple layout instances render
+  const w = typeof window !== 'undefined' ? (window as any) : undefined;
+  const isAlreadyApplied = !!(w && w.__SC_UNIFIED_LAYOUT_APPLIED__);
+
+  // If a parent layout exists (context) OR a global flag is set, render children only
+  if (isNested || isAlreadyApplied) {
+    return <>{children}</>;
+  }
   const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
   
   const userRole = profile?.role;
@@ -108,6 +116,20 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
   if (isNested) {
     return <>{children}</>;
   }
+
+  // Mark layout as applied before rendering children so nested instances skip immediately
+  if (w) {
+    w.__SC_UNIFIED_LAYOUT_APPLIED__ = true;
+  }
+
+  // Ensure we clear the global flag when this top-level layout unmounts
+  useEffect(() => {
+    return () => {
+      if (w) {
+        w.__SC_UNIFIED_LAYOUT_APPLIED__ = false;
+      }
+    };
+  }, []);
 
   return (
     <LayoutAppliedContext.Provider value={true}>

@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { UnifiedLayout } from '@/components/layout/UnifiedLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { exportExpensesToExcel } from "@/utils/exportUtils";
 import { cn } from "@/lib/utils";
@@ -211,7 +210,6 @@ export default function ExpensesPage() {
   };
 
   return (
-    <UnifiedLayout>
       <div className="py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">إدارة المصروفات</h1>
@@ -509,7 +507,6 @@ export default function ExpensesPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </UnifiedLayout>
   );
 }
 
