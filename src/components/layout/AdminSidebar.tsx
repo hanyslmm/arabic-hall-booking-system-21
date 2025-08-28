@@ -149,12 +149,6 @@ const defaultNavigation: NavigationGroup[] = [
         icon: FileText,
         description: "إضافة وعرض المصروفات اليومية",
       },
-      {
-        title: "تقارير المجموعات",
-        url: "/financial-reports",
-        icon: BookOpen,
-        description: "التقارير المالية للمجموعات",
-      },
     ],
   },
   {

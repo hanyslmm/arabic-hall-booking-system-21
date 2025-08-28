@@ -34,7 +34,7 @@ import {
   LazyMonthlyReportsPage,
   LazyMonthlyFeeManager,
   LazyStudentRelocationManager,
-  LazyClassFinancialReportsPage,
+  
   LazyAdminPrivilegesPage,
   LazyDailyExpensesPage,
   LazyExpensesPage,
@@ -182,7 +182,6 @@ const App = () => {
           <Route path="student-relocation" element={<LazyStudentRelocationManager />} />
           <Route path="attendance" element={<LazyAttendanceManagementPage />} />
                   <Route path="class-management/:bookingId" element={<LazyClassManagementPage />} />
-                  <Route path="financial-reports" element={<LazyClassFinancialReportsPage />} />
                   <Route path="admin-privileges" element={<LazyAdminPrivilegesPage />} />
                   <Route path="expenses" element={<LazyExpensesPage />} />
                   <Route path="daily-expenses" element={<LazyDailyExpensesPage />} />

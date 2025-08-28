@@ -3,7 +3,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ResponsiveLayout } from './ResponsiveLayout';
 import { AutoHideSidebar } from './AutoHideSidebar';
 import { useAuth } from "@/hooks/useAuth";
-import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus, ClipboardList } from "lucide-react";
+import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus } from "lucide-react";
 
 interface MobileOptimizedLayoutProps {
   children: React.ReactNode;
@@ -68,7 +68,7 @@ export function MobileOptimizedLayout({ children }: MobileOptimizedLayoutProps) 
             title: "التقارير المالية",
             items: [
               { title: "التقارير", url: "/reports", icon: FileText },
-              { title: "تقارير المجموعات", url: "/financial-reports", icon: ClipboardList },
+              { title: "إدارة المصروفات", url: "/expenses", icon: FileText },
             ],
           }]
         : []

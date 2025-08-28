@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
-import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus, ClipboardList } from "lucide-react";
+import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus } from "lucide-react";
 
 interface UnifiedLayoutProps {
   children: React.ReactNode;
@@ -69,7 +69,7 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
             title: "التقارير المالية",
             items: [
               { title: "التقارير", url: "/reports", icon: FileText },
-              { title: "تقارير المجموعات", url: "/financial-reports", icon: ClipboardList },
+              { title: "إدارة المصروفات", url: "/expenses", icon: FileText },
             ],
           }]
         : []
