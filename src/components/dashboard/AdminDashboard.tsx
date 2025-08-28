@@ -186,9 +186,13 @@ export function AdminDashboard() {
                 pattern="[0-9]*[.,]?[0-9]*"
                 value={amountText}
                 onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9.,]/g, '');
-                  setAmountText(raw);
-                  const normalized = raw.replace(',', '.');
+                  // Helper to convert Arabic-Indic digits to English digits
+                  const toEnglishDigits = (str: string) =>
+                    str.replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+                  const raw = e.target.value.replace(/[^\d\u0660-\u0669.,]/g, '');
+                  const englishRaw = toEnglishDigits(raw);
+                  setAmountText(englishRaw);
+                  const normalized = englishRaw.replace(',', '.');
                   const parsed = parseFloat(normalized);
                   setExpenseForm((prev) => ({ ...prev, amount: isNaN(parsed) ? 0 : parsed }));
                 }}
