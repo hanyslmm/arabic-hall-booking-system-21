@@ -71,39 +71,62 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
     const labelWidthMm = 50;
     const labelHeightMm = 25;
 
-    // Create canvas for barcode
+    // Create canvas for barcode with proper dimensions
+    // For landscape orientation: width=50mm, height=25mm
+    // Use higher DPI for better quality: 1mm ≈ 7.56 pixels (200 DPI)
+    const canvasWidth = Math.round(labelWidthMm * 7.56);  // 50mm = ~378px
+    const canvasHeight = Math.round(labelHeightMm * 7.56); // 25mm = ~189px
+    
     const canvas = document.createElement('canvas');
-    canvas.width = 600; 
-    canvas.height = 300;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     const JsBarcode = window.JsBarcode;
-    if (JsBarcode) {
-      try {
-        JsBarcode(canvas, student.serial_number, {
-          format: 'CODE128',
-          lineColor: '#000000',
-          background: '#ffffff',
-          width: 2,
-          height: 220,        // Taller barcode (priority for scanning)
-          displayValue: true, // Show serial number below
-          fontSize: 16,       // Smaller text
-          textMargin: 2,
-          margin: 5
-        });
-      } catch (e) {
-        console.error("JsBarcode error:", e);
-        printWindow.close();
-        alert("Failed to generate barcode. The serial number might contain invalid characters.");
-        return;
-      }
-    } else {
+    if (!JsBarcode) {
       console.error("JsBarcode library not found.");
       printWindow.close();
-      alert("Barcode generation library is not available.");
+      alert("Barcode generation library is not available. Please make sure JsBarcode is loaded.");
+      return;
+    }
+
+    try {
+      JsBarcode(canvas, student.serial_number, {
+        format: 'CODE128',
+        lineColor: '#000000',
+        background: '#ffffff',
+        width: 3,
+        height: Math.round(canvasHeight * 0.75), // 75% of label height for barcode
+        displayValue: true,
+        fontSize: Math.round(canvasHeight * 0.08), // 8% of label height for text
+        textMargin: 2,
+        margin: 5
+      });
+    } catch (e) {
+      console.error("JsBarcode error:", e);
+      printWindow.close();
+      alert("Failed to generate barcode. The serial number might contain invalid characters.");
+      return;
+    }
+
+    // Verify canvas has content
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+    if (!imageData || imageData.data.every(pixel => pixel === 0)) {
+      console.error("Canvas is empty - barcode generation failed");
+      printWindow.close();
+      alert("Barcode generation failed. Please try again.");
       return;
     }
 
     const barcodeDataURL = canvas.toDataURL('image/png');
+    
+    // Verify the data URL is valid
+    if (!barcodeDataURL || barcodeDataURL === 'data:,') {
+      console.error("Invalid barcode data URL");
+      printWindow.close();
+      alert("Barcode generation failed. Please try again.");
+      return;
+    }
 
     const printContent = `
       <!DOCTYPE html>
@@ -117,8 +140,8 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
           }
           
           html, body {
-            width: 100%;
-            height: 100%;
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
             margin: 0;
             padding: 0;
             display: flex;
@@ -126,15 +149,69 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
             justify-content: center;
             background: white;
             overflow: hidden;
+            box-sizing: border-box;
+            transform: rotate(0deg);
+            font-family: Arial, sans-serif;
+          }
+          
+          .barcode-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1mm;
+            transform: rotate(0deg);
           }
           
           .barcode-img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            transform: rotate(0deg);
+          }
+          
+          .fallback-text {
+            font-size: 8pt;
+            font-weight: bold;
+            text-align: center;
+            color: black;
+            line-height: 1.2;
           }
           
           @media print {
+            @page {
+              size: ${labelWidthMm}mm ${labelHeightMm}mm landscape;
+              margin: 0;
+            }
+            
+            html, body {
+              width: ${labelWidthMm}mm !important;
+              height: ${labelHeightMm}mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              transform: rotate(0deg) !important;
+            }
+            
+            .barcode-container {
+              width: 100% !important;
+              height: 100% !important;
+              padding: 1mm !important;
+              transform: rotate(0deg) !important;
+            }
+            
+            .barcode-img {
+              width: 100% !important;
+              height: 100% !important;
+              transform: rotate(0deg) !important;
+            }
+            
+            .fallback-text {
+              font-size: 8pt !important;
+              color: black !important;
+            }
+            
             * {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
@@ -143,13 +220,54 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         </style>
       </head>
       <body>
-        <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode" />
+        <div class="barcode-container">
+          <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+          <div class="fallback-text" style="display: none;">
+            ${student.serial_number}
+          </div>
+        </div>
         <script>
           window.addEventListener('load', function() {
-            setTimeout(function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 400);
-            }, 300);
+            console.log('Print window loaded');
+            
+            // Wait for image to load
+            const img = document.querySelector('.barcode-img');
+            if (img) {
+              img.onload = function() {
+                console.log('Barcode image loaded successfully');
+                setTimeout(function() {
+                  console.log('Starting print...');
+                  window.print();
+                  setTimeout(function() { 
+                    console.log('Closing window...');
+                    window.close(); 
+                  }, 400);
+                }, 300);
+              };
+              
+              img.onerror = function() {
+                console.error('Failed to load barcode image');
+                alert('Failed to load barcode image. Please try again.');
+                window.close();
+              };
+              
+              // If image is already loaded
+              if (img.complete) {
+                console.log('Image already loaded');
+                setTimeout(function() {
+                  console.log('Starting print...');
+                  window.print();
+                  setTimeout(function() { 
+                    console.log('Closing window...');
+                    window.close(); 
+                  }, 400);
+                }, 300);
+              }
+            } else {
+              console.error('Barcode image element not found');
+              alert('Barcode image not found. Please try again.');
+              window.close();
+            }
           });
         <\/script>
       </body>
