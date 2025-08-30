@@ -61,21 +61,20 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
   };
 
   const handlePrintBarcode = () => {
-    const printWindow = window.open('', '_blank', 'width=600,height=300');
+    const printWindow = window.open('', '_blank', 'width=400,height=200');
     if (!printWindow) {
       alert('Please allow pop-ups to print the barcode.');
       return;
     }
 
-    // Label dimensions: 50mm x 25mm (landscape)
+    // Label dimensions: 50mm x 25mm 
     const labelWidthMm = 50;
     const labelHeightMm = 25;
 
-    // Create canvas for barcode with proper dimensions
-    // For landscape orientation: width=50mm, height=25mm
-    // Use higher DPI for better quality: 1mm ≈ 7.56 pixels (200 DPI)
-    const canvasWidth = Math.round(labelWidthMm * 7.56);  // 50mm = ~378px
-    const canvasHeight = Math.round(labelHeightMm * 7.56); // 25mm = ~189px
+    // Create canvas for barcode - optimized for thermal printers
+    // Using 8 pixels per mm for crisp printing (203 DPI)
+    const canvasWidth = labelWidthMm * 8;  // 50mm = 400px
+    const canvasHeight = labelHeightMm * 8; // 25mm = 200px
     
     const canvas = document.createElement('canvas');
     canvas.width = canvasWidth;
@@ -94,12 +93,12 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         format: 'CODE128',
         lineColor: '#000000',
         background: '#ffffff',
-        width: 3,
-        height: Math.round(canvasHeight * 0.75), // 75% of label height for barcode
+        width: 2,
+        height: 120, // Fixed height for better readability
         displayValue: true,
-        fontSize: Math.round(canvasHeight * 0.08), // 8% of label height for text
-        textMargin: 2,
-        margin: 5
+        fontSize: 14,
+        textMargin: 8,
+        margin: 10
       });
     } catch (e) {
       console.error("JsBarcode error:", e);
@@ -135,81 +134,58 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         <title>Print Barcode Label</title>
         <style>
           @page {
-            size: ${labelWidthMm}mm ${labelHeightMm}mm landscape;
+            size: ${labelWidthMm}mm ${labelHeightMm}mm;
             margin: 0;
+          }
+          
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
           }
           
           html, body {
             width: ${labelWidthMm}mm;
             height: ${labelHeightMm}mm;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             background: white;
             overflow: hidden;
-            box-sizing: border-box;
-            transform: rotate(0deg);
-            font-family: Arial, sans-serif;
-          }
-          
-          .barcode-container {
-            width: 100%;
-            height: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1mm;
-            transform: rotate(0deg);
+          }
+          
+          .label {
+            width: ${labelWidthMm}mm;
+            height: ${labelHeightMm}mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2mm;
+            background: white;
           }
           
           .barcode-img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            transform: rotate(0deg);
-          }
-          
-          .fallback-text {
-            font-size: 8pt;
-            font-weight: bold;
-            text-align: center;
-            color: black;
-            line-height: 1.2;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
           }
           
           @media print {
             @page {
-              size: ${labelWidthMm}mm ${labelHeightMm}mm landscape;
+              size: ${labelWidthMm}mm ${labelHeightMm}mm;
               margin: 0;
             }
             
             html, body {
               width: ${labelWidthMm}mm !important;
               height: ${labelHeightMm}mm !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              transform: rotate(0deg) !important;
             }
             
-            .barcode-container {
-              width: 100% !important;
-              height: 100% !important;
-              padding: 1mm !important;
-              transform: rotate(0deg) !important;
-            }
-            
-            .barcode-img {
-              width: 100% !important;
-              height: 100% !important;
-              transform: rotate(0deg) !important;
-            }
-            
-            .fallback-text {
-              font-size: 8pt !important;
-              color: black !important;
+            .label {
+              width: ${labelWidthMm}mm !important;
+              height: ${labelHeightMm}mm !important;
+              padding: 2mm !important;
             }
             
             * {
@@ -220,53 +196,29 @@ export const StudentQRCodeModal = ({ isOpen, onClose, student }: StudentQRCodeMo
         </style>
       </head>
       <body>
-        <div class="barcode-container">
-          <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-          <div class="fallback-text" style="display: none;">
-            ${student.serial_number}
-          </div>
+        <div class="label">
+          <img src="${barcodeDataURL}" class="barcode-img" alt="Barcode for ${student.serial_number}" />
         </div>
         <script>
           window.addEventListener('load', function() {
-            console.log('Print window loaded');
-            
-            // Wait for image to load
             const img = document.querySelector('.barcode-img');
             if (img) {
-              img.onload = function() {
-                console.log('Barcode image loaded successfully');
-                setTimeout(function() {
-                  console.log('Starting print...');
+              const printLabel = () => {
+                setTimeout(() => {
                   window.print();
-                  setTimeout(function() { 
-                    console.log('Closing window...');
-                    window.close(); 
-                  }, 400);
-                }, 300);
+                  setTimeout(() => window.close(), 500);
+                }, 100);
               };
               
-              img.onerror = function() {
-                console.error('Failed to load barcode image');
-                alert('Failed to load barcode image. Please try again.');
-                window.close();
-              };
-              
-              // If image is already loaded
               if (img.complete) {
-                console.log('Image already loaded');
-                setTimeout(function() {
-                  console.log('Starting print...');
-                  window.print();
-                  setTimeout(function() { 
-                    console.log('Closing window...');
-                    window.close(); 
-                  }, 400);
-                }, 300);
+                printLabel();
+              } else {
+                img.onload = printLabel;
+                img.onerror = () => {
+                  alert('Failed to load barcode. Please try again.');
+                  window.close();
+                };
               }
-            } else {
-              console.error('Barcode image element not found');
-              alert('Barcode image not found. Please try again.');
-              window.close();
             }
           });
         <\/script>
