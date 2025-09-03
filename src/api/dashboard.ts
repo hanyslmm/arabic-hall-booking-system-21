@@ -1,6 +1,7 @@
 // Dedicated API layer for dashboard data fetching
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMonthlyEarnings } from "@/utils/finance";
+import { monthBasedApi } from "@/utils/monthBasedApi";
 
 export interface FinancialSummary {
   totalIncome: number;
@@ -20,28 +21,14 @@ export interface HallOccupancy {
 
 export const dashboardApi = {
   /**
-   * Get financial summary for a specific month and year
+   * Get financial summary for a specific month and year using month-based API
    */
   async getFinancialSummary(month: number, year: number): Promise<FinancialSummary> {
     try {
-      // Use the existing robust monthly earnings function
-      const totalIncome = await fetchMonthlyEarnings(month, year);
+      // Use the month-based API for financial summary
+      const summary = await monthBasedApi.getFinancialSummary(month, year);
       
-      // Get expenses using RPC function
-      let totalExpenses = 0;
-      try {
-        const { data, error } = await supabase.rpc('get_monthly_expenses', {
-          p_month: month,
-          p_year: year
-        });
-        if (!error) {
-          totalExpenses = Number(data || 0);
-        }
-      } catch (expenseError) {
-        console.warn('Could not fetch expenses:', expenseError);
-      }
-
-      // Calculate occupancy: proportion of halls with active bookings in the month
+      // Calculate occupancy using month-based booking data
       const startOfMonth = new Date(year, month - 1, 1);
       const endOfMonthExclusive = new Date(year, month, 1);
       const startStr = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-${String(startOfMonth.getDate()).padStart(2, '0')}`;
@@ -52,26 +39,27 @@ export const dashboardApi = {
         .from('halls')
         .select('id', { count: 'exact', head: true });
 
-      // Fetch bookings that overlap with this month
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('hall_id, start_date, end_date, status')
-        .lte('start_date', endStr);
-
-      if (bookingsError) throw bookingsError;
+      // Get active bookings for the month using configuration data (with fallback)
+      const bookingsData = await monthBasedApi.getConfigurationData(
+        'bookings',
+        month,
+        year,
+        'hall_id, start_date, end_date, status',
+        { status: 'active' }
+      );
 
       const activeOverlapping = (bookingsData || []).filter((b: any) => {
-        if (b.status && String(b.status).toLowerCase() === 'cancelled') return false;
+        const startDate = new Date(b.start_date);
         const endDate = b.end_date ? new Date(b.end_date) : null;
-        return !endDate || endDate >= startOfMonth;
+        return startDate <= endOfMonthExclusive && (!endDate || endDate >= startOfMonth);
       });
 
       const uniqueHallIds = new Set<string>(activeOverlapping.map((b: any) => b.hall_id));
       const occupancy = hallsCount && hallsCount > 0 ? (uniqueHallIds.size / hallsCount) * 100 : 0;
 
       return {
-        totalIncome,
-        totalExpenses,
+        totalIncome: summary.totalIncome,
+        totalExpenses: summary.totalExpenses,
         occupancy,
       };
     } catch (error) {

@@ -7,6 +7,7 @@ import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
 import { useAuth } from "@/hooks/useAuth";
+import { useMonthContext } from "@/hooks/useMonthNavigation";
 
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "@/api/dashboard";
@@ -21,8 +22,7 @@ import { expensesApi, CreateExpenseData } from "@/api/expenses";
 
 export function AdminDashboard() {
   const { profile } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const { selectedMonth, selectedYear, setMonth } = useMonthContext();
   const [dateRange, setDateRange] = useState<{ startDate?: Date; endDate?: Date }>({});
   const [isFastReceptionistOpen, setIsFastReceptionistOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
@@ -47,8 +47,7 @@ export function AdminDashboard() {
   };
 
   const handleMonthChange = (month: number, year: number) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
+    setMonth(month, year);
     // Clear date range when month changes
     setDateRange({});
   };

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { MonthProvider } from "@/components/providers/MonthProvider";
 import { UnifiedLayout } from "@/components/layout/UnifiedLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -154,12 +155,13 @@ const App = () => {
    return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuditLogProvider>
-          <TooltipProvider>
-            <ToastEventListener />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+        <MonthProvider>
+          <AuditLogProvider>
+            <TooltipProvider>
+              <ToastEventListener />
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<StudentRouteGuard><LoginPage /></StudentRouteGuard>} />
                 <Route path="/student-login" element={<LazyStudentLoginPage />} />
@@ -201,8 +203,9 @@ const App = () => {
           </TooltipProvider>
           <GlobalNotifications />
         </AuditLogProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+      </MonthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
   );
 }
 

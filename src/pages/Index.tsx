@@ -3,18 +3,22 @@ import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ReceptionistDashboard } from "@/components/receptionist/ReceptionistDashboard";
 import { DailyFinanceCards } from "@/components/dashboard/DailyFinanceCards";
 import { QuickExpenseButton } from "@/components/dashboard/QuickExpenseButton";
+import { useMonthContext } from "@/hooks/useMonthNavigation";
 
 export default function Index() {
   const { profile } = useAuth();
+  const { getDateRange } = useMonthContext();
   
   const isAdmin = profile?.role === 'admin';
   const canViewFinance = isAdmin || profile?.role === 'manager';
+  
+  const { startDate } = getDateRange();
 
   return (
     <div className="min-h-screen bg-background">
       {isAdmin ? (
         <div className="space-y-6">
-          <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
+          <DailyFinanceCards selectedDate={startDate} />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <QuickExpenseButton />
           </div>
@@ -22,7 +26,7 @@ export default function Index() {
         </div>
       ) : canViewFinance ? (
         <div className="space-y-6">
-          <DailyFinanceCards selectedDate={new Date().toISOString().split('T')[0]} />
+          <DailyFinanceCards selectedDate={startDate} />
           <ReceptionistDashboard />
         </div>
       ) : (
