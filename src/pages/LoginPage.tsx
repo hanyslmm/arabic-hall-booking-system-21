@@ -32,23 +32,40 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      let email = username.trim();
-      
-      // Map admin username to email
-      if (email.toLowerCase() === "admin") {
-        email = "admin@admin.com";
-      } else if (!email.includes("@")) {
-        // If it's not an email and not admin, assume it's a username@domain format
-        email = `${email}@admin.com`;
+      const raw = username.trim();
+      const pwd = password.trim();
+
+      // Build a list of candidate emails to try for convenience
+      let candidateEmails: string[] = [];
+      if (raw.toLowerCase() === "admin") {
+        // Prefer the canonical local admin first, then other known admin variants
+        candidateEmails = [
+          "admin@system.local",
+          "admin@admin.com",
+          "admin@example.com",
+          "admin@local.app",
+        ];
+      } else if (!raw.includes("@")) {
+        candidateEmails = [`${raw}@admin.com`];
+      } else {
+        candidateEmails = [raw];
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password: password.trim()
-      });
+      let lastError: any = null;
+      for (const email of candidateEmails) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password: pwd,
+        });
+        if (!error) {
+          lastError = null;
+          break;
+        }
+        lastError = error;
+      }
 
-      if (error) {
-        throw error;
+      if (lastError) {
+        throw lastError;
       }
 
       toast({ 
