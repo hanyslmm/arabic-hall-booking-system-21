@@ -384,9 +384,13 @@ export const paymentsApi = {
     payment_method?: string;
     notes?: string;
   }): Promise<PaymentRecord> {
+    // Always stamp created_by with the current auth user profile id if available
+    const { data: auth } = await supabase.auth.getUser();
+    const createdBy = auth.user?.id ?? null;
+
     const { data, error } = await supabase
       .from("payment_records")
-      .insert([paymentData])
+      .insert([{ ...paymentData, created_by: createdBy }])
       .select()
       .single();
     

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/utils/currency";
 import { MonthSelector } from "./MonthSelector";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DailyFinanceCardsProps {
   selectedDate?: string;
@@ -14,25 +15,48 @@ interface DailyFinanceCardsProps {
 
 export function DailyFinanceCards({ selectedDate = new Date().toISOString().split('T')[0] }: DailyFinanceCardsProps) {
   const { profile } = useAuth();
-  
+
   const isAdmin = profile?.role === 'admin';
-  const canViewFinance = isAdmin || profile?.role === 'manager';
+  const isManager = profile?.role === 'manager';
+  const isHallManager = profile?.role === 'space_manager';
+  const canViewFinance = isAdmin || isManager || isHallManager;
   
   // For non-admin users, force current day view
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
   const [currentDate, setCurrentDate] = useState(selectedDate);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedUser, setSelectedUser] = useState<string>('all');
 
   const effectiveDate = viewMode === 'daily' ? currentDate : null;
   const effectiveMonth = viewMode === 'monthly' ? selectedMonth : null;
   const effectiveYear = viewMode === 'monthly' ? selectedYear : null;
 
-  // Fetch daily/monthly income
-  const { data: income = 0 } = useQuery({
-    queryKey: ['finance-income', effectiveDate, effectiveMonth, effectiveYear, viewMode],
+  // Build user filter: admins can pick any user; managers/hall managers are scoped to themselves
+  const userFilter = useMemo(() => {
+    if (isAdmin) return selectedUser;
+    return profile?.id || 'self';
+  }, [isAdmin, selectedUser, profile?.id]);
+
+  // Fetch list of users for admin filter
+  const { data: users = [] } = useQuery({
+    queryKey: ['finance-users'],
     queryFn: async () => {
-      let query = supabase.from('payment_records').select('amount');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isAdmin,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch daily/monthly income, optionally filtered by created_by
+  const { data: income = 0 } = useQuery({
+    queryKey: ['finance-income', effectiveDate, effectiveMonth, effectiveYear, viewMode, userFilter],
+    queryFn: async () => {
+      let query = supabase.from('payment_records').select('amount, created_by');
       
       if (viewMode === 'daily' && effectiveDate) {
         query = query.eq('payment_date', effectiveDate);
@@ -42,6 +66,9 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
           ? `${effectiveYear + 1}-01-01` 
           : `${effectiveYear}-${(effectiveMonth + 1).toString().padStart(2, '0')}-01`;
         query = query.gte('payment_date', startDate).lt('payment_date', endDate);
+      }
+      if (userFilter && userFilter !== 'all') {
+        query = query.eq('created_by', userFilter);
       }
       
       const { data, error } = await query;
@@ -53,9 +80,9 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
 
   // Fetch daily/monthly expenses
   const { data: expenses = 0 } = useQuery({
-    queryKey: ['finance-expenses', effectiveDate, effectiveMonth, effectiveYear, viewMode],
+    queryKey: ['finance-expenses', effectiveDate, effectiveMonth, effectiveYear, viewMode, userFilter],
     queryFn: async () => {
-      let query = supabase.from('expenses').select('amount');
+      let query = supabase.from('expenses').select('amount, created_by');
       
       if (viewMode === 'daily' && effectiveDate) {
         query = query.eq('date', effectiveDate);
@@ -65,6 +92,9 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
           ? `${effectiveYear + 1}-01-01` 
           : `${effectiveYear}-${(effectiveMonth + 1).toString().padStart(2, '0')}-01`;
         query = query.gte('date', startDate).lt('date', endDate);
+      }
+      if (userFilter && userFilter !== 'all') {
+        query = query.eq('created_by', userFilter);
       }
       
       const { data, error } = await query;
@@ -129,6 +159,22 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
               }}
             />
           )}
+
+          {/* User Filter (Admin only) */}
+          <div className="flex gap-2 items-center">
+            <label className="text-sm">المستخدم:</label>
+            <Select value={selectedUser} onValueChange={setSelectedUser}>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="اختر المستخدم" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">الكل</SelectItem>
+                {users.map((u: any) => (
+                  <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
 

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, DollarSign } from "lucide-react";
 import { FastReceptionistModal } from "@/components/receptionist/FastReceptionistModal";
-import StatsCards from "@/components/dashboard/StatsCards";
+// import StatsCards from "@/components/dashboard/StatsCards";
+import { DailyFinanceCards } from "@/components/dashboard/DailyFinanceCards";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
@@ -135,11 +136,8 @@ export function AdminDashboard() {
         />
       </div>
 
-      <StatsCards 
-        selectedMonth={selectedMonth} 
-        selectedYear={selectedYear}
-        dateRange={dateRange}
-      />
+      {/* Daily finance overview with per-user filtering for admins; managers see self-only */}
+      <DailyFinanceCards />
 
       <HallsGrid occupancyData={occupancyData || []} />
 

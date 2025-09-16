@@ -62,8 +62,8 @@ export function MobileOptimizedLayout({ children }: MobileOptimizedLayoutProps) 
         : []
     ),
     ...(
-      // Show financial reports for admins and owners only
-      isOwnerOrAdmin && !isTeacher
+      // Show financial reports ONLY for admins
+      isAdmin && !isTeacher
         ? [{
             title: "التقارير المالية",
             items: [
