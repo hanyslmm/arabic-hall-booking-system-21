@@ -7,7 +7,8 @@ export const getEmployeeUsers = async (): Promise<UserProfile[]> => {
     .from("profiles")
     .select("*")
     .in("user_role", ["owner", "manager", "space_manager"])
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(10000); // Remove 1000 row limit
     
   if (error) throw error;
   
@@ -83,7 +84,7 @@ export const getStudentTeacherUsers = async (): Promise<UserProfile[]> => {
   }
   // Admins (owner, manager, space_manager) can see all - no additional filters needed
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(10000); // Remove 1000 row limit
   
   if (error) throw error;
   

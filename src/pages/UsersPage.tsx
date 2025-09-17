@@ -119,21 +119,21 @@ export default function UsersPage() {
         );
       case "teacher":
         return (
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 bg-green-50 text-green-700 border-green-200 hover:bg-green-100">
             <GraduationCap className="w-3 h-3" />
             معلم
           </Badge>
         );
       case "read_only":
         return (
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
-            <Users className="w-3 h-3" />
+          <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+            <UserCheck className="w-3 h-3" />
             طالب
           </Badge>
         );
       default:
         return (
-          <Badge variant="outline" className="text-xs flex items-center gap-1">
+          <Badge variant="outline" className="text-xs flex items-center gap-1 bg-gray-50 text-gray-700 border-gray-200">
             <Users className="w-3 h-3" />
             مستخدم
           </Badge>
@@ -178,43 +178,43 @@ export default function UsersPage() {
   const renderUserGrid = (users: UserProfile[], emptyMessage: string, emptyDescription: string) => (
     <>
       {/* Users Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {users?.map((user) => (
-          <Card key={user.id} className="hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/20">
+          <Card key={user.id} className="group hover:shadow-lg transition-all duration-300 border hover:border-primary/30 hover:scale-[1.02] bg-gradient-to-br from-background to-muted/20">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                <div className="flex items-center gap-3 flex-1">
+                  <Avatar className="w-14 h-14 ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-lg">
                       {user.full_name
                         ? user.full_name.charAt(0).toUpperCase()
                         : user.email?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg leading-tight">
-                      {user.full_name || user.email}
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base leading-tight truncate font-semibold">
+                      {user.full_name || user.email?.split('@')[0]}
                     </CardTitle>
-                    <CardDescription className="mt-1">
+                    <div className="mt-2">
                       {getRoleBadge(user.user_role)}
-                    </CardDescription>
+                    </div>
                   </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10">
                       <span className="sr-only">Open menu</span>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => handleEditUser(user)} className="gap-2">
+                  <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-sm border-primary/20">
+                    <DropdownMenuItem onClick={() => handleEditUser(user)} className="gap-2 hover:bg-primary/10">
                       <Key className="w-4 h-4" />
                       تعديل المستخدم
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="text-destructive gap-2"
+                      className="text-destructive gap-2 hover:bg-destructive/10"
                       onClick={() => handleDeleteUser(user.id)}
                     >
                       <Users className="w-4 h-4" />
@@ -224,24 +224,22 @@ export default function UsersPage() {
                 </DropdownMenu>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3 text-sm">
-                {user.email && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">{user.email}</span>
-                  </div>
-                )}
-                {user.phone && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="w-4 h-4 flex-shrink-0" />
-                    <span>{user.phone}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="w-4 h-4 flex-shrink-0" />
-                  <span>انضم في {format(new Date(user.created_at), "dd/MM/yyyy")}</span>
+            <CardContent className="pt-0 space-y-3">
+              {user.email && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md p-2">
+                  <Mail className="w-4 h-4 flex-shrink-0 text-primary" />
+                  <span className="truncate font-mono text-xs">{user.email}</span>
                 </div>
+              )}
+              {user.phone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="w-4 h-4 flex-shrink-0 text-green-600" />
+                  <span className="font-medium">{user.phone}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                <Calendar className="w-3 h-3 flex-shrink-0" />
+                <span>انضم في {format(new Date(user.created_at), "dd/MM/yyyy")}</span>
               </div>
             </CardContent>
           </Card>
@@ -303,17 +301,22 @@ export default function UsersPage() {
         </div>
 
         {/* Search Section */}
-        <Card>
-          <CardContent className="p-4">
+        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+          <CardContent className="p-6">
             <div className="relative">
-              <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary/60" />
               <Input
-                placeholder="البحث في المستخدمين..."
+                placeholder="البحث في المستخدمين بالاسم أو البريد الإلكتروني..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
+                className="pr-12 h-12 text-lg bg-background/80 border-primary/30 focus:border-primary focus:ring-primary/20"
               />
             </div>
+            {searchTerm && (
+              <p className="text-sm text-muted-foreground mt-3">
+                البحث عن: "{searchTerm}" - النتائج: {activeTab === "employees" ? filteredEmployeeUsers.length : filteredStudentTeacherUsers.length}
+              </p>
+            )}
           </CardContent>
         </Card>
 
