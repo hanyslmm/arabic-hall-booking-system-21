@@ -34,14 +34,7 @@ export const getStudentTeacherUsers = async (): Promise<UserProfile[]> => {
 
   let query = supabase
     .from("profiles")
-    .select(`
-      *,
-      teachers:teacher_id(
-        id,
-        name,
-        teacher_code
-      )
-    `)
+    .select("*")  // Remove the problematic join
     .in("user_role", ["teacher", "read_only"]);
 
   // Apply access control based on user role
@@ -94,8 +87,14 @@ export const getStudentTeacherUsers = async (): Promise<UserProfile[]> => {
   
   if (error) throw error;
   
-  return data.map((profile: any) => ({
+  // Transform the data and add teacher information if needed
+  const results = data.map((profile: any) => ({
     ...profile,
     phone: profile.phone || null
   })) as UserProfile[];
+
+  // If we have users with teacher_id, we could fetch teacher info separately if needed
+  // For now, we'll just return the profiles without teacher details
+  
+  return results;
 };
