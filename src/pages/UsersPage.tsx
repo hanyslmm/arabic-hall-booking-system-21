@@ -17,7 +17,8 @@ import { EditUserModal } from "@/components/user/EditUserModal";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
-import { getEmployeeUsers, getStudentTeacherUsers } from "@/api/userManagement";
+import { getEmployeeUsers, getStudentTeacherUsers, PaginatedResult } from "@/api/userManagement";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -25,6 +26,9 @@ export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("employees");
+  const [pageEmployees, setPageEmployees] = useState(1);
+  const [pageStudents, setPageStudents] = useState(1);
+  const PAGE_SIZE = 24;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -32,16 +36,16 @@ export default function UsersPage() {
   const { user, isOwner, isAdmin, loading } = useAuth();
   
   // Fetch employee users (admin roles)
-  const { data: employeeUsers, isLoading: isLoadingEmployees, error: employeeError } = useQuery({
-    queryKey: ["employee-users"],
-    queryFn: getEmployeeUsers,
+  const { data: employeeUsersPage, isLoading: isLoadingEmployees, error: employeeError } = useQuery<PaginatedResult<UserProfile>>({
+    queryKey: ["employee-users", pageEmployees, searchTerm],
+    queryFn: () => getEmployeeUsers({ page: pageEmployees, pageSize: PAGE_SIZE, searchTerm }),
     enabled: !!user && (isOwner || isAdmin),
   });
 
   // Fetch student & teacher users
-  const { data: studentTeacherUsers, isLoading: isLoadingStudentTeacher, error: studentTeacherError } = useQuery({
-    queryKey: ["student-teacher-users"],
-    queryFn: getStudentTeacherUsers,
+  const { data: studentTeacherUsersPage, isLoading: isLoadingStudentTeacher, error: studentTeacherError } = useQuery<PaginatedResult<UserProfile>>({
+    queryKey: ["student-teacher-users", pageStudents, searchTerm],
+    queryFn: () => getStudentTeacherUsers({ page: pageStudents, pageSize: PAGE_SIZE, searchTerm }),
     enabled: !!user,
   });
 
@@ -149,8 +153,12 @@ export default function UsersPage() {
     ) || [];
   };
 
-  const filteredEmployeeUsers = getFilteredUsers(employeeUsers, searchTerm);
-  const filteredStudentTeacherUsers = getFilteredUsers(studentTeacherUsers, searchTerm);
+  const filteredEmployeeUsers = getFilteredUsers(employeeUsersPage?.data, "");
+  const filteredStudentTeacherUsers = getFilteredUsers(studentTeacherUsersPage?.data, "");
+  const employeeTotal = employeeUsersPage?.total || 0;
+  const studentsTotal = studentTeacherUsersPage?.total || 0;
+  const employeeTotalPages = Math.max(1, Math.ceil(employeeTotal / PAGE_SIZE));
+  const studentsTotalPages = Math.max(1, Math.ceil(studentsTotal / PAGE_SIZE));
 
   const isLoading = isLoadingEmployees || isLoadingStudentTeacher;
   const error = employeeError || studentTeacherError;
@@ -314,7 +322,7 @@ export default function UsersPage() {
             </div>
             {searchTerm && (
               <p className="text-sm text-muted-foreground mt-3">
-                البحث عن: "{searchTerm}" - النتائج: {activeTab === "employees" ? filteredEmployeeUsers.length : filteredStudentTeacherUsers.length}
+                البحث عن: "{searchTerm}" - النتائج: {activeTab === "employees" ? employeeTotal : studentsTotal}
               </p>
             )}
           </CardContent>
@@ -327,14 +335,14 @@ export default function UsersPage() {
               <Shield className="w-4 h-4" />
               الموظفون والإدارة
               <Badge variant="secondary" className="ml-2">
-                {employeeUsers?.length || 0}
+                {employeeTotal}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="students-teachers" className="flex items-center gap-2">
               <GraduationCap className="w-4 h-4" />
               الطلاب والمعلمون
               <Badge variant="secondary" className="ml-2">
-                {studentTeacherUsers?.length || 0}
+                {studentsTotal}
               </Badge>
             </TabsTrigger>
           </TabsList>
@@ -356,6 +364,17 @@ export default function UsersPage() {
               "لا يوجد موظفون",
               "ابدأ بإضافة موظف أو مدير جديد للنظام"
             )}
+          <Pagination className="pt-2">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious onClick={() => setPageEmployees((p) => Math.max(1, p - 1))} />
+              </PaginationItem>
+              <span className="px-3 py-2 text-sm text-muted-foreground">صفحة {pageEmployees} من {employeeTotalPages}</span>
+              <PaginationItem>
+                <PaginationNext onClick={() => setPageEmployees((p) => Math.min(employeeTotalPages, p + 1))} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
           </TabsContent>
 
           <TabsContent value="students-teachers" className="space-y-6">
@@ -375,6 +394,17 @@ export default function UsersPage() {
               "لا يوجد طلاب أو معلمون",
               "ابدأ بإضافة حسابات للطلاب والمعلمين"
             )}
+          <Pagination className="pt-2">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious onClick={() => setPageStudents((p) => Math.max(1, p - 1))} />
+              </PaginationItem>
+              <span className="px-3 py-2 text-sm text-muted-foreground">صفحة {pageStudents} من {studentsTotalPages}</span>
+              <PaginationItem>
+                <PaginationNext onClick={() => setPageStudents((p) => Math.min(studentsTotalPages, p + 1))} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
           </TabsContent>
         </Tabs>
 
