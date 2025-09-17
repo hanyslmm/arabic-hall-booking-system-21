@@ -56,7 +56,7 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
   const { data: income = 0 } = useQuery({
     queryKey: ['finance-income', effectiveDate, effectiveMonth, effectiveYear, viewMode, userFilter],
     queryFn: async () => {
-      let query = supabase.from('payment_records').select('amount, created_by');
+      let query = supabase.from('payment_records').select('amount');
       
       if (viewMode === 'daily' && effectiveDate) {
         query = query.eq('payment_date', effectiveDate);
@@ -67,9 +67,7 @@ export function DailyFinanceCards({ selectedDate = new Date().toISOString().spli
           : `${effectiveYear}-${(effectiveMonth + 1).toString().padStart(2, '0')}-01`;
         query = query.gte('payment_date', startDate).lt('payment_date', endDate);
       }
-      if (userFilter && userFilter !== 'all') {
-        query = query.eq('created_by', userFilter);
-      }
+      // Note: payment_records table doesn't have created_by column, so we skip user filtering for income
       
       const { data, error } = await query;
       if (error) throw error;
