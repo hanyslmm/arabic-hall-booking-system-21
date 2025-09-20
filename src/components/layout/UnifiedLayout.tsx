@@ -63,8 +63,8 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
         : []
     ),
     ...(
-      // Show financial reports ONLY for full admins
-      isAdmin && !isTeacher
+      // Show financial reports for owner and general manager only
+      (isOwner || userRole === 'manager') && !isTeacher
         ? [{
             title: "التقارير المالية",
             items: [

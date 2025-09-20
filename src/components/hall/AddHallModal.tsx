@@ -35,9 +35,14 @@ export const AddHallModal = ({ hall, isEdit = false, onSuccess }: AddHallModalPr
 
   const createMutation = useMutation({
     mutationFn: async (data: Omit<Hall, 'id'>) => {
+      // Only persist columns that exist in the current schema
+      const payload = {
+        name: data.name,
+        capacity: Number(data.capacity) || 0,
+      };
       const { error } = await supabase
         .from('halls')
-        .insert([data]);
+        .insert([payload]);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -56,9 +61,14 @@ export const AddHallModal = ({ hall, isEdit = false, onSuccess }: AddHallModalPr
   const updateMutation = useMutation({
     mutationFn: async (data: Omit<Hall, 'id'>) => {
       if (!hall?.id) throw new Error('No hall ID provided');
+      // Only persist columns that exist in the current schema
+      const payload = {
+        name: data.name,
+        capacity: Number(data.capacity) || 0,
+      };
       const { error } = await supabase
         .from('halls')
-        .update(data)
+        .update(payload)
         .eq('id', hall.id);
       if (error) throw error;
     },

@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useMonthNavigation } from '@/hooks/useMonthNavigation';
 import { UnifiedLayout } from '@/components/layout/UnifiedLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ArrowLeft, Plus, Save, DollarSign, Users, Calendar, Upload, Trash2, Edit, Filter, QrCode } from 'lucide-react';
@@ -20,6 +21,7 @@ import { studentRegistrationsApi, paymentsApi } from '@/api/students';
 import { studentsApi } from '@/api/students';
 import { BulkUploadModal } from '@/components/student/BulkUploadModal';
 import { StudentQRCodeModal } from '@/components/student/StudentQRCodeModal';
+import { MonthlyTransitionManager } from '@/components/booking/MonthlyTransitionManager';
 import { format } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 
@@ -58,6 +60,27 @@ export default function ClassManagementPage() {
   const [isApplyingAll, setIsApplyingAll] = useState(false);
   const [viewingStudentDetails, setViewingStudentDetails] = useState<any | null>(null);
   const [qrCodeStudent, setQrCodeStudent] = useState<any | null>(null);
+  
+  // Month navigation for viewing historical data
+  const { selectedMonth, selectedYear, setMonth, resetToCurrentMonth } = useMonthNavigation();
+  const goToPreviousMonth = () => {
+    let month = selectedMonth - 1;
+    let year = selectedYear;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+    setMonth(month, year);
+  };
+  const goToNextMonth = () => {
+    let month = selectedMonth + 1;
+    let year = selectedYear;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+    setMonth(month, year);
+  };
 
   // Fetch booking details
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -305,33 +328,70 @@ export default function ClassManagementPage() {
     }
   };
 
-  // Filter registrations based on search and status
-  const filteredRegistrations = registrations?.filter(registration => {
+  // Calculate month boundaries for selected month
+  const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+  const monthEnd = new Date(selectedYear, selectedMonth, 0);
+  const isInSelectedMonth = (dateString?: string | null) => {
+    if (!dateString) return false;
+    const d = new Date(dateString);
+    return d >= monthStart && d <= monthEnd;
+  };
+
+  // Helper: format month/year in Arabic (Gregorian calendar)
+  const formatMonthYear = (year: number, month: number) =>
+    new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { year: 'numeric', month: 'long' }).format(
+      new Date(year, month - 1, 1)
+    );
+  
+  // Filter registrations based on search and computed monthly status (roster is constant across months)
+  const filteredRegistrations = (registrations || []).filter(registration => {
     const matchesSearch = !searchFilter || 
       registration.student?.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
       registration.student?.mobile_phone.includes(searchFilter) ||
       registration.student?.serial_number.includes(searchFilter);
     
-    const matchesStatus = statusFilter === 'all' || registration.payment_status === statusFilter;
+    // Compute monthly payment status
+    const monthPaidAmount = ((registration as any).payment_records || [])
+      .filter((pr: any) => isInSelectedMonth(pr.payment_date))
+      .reduce((sum: number, pr: any) => sum + (pr.amount || 0), 0);
+    const totalFees = registration.total_fees || 0;
+    const monthlyStatus = monthPaidAmount <= 0 ? 'pending' : monthPaidAmount >= totalFees ? 'paid' : 'partial';
+
+    const matchesStatus = statusFilter === 'all' || monthlyStatus === statusFilter;
     
     return matchesSearch && matchesStatus;
   }) || [];
-
-  // Payment summary counts and rate for current class (period = current month by default)
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const isInCurrentMonth = (dateString?: string | null) => {
-    if (!dateString) return false;
-    const d = new Date(dateString);
-    return d >= monthStart && d < monthEnd;
-  };
-
+  
   const totalStudents = registrations?.length || 0;
-  const paidStudentsThisMonth = (registrations || []).filter(reg =>
-    (reg as any).payment_records ? (reg as any).payment_records.some((pr: any) => isInCurrentMonth(pr.payment_date)) : (reg.paid_amount || 0) >= (reg.total_fees || 0)
-  ).length;
+  
+  // Calculate paid students for the selected month
+  const paidStudentsThisMonth = (registrations || []).filter(reg => {
+    const monthPaidAmount = ((reg as any).payment_records || [])
+      .filter((pr: any) => isInSelectedMonth(pr.payment_date))
+      .reduce((sum: number, pr: any) => sum + (pr.amount || 0), 0);
+    return monthPaidAmount >= (reg.total_fees || 0);
+  }).length;
+  
   const paymentRate = totalStudents > 0 ? Math.round((paidStudentsThisMonth / totalStudents) * 100) : 0;
+
+  // Calculate effective fee as the most common current fee among all registrations
+  const effectiveClassFee = React.useMemo(() => {
+    if (!registrations || registrations.length === 0) {
+      return booking?.class_fees || 0;
+    }
+    // Find the most common fee among all registrations
+    const feeCounts: Record<number, number> = {};
+    registrations.forEach(reg => {
+      const fee = reg.total_fees || 0;
+      feeCounts[fee] = (feeCounts[fee] || 0) + 1;
+    });
+
+    // Return the most common fee
+    const mostCommonFee = Object.entries(feeCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0];
+    
+    return mostCommonFee ? parseInt(mostCommonFee) : (booking?.class_fees || 0);
+  }, [registrations, booking?.class_fees]);
 
   if (isLoadingBooking || isLoadingRegistrations) {
     return (
@@ -390,7 +450,9 @@ export default function ClassManagementPage() {
                 <div className="text-2xl font-bold">{totalStudents}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">عدد المدفوعين هذا الشهر</div>
+                <div className="text-sm text-muted-foreground">
+                  عدد المدفوعين لشهر {formatMonthYear(selectedYear, selectedMonth)}
+                </div>
                 <div className="text-2xl font-bold text-green-600">{paidStudentsThisMonth}</div>
               </div>
               <div>
@@ -404,12 +466,42 @@ export default function ClassManagementPage() {
           </CardContent>
         </Card>
 
+        {/* Month Navigation */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              عرض البيانات حسب الشهر
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={goToPreviousMonth}>
+                  الشهر السابق
+                </Button>
+                <div className="text-center">
+                  <div className="text-lg font-semibold">
+                    {formatMonthYear(selectedYear, selectedMonth)}
+                  </div>
+                </div>
+                <Button variant="outline" onClick={goToNextMonth}>
+                  الشهر التالي
+                </Button>
+              </div>
+              <Button variant="outline" onClick={resetToCurrentMonth}>
+                الشهر الحالي
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Class Information */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Users className="h-5 w-5" />
                 معلومات المجموعة
               </div>
               <Button 
@@ -445,7 +537,13 @@ export default function ClassManagementPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium">رسوم المجموعة</Label>
-                <p className="text-lg">{booking.class_fees || 0} جنيه (افتراضي)</p>
+                <p className="text-lg">
+                  {effectiveClassFee} جنيه 
+                  {effectiveClassFee !== (booking.class_fees || 0) ? 
+                    ` (لشهر ${formatMonthYear(selectedYear, selectedMonth)})` : 
+                    ' (افتراضي)'
+                  }
+                </p>
               </div>
               <div>
                 <Label className="text-sm font-medium">عدد الطلاب</Label>
@@ -485,6 +583,8 @@ export default function ClassManagementPage() {
               إدارة الطلاب
             </CardTitle>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <MonthlyTransitionManager bookingId={bookingId} />
+              
               <Button onClick={applyClassFeeToAll} variant="outline" disabled={isApplyingAll}>
                 <DollarSign className="h-4 w-4 ml-2" />
                 {isApplyingAll ? 'جارٍ التطبيق...' : 'تطبيق رسوم المجموعة على الجميع'}

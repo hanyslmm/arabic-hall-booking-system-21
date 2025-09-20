@@ -313,9 +313,9 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
 
               for (const studentData of batch) {
                 const normalizedMobile = normalizeMobileNumber(studentData.mobile);
-                let student = existingStudentsMap.get(normalizedMobile);
+                const existingStudent = existingStudentsMap.get(normalizedMobile);
                 
-                if (!student) {
+                if (!existingStudent) {
                   // Use the students API for new students
                   studentPromises.push(
                     studentsApi.create({
@@ -331,13 +331,13 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                   );
                 } else {
                   // Student already exists, prepare registration
-                  if (data.mode === 'append' && existingRegistrationStudentIds.has(student.id)) {
+                  if (data.mode === 'append' && existingRegistrationStudentIds.has(existingStudent.id)) {
                     // Skip if already registered in append mode
                     continue;
                   }
                   
                   registrationsToCreate.push({
-                    student_id: student.id,
+                    student_id: existingStudent.id,
                     booking_id: booking.id,
                     total_fees: booking.class_fees || 0,
                     payment_status: 'pending'
@@ -347,7 +347,7 @@ export const BulkUploadModal = ({ children }: BulkUploadModalProps) => {
                   if (studentData.darsPayment && studentData.darsPayment > 0) {
                     paymentsToCreate.push({
                       studentData,
-                      studentId: student.id
+                      studentId: existingStudent.id
                     });
                   }
                 }

@@ -201,14 +201,60 @@ export const studentRegistrationsApi = {
       .from("student_registrations")
       .select(`
         *,
-        students(*),
+        student:students(*),
         payment_records(amount, payment_date)
       `)
       .eq("booking_id", bookingId)
       .order("created_at", { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    const rows = data || [];
+    // Derive paid_amount from payment_records when the stored column isn't maintained
+    const withPaid = rows.map((row: any) => {
+      const sumPaid = Array.isArray(row.payment_records)
+        ? row.payment_records.reduce((sum: number, pr: any) => sum + Number(pr?.amount || 0), 0)
+        : 0;
+      const paid_amount = (typeof row.paid_amount === 'number' && row.paid_amount > 0)
+        ? row.paid_amount
+        : sumPaid;
+      return { ...row, paid_amount };
+    });
+    return withPaid;
+  },
+
+  async getByBookingPaginated(params: { bookingId: string; page: number; pageSize: number; sortKey?: string; sortDirection?: 'asc' | 'desc'; }): Promise<{ data: any[]; total: number; }>{
+    const { bookingId, page, pageSize, sortKey, sortDirection } = params;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    // Allowlist of sortable columns on registrations to prevent errors
+    const allowedSortKeys = new Set<string>(["created_at", "registration_date", "total_fees", "paid_amount"]);
+    const effectiveSortKey = (sortKey && allowedSortKeys.has(sortKey)) ? sortKey : "created_at";
+    const effectiveAscending = (sortDirection || 'desc') === 'asc';
+
+    const { data, error, count } = await supabase
+      .from('student_registrations')
+      .select(`
+        *,
+        student:students(*),
+        payment_records(amount, payment_date)
+      `, { count: 'exact' })
+      .eq('booking_id', bookingId)
+      .order(effectiveSortKey, { ascending: effectiveAscending })
+      .range(from, to);
+
+    if (error) throw error;
+    const rows = data || [];
+    const withPaid = rows.map((row: any) => {
+      const sumPaid = Array.isArray(row.payment_records)
+        ? row.payment_records.reduce((sum: number, pr: any) => sum + Number(pr?.amount || 0), 0)
+        : 0;
+      const paid_amount = (typeof row.paid_amount === 'number' && row.paid_amount > 0)
+        ? row.paid_amount
+        : sumPaid;
+      return { ...row, paid_amount };
+    });
+    return { data: withPaid, total: count || 0 };
   },
 
   async getByStudentWithPayments(studentId: string): Promise<any[]> {

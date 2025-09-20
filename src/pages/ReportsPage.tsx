@@ -33,9 +33,10 @@ interface BookingFinancialData {
 }
 
 export function ReportsPage() {
-  const { user, isAdmin, isOwner, canManageUsers, loading } = useAuth();
+  const { user, isAdmin, isOwner, loading, profile } = useAuth();
 
-  const hasAdminAccess = isAdmin || isOwner || canManageUsers;
+  // Access: owner or general manager only
+  const hasAdminAccess = Boolean(isOwner || profile?.role === 'manager');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<string>('all');
 

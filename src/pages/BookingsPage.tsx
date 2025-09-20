@@ -32,6 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { GraduationCap } from "lucide-react";
 import { studentRegistrationsApi } from "@/api/students";
+import { MonthSelector } from "@/components/dashboard/MonthSelector";
 
 interface Booking {
   id: string;
@@ -62,6 +63,8 @@ const BookingsPage = () => {
   const navigate = useNavigate();
   const [selectedHall, setSelectedHall] = useState<string>('all');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [debugInfo, setDebugInfo] = useState<{
     authState: unknown;
     profileState: unknown;
@@ -136,7 +139,7 @@ const BookingsPage = () => {
 
   // Fetch bookings with actual student count
   const { data: bookings, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: queryKeys.bookingsFiltered(selectedHall, selectedTeacher),
+    queryKey: [...queryKeys.bookingsFiltered(selectedHall, selectedTeacher), selectedMonth, selectedYear],
     queryFn: async () => {
       console.log('🔍 Starting bookings query...');
       
@@ -154,6 +157,10 @@ const BookingsPage = () => {
       
       console.log('✅ User authenticated:', session.user.id);
       
+      // Compute month range
+      const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+      const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+
       let query = supabase
         .from('bookings')
         .select(`
@@ -171,8 +178,15 @@ const BookingsPage = () => {
         query = query.eq('teacher_id', selectedTeacher);
       }
       
-      console.log('🔍 Executing bookings query with filters:', { selectedHall, selectedTeacher });
+      console.log('🔍 Executing bookings query with filters:', { selectedHall, selectedTeacher, selectedMonth, selectedYear });
       
+      // Show ongoing classes for the selected month
+      // Rule: booking appears in a month if start_date <= end_of_month AND (end_date is NULL OR end_date >= start_of_month)
+      query = query
+        .lte('start_date', endDate)
+        .or(`end_date.is.null,end_date.gte.${startDate}`)
+        .eq('status', 'active');
+
       const { data: bookingsData, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
@@ -620,6 +634,12 @@ const BookingsPage = () => {
   return (
     <UnifiedLayout>
       <div className="container mx-auto py-6 space-y-6">
+        {/* Month Selector */}
+        <MonthSelector 
+          selectedMonth={selectedMonth} 
+          selectedYear={selectedYear} 
+          onMonthChange={(m, y) => { setSelectedMonth(m); setSelectedYear(y); }}
+        />
         {/* Enhanced Header Section */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-xl border">
           <div className="flex-1">

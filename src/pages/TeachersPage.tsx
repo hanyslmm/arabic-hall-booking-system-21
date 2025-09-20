@@ -39,6 +39,9 @@ const TeachersPage = () => {
   const [confirmDeleteTeacher, setConfirmDeleteTeacher] = useState<Teacher | null>(null);
   const [feeModalTeacher, setFeeModalTeacher] = useState<Teacher | null>(null);
   const [newDefaultFee, setNewDefaultFee] = useState<number>(0);
+  const [candidateBookings, setCandidateBookings] = useState<Array<{id:string; class_code:string; start_date:string; end_date:string|null}>>([]);
+  const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
+  const [applyToCurrentMonth, setApplyToCurrentMonth] = useState<boolean>(true);
   const [showTeacherAccountManager, setShowTeacherAccountManager] = useState(false);
   const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -153,6 +156,25 @@ const TeachersPage = () => {
       onClick: (teacher) => {
         setFeeModalTeacher(teacher);
         setNewDefaultFee(teacher.default_class_fee ?? 0);
+        (async ()=>{
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth()+1, 0);
+          const startStr = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth()+1).padStart(2,'0')}-01`;
+          const endStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth()+1).padStart(2,'0')}-${String(endOfMonth.getDate()).padStart(2,'0')}`;
+          const { data, error } = await supabase
+            .from('bookings')
+            .select('id, class_code, start_date, end_date')
+            .eq('teacher_id', teacher.id)
+            .lte('start_date', endStr)
+            .or(`end_date.is.null,end_date.gte.${startStr}`)
+            .order('start_date', { ascending: true });
+          if (!error) {
+            const rows = (data as any[]) || [];
+            setCandidateBookings(rows.map(r=>({id:r.id, class_code:r.class_code || '-', start_date:r.start_date, end_date:r.end_date})));
+            setSelectedBookingIds(new Set(rows.map(r=>r.id)));
+          }
+        })();
       },
       variant: 'outline',
       size: 'sm',
@@ -372,7 +394,7 @@ const TeachersPage = () => {
         )}
 
         {/* Default fee modal */}
-        <Dialog open={!!feeModalTeacher} onOpenChange={(open) => { if(!open) setFeeModalTeacher(null); }}>
+        <Dialog open={!!feeModalTeacher} onOpenChange={(open) => { if(!open){ setFeeModalTeacher(null); setCandidateBookings([]); setSelectedBookingIds(new Set()); } }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>تعديل الرسوم الافتراضية للمعلم</DialogTitle>
@@ -380,8 +402,59 @@ const TeachersPage = () => {
             <div className="space-y-4">
               <div>
                 <Label>الرسوم الافتراضية (تطبق تلقائياً على كل مجموعات هذا المعلم التي ليست "مخصصة")</Label>
-                <Input type="number" value={newDefaultFee} min={0} onChange={(e)=> setNewDefaultFee(Number(e.target.value)||0)} />
-                <p className="text-xs text-muted-foreground mt-1">يمكنك تخصيص رسوم مجموعة معينة من صفحة إدارة المجموعة. التعديلات هنا لا تؤثر على المجموعات ذات الرسوم المخصصة.</p>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
+                  value={String(newDefaultFee ?? '')}
+                  onChange={(e)=>{
+                    const toEnglish = (s: string) => s.replace(/[\u0660-\u0669]/g, (d)=> String(d.charCodeAt(0)-0x0660));
+                    const raw = toEnglish(e.target.value);
+                    const normalized = raw.replace(',', '.');
+                    const parsed = normalized.trim() === '' ? NaN : Number(normalized);
+                    setNewDefaultFee(Number.isFinite(parsed) ? parsed : 0);
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="apply-current-month"
+                  type="checkbox"
+                  checked={applyToCurrentMonth}
+                  onChange={(e)=> setApplyToCurrentMonth(e.target.checked)}
+                />
+                <Label htmlFor="apply-current-month">تطبيق التغيير أيضاً على الشهر الحالي</Label>
+              </div>
+              <div className="space-y-2">
+                <Label>المجموعات التي سيُطبق عليها التغيير</Label>
+                <div className="max-h-56 overflow-auto rounded border p-2 space-y-1">
+                  {candidateBookings.length === 0 && (
+                    <div className="text-sm text-muted-foreground">لا توجد مجموعات حالية أو قادمة لهذا المعلم.</div>
+                  )}
+                  {candidateBookings.map((b)=>{
+                    const checked = selectedBookingIds.has(b.id);
+                    return (
+                      <label key={b.id} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e)=>{
+                              setSelectedBookingIds(prev=>{
+                                const n = new Set(prev);
+                                if(e.target.checked) n.add(b.id); else n.delete(b.id);
+                                return n;
+                              });
+                            }}
+                          />
+                          <span className="font-mono">{b.class_code}</span>
+                        </div>
+                        <span className="text-muted-foreground">{b.start_date}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="text-xs text-muted-foreground">المحدد حالياً: {selectedBookingIds.size} مجموعة</div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={()=> setFeeModalTeacher(null)}>إلغاء</Button>
@@ -389,7 +462,12 @@ const TeachersPage = () => {
                   onClick={async ()=>{
                     if(!feeModalTeacher) return;
                     try{
-                      await applyTeacherDefaultFee(feeModalTeacher.id, newDefaultFee);
+                      await applyTeacherDefaultFee(
+                        feeModalTeacher.id,
+                        newDefaultFee,
+                        Array.from(selectedBookingIds),
+                        { applyToCurrentMonth }
+                      );
                       setFeeModalTeacher(null);
                       setNewDefaultFee(0);
                       toast({ title: 'تم تطبيق الرسوم الافتراضية وتحديث المجموعات والطلاب' });

@@ -21,6 +21,38 @@ export const getBookings = async (): Promise<Booking[]> => {
   return data as Booking[];
 };
 
+export const getBookingsPaginated = async (params: { page: number; pageSize: number; hallId?: string; teacherId?: string; sortKey?: string; sortDirection?: 'asc' | 'desc' }): Promise<{ data: Booking[]; total: number; }> => {
+  const { page, pageSize, hallId, teacherId, sortKey, sortDirection } = params;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const allowedSortKeys = new Set<string>(['created_at', 'start_date']);
+  const effectiveSortKey = (sortKey && allowedSortKeys.has(sortKey)) ? sortKey : 'created_at';
+  const effectiveAscending = (sortDirection || 'desc') === 'asc';
+
+  let query = supabase
+    .from('bookings')
+    .select(`
+      *,
+      halls(name, capacity),
+      teachers(name, teacher_code),
+      academic_stages(name)
+    `, { count: 'exact' })
+    .order(effectiveSortKey, { ascending: effectiveAscending })
+    .range(from, to);
+
+  if (hallId && hallId !== 'all') {
+    query = query.eq('hall_id', hallId);
+  }
+  if (teacherId && teacherId !== 'all') {
+    query = query.eq('teacher_id', teacherId);
+  }
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { data: (data as Booking[]) || [], total: count || 0 };
+};
+
 export const addBooking = async (booking: Omit<Tables<"bookings">, "id" | "created_at" | "updated_at">) => {
   const { data, error } = await supabase
     .from("bookings")
@@ -140,6 +172,7 @@ export const getBookingById = async (id: string): Promise<Booking> => {
 // Export as bookingsApi object
 export const bookingsApi = {
   getAll: getBookings,
+  getPaginated: getBookingsPaginated,
   getById: getBookingById,
   getByDate: getBookingsByDate,
   create: addBooking,

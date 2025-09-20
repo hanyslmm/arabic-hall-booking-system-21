@@ -14,11 +14,6 @@ export default function MonthlyReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   
   const isAdmin = profile?.role === 'admin';
-  
-  // Redirect non-admin users
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
 
   // Monthly Income
   const { data: monthlyIncome = 0 } = useQuery({
@@ -35,7 +30,8 @@ export default function MonthlyReportsPage() {
       
       if (error) throw error;
       return data.reduce((sum, record) => sum + Number(record.amount), 0);
-    }
+    },
+    enabled: !!isAdmin,
   });
 
   // Monthly Expenses
@@ -53,7 +49,8 @@ export default function MonthlyReportsPage() {
       
       if (error) throw error;
       return data.reduce((sum, record) => sum + Number(record.amount), 0);
-    }
+    },
+    enabled: !!isAdmin,
   });
 
   // Student Count
@@ -71,7 +68,8 @@ export default function MonthlyReportsPage() {
       
       if (error) throw error;
       return data.length;
-    }
+    },
+    enabled: !!isAdmin,
   });
 
   // Active Bookings
@@ -85,12 +83,17 @@ export default function MonthlyReportsPage() {
       
       if (error) throw error;
       return data.length;
-    }
+    },
+    enabled: !!isAdmin,
   });
 
   const formatCurrencyLocal = (amount: number) => formatCurrency(amount);
 
   const monthlyProfit = monthlyIncome - monthlyExpenses;
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <UnifiedLayout>

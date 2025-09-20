@@ -17,8 +17,14 @@ const userSchema = z.object({
   username: z.string().min(1, "يرجى إدخال اسم المستخدم"),
   password: z.string().min(3, "كلمة المرور يجب أن تكون 3 أحرف على الأقل"),
   full_name: z.string().optional(),
-  email: z.string().email("يرجى إدخال بريد إلكتروني صحيح").optional().or(z.literal("")),
-  phone: z.string().optional(),
+  email: z
+    .union([z.string().email("يرجى إدخال بريد إلكتروني صحيح"), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
+  phone: z
+    .union([z.string(), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
   user_role: z.enum(["owner", "manager", "space_manager", "teacher"], {
     errorMap: () => ({ message: "يرجى اختيار الدور" })
   }),

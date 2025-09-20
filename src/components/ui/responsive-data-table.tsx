@@ -49,6 +49,14 @@ export function ResponsiveDataTable<T extends Record<string, any>>({
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
+  // Compute visible columns (desktop rules) early to avoid conditional hook usage
+  const visibleColumns = React.useMemo(() => {
+    const width = typeof window === 'undefined' ? 1920 : window.innerWidth;
+    if (width < 1024) return columns.filter(col => col.priority === 'high');
+    if (width < 1280) return columns.filter(col => col.priority !== 'low');
+    return columns;
+  }, [columns]);
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -134,20 +142,6 @@ export function ResponsiveDataTable<T extends Record<string, any>>({
   }
 
   // Desktop Table View
-  const visibleColumns = React.useMemo(() => {
-    if (typeof window === 'undefined') return columns;
-    
-    const width = window.innerWidth;
-    return columns.filter(col => {
-      if (width < 1024) { // lg breakpoint
-        return col.priority === 'high';
-      }
-      if (width < 1280) { // xl breakpoint
-        return col.priority !== 'low';
-      }
-      return true;
-    });
-  }, [columns]);
 
   return (
     <div className={cn("overflow-x-auto", className)}>

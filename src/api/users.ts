@@ -14,17 +14,17 @@ teacher_id?: string | null;
 export type CreateUserData = {
   username: string;
   password: string;
-  email?: string;
+  email?: string | null;
   full_name?: string;
-  phone?: string;
+  phone?: string | null;
   user_role: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only';
   teacher_id?: string;
 };
 
 export type UpdateUserData = {
   full_name?: string;
-  phone?: string;
-  email?: string;
+  phone?: string | null;
+  email?: string | null;
   user_role?: 'owner' | 'manager' | 'space_manager' | 'teacher' | 'read_only';
   password?: string;
 };
@@ -44,47 +44,49 @@ return data.map((profile: any) => ({
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
   try {
-    console.log('Creating user directly in database:', userData);
+    console.log('Creating user via Edge Function:', userData);
 
-    // Generate a unique ID for the user
-    const userId = crypto.randomUUID();
-    
-    // Create user profile directly in profiles table
-    const profileData = {
-      id: userId,
-      email: userData.email || null,
-      full_name: userData.full_name || null,
-      phone: userData.phone || null,
-      user_role: userData.user_role,
-      username: userData.username,
-      teacher_id: userData.user_role === 'teacher' ? userData.teacher_id : null,
-      role: 'user',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Determine an email to use for auth: provided email or username@admin.com
+    const effectiveEmail = (userData.email && userData.email.trim().length > 0)
+      ? userData.email
+      : `${userData.username}@admin.com`;
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .insert([profileData])
-      .select()
-      .single();
+    // Use Supabase Edge Function to create the auth user + profile atomically
+    const { data, error } = await (supabase as any).functions.invoke('create-user', {
+      body: {
+        email: effectiveEmail,
+        password: userData.password,
+        full_name: userData.full_name ?? null,
+        phone: userData.phone ?? null,
+        user_role: userData.user_role,
+      }
+    });
 
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
-      throw new Error(profileError.message || 'Failed to create user profile');
+    if (error) {
+      console.error('Edge function create-user error:', error);
+      throw new Error(error.message || 'Failed to create user');
     }
 
-    console.log('User created successfully:', profile);
-    
+    const profile = data?.profile ?? data?.data ?? data;
+
+    // Optionally persist username if column exists
+    try {
+      if (profile?.id && userData.username) {
+        await supabase.from('profiles').update({ username: userData.username }).eq('id', profile.id);
+      }
+    } catch (e) {
+      console.warn('Optional username update failed (non-fatal):', e);
+    }
+
     return {
       id: profile.id,
       email: profile.email,
       full_name: profile.full_name,
       phone: profile.phone,
       user_role: profile.user_role,
-      created_at: profile.created_at,
-      username: profile.username,
-      teacher_id: profile.teacher_id
+      created_at: profile.created_at ?? new Date().toISOString(),
+      username: userData.username ?? profile.username,
+      teacher_id: profile.teacher_id ?? null,
     } as UserProfile;
 
   } catch (error: any) {

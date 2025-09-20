@@ -23,6 +23,7 @@ const bookingSchema = z.object({
   days_of_week: z.array(z.string()).min(1, "يرجى اختيار يوم واحد على الأقل"),
   status: z.enum(['active', 'cancelled', 'completed']),
   class_code: z.string().optional(),
+  end_date: z.string().nullable().optional(),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -60,6 +61,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
       days_of_week: booking.days_of_week,
       status: booking.status,
       class_code: booking.class_code || '',
+      end_date: booking.end_date || null,
     },
   });
 
@@ -76,6 +78,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
         days_of_week: booking.days_of_week,
         status: booking.status,
         class_code: booking.class_code || '',
+        end_date: booking.end_date || null,
       });
     }
   }, [booking, form]);
@@ -124,6 +127,7 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
           days_of_week: data.days_of_week,
           status: data.status,
           class_code: data.class_code || null,
+          end_date: data.end_date || null,
         })
         .eq('id', bookingId);
 
@@ -285,6 +289,20 @@ export const EditBookingModal = ({ bookingId, booking }: EditBookingModalProps) 
             </Select>
             {form.formState.errors.status && (
               <p className="text-sm text-destructive">{form.formState.errors.status.message}</p>
+            )}
+          </div>
+
+          {/* End Date - to stop continuation in next months */}
+          <div className="space-y-2">
+            <Label htmlFor="end_date">تاريخ الإيقاف (اختياري)</Label>
+            <Input
+              type="date"
+              value={form.watch('end_date') || ''}
+              onChange={(e) => form.setValue('end_date', e.target.value || null)}
+            />
+            <p className="text-xs text-muted-foreground">إذا تم تحديد تاريخ الإيقاف، لن تُحسب المجموعة بعد هذا التاريخ ويمكن إنشاء مجموعة جديدة بنفس الوقت والقاعة.</p>
+            {(form.formState.errors as any)?.end_date && (
+              <p className="text-sm text-destructive">{(form.formState.errors as any).end_date?.message}</p>
             )}
           </div>
 

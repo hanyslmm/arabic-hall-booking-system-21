@@ -109,7 +109,11 @@ export function ExpenseCategoryManager() {
                     placeholder="مثال: صيانة الأجهزة"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        editingCategory ? handleEditCategory() : handleAddCategory();
+                        if (editingCategory) {
+                          handleEditCategory();
+                        } else {
+                          handleAddCategory();
+                        }
                       }
                     }}
                   />

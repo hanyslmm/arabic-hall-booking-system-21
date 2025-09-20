@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, DollarSign } from "lucide-react";
 import { FastReceptionistModal } from "@/components/receptionist/FastReceptionistModal";
 // import StatsCards from "@/components/dashboard/StatsCards";
-import { DailyFinanceCards } from "@/components/dashboard/DailyFinanceCards";
+import ManagerKPIs from "@/components/dashboard/ManagerKPIs";
 import { MonthSelector } from "@/components/dashboard/MonthSelector";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { HallsGrid } from "@/components/dashboard/HallsGrid";
@@ -136,8 +136,8 @@ export function AdminDashboard() {
         />
       </div>
 
-      {/* Daily finance overview with per-user filtering for admins; managers see self-only */}
-      <DailyFinanceCards />
+      {/* KPIs tailored for hall managers and higher (no money totals) */}
+      <ManagerKPIs />
 
       <HallsGrid occupancyData={occupancyData || []} />
 
