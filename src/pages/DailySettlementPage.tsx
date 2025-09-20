@@ -280,7 +280,7 @@ export default function DailySettlementPage() {
         </div>
       </div>
 
-      {/* Quick Add form for hall managers: always visible, one unified form for today's operations */
+      {/* Quick Add form for hall managers: always visible, one unified form for today's operations */}
       {isHallManager && (
         <Card>
           <CardHeader>
