@@ -149,6 +149,18 @@ const defaultNavigation: NavigationGroup[] = [
         icon: FileText,
         description: "إضافة وعرض المصروفات اليومية",
       },
+      {
+        title: "التقفيل اليومي",
+        url: "/daily-settlement",
+        icon: FileText,
+        description: "تسجيل الإيرادات والمصروفات اليومية",
+      },
+      {
+        title: "السيولة الفعلية",
+        url: "/actual-liquidity", 
+        icon: FileText,
+        description: "عرض تقارير السيولة والأرباح",
+      },
     ],
   },
   {
@@ -386,6 +398,14 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
                   // Show expenses pages for admin and manager roles
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {
                     return isAdmin || canManageData;
+                  }
+                  // Show settlement pages for space managers and above
+                  if (item.url === '/daily-settlement') {
+                    return profile?.user_role === 'space_manager' || isAdmin || canManageUsers;
+                  }
+                  // Show liquidity page for owners and managers only
+                  if (item.url === '/actual-liquidity') {
+                    return isOwner || isAdmin || profile?.user_role === 'manager';
                   }
                   // Show audit logs for admin only
                   if (item.url === '/audit-logs') {

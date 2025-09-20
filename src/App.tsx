@@ -39,6 +39,8 @@ import {
   LazyAdminPrivilegesPage,
   LazyDailyExpensesPage,
   LazyExpensesPage,
+  LazyDailySettlementPage,
+  LazyActualLiquidityPage,
   LazyTeacherDashboard,
   LazyStudentLoginPage,
   LazyStudentDashboard,
@@ -187,6 +189,8 @@ const App = () => {
                   <Route path="admin-privileges" element={<LazyAdminPrivilegesPage />} />
                   <Route path="expenses" element={<LazyExpensesPage />} />
                   <Route path="daily-expenses" element={<LazyDailyExpensesPage />} />
+                  <Route path="daily-settlement" element={<LazyDailySettlementPage />} />
+                  <Route path="actual-liquidity" element={<LazyActualLiquidityPage />} />
                   <Route path="student-dashboard" element={<LazyStudentDashboard />} />
                   <Route path="simple-student-dashboard" element={<SimpleStudentDashboard />} />
                   <Route path="settings" element={<SettingsPage />} />

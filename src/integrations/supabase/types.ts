@@ -200,6 +200,51 @@ export type Database = {
           },
         ]
       }
+      daily_settlements: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          settlement_date: string
+          source_id: string | null
+          source_name: string
+          source_type: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          settlement_date?: string
+          source_id?: string | null
+          source_name: string
+          source_type: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          settlement_date?: string
+          source_id?: string | null
+          source_name?: string
+          source_type?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
