@@ -24,6 +24,12 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
       title: "الإحصائيات",
       items: [
         { title: "لوحة التحكم", url: "/", icon: Home },
+        // Show Daily Settlement for hall managers and higher (manager/owner/admin)
+        ...(
+          (profile?.user_role === 'space_manager' || profile?.user_role === 'manager' || isOwnerOrAdmin)
+            ? [{ title: "التقفيل اليومي", url: "/daily-settlement", icon: FileText }]
+            : []
+        ),
       ],
     },
     {
