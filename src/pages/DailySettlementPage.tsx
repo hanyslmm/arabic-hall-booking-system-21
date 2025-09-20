@@ -204,12 +204,12 @@ export default function DailySettlementPage() {
                       
                       {formData.source_type === 'teacher' ? (
                         <Select onValueChange={handleTeacherSelect}>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-background border border-border">
                             <SelectValue placeholder="اختر معلم" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-background border border-border shadow-lg z-50">
                             {teachers.map((teacher) => (
-                              <SelectItem key={teacher.id} value={teacher.id}>
+                              <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
                                 {teacher.name}
                               </SelectItem>
                             ))}
@@ -229,12 +229,12 @@ export default function DailySettlementPage() {
                   <div>
                     <Label htmlFor="category">فئة المصروف *</Label>
                     <Select onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background border border-border">
                         <SelectValue placeholder="اختر فئة المصروف" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background border border-border shadow-lg z-50">
                         {expenseCategories.map((category) => (
-                          <SelectItem key={category} value={category}>
+                          <SelectItem key={category} value={category} className="hover:bg-accent">
                             {category}
                           </SelectItem>
                         ))}
