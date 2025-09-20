@@ -57,6 +57,12 @@ const defaultNavigation: NavigationGroup[] = [
         icon: Home,
         description: "نظرة عامة على النظام",
       },
+      {
+        title: "التقفيل اليومي",
+        url: "/daily-settlement",
+        icon: FileText,
+        description: "تسجيل الإيرادات والمصروفات اليومية",
+      },
     ],
   },
   {
@@ -399,7 +405,7 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {
                     return isAdmin || canManageData;
                   }
-                  // Show settlement pages for space managers and above
+                  // Show settlement pages for space managers and above (appears in both sections)
                   if (item.url === '/daily-settlement') {
                     return profile?.user_role === 'space_manager' || isAdmin || canManageUsers;
                   }
