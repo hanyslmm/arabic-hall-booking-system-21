@@ -9,17 +9,36 @@ import { Loader2 } from "lucide-react";
 
 export const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
+
+  // Function to convert username to email if needed
+  const getEmailFromInput = (input: string): string => {
+    // If input contains @ symbol, treat as email
+    if (input.includes('@')) {
+      return input;
+    }
+    
+    // Map known usernames to their email addresses
+    const usernameToEmailMap: { [key: string]: string } = {
+      'admin': 'admin@system.local',
+      'hend': 'hend@admin.com',
+      'tasneem': 'tasneem@admin.com'
+    };
+    
+    return usernameToEmailMap[input.toLowerCase()] || `${input}@admin.com`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      const emailToUse = getEmailFromInput(emailOrUsername);
+      
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailToUse,
         password,
       });
       if (error) throw error;
@@ -51,13 +70,13 @@ export const AuthForm = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Label htmlFor="emailOrUsername">البريد الإلكتروني أو اسم المستخدم</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="example@domain.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="emailOrUsername"
+                type="text"
+                placeholder="admin أو example@domain.com"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
                 required
               />
             </div>
