@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { dailySettlementsApi, CreateSettlementData } from "@/api/dailySettlements";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/utils/currency";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Teacher {
   id: string;
@@ -32,10 +33,13 @@ const expenseCategories = [
 ];
 
 export default function DailySettlementPage() {
+  const { profile } = useAuth();
+  const isHallManager = profile?.user_role === 'space_manager';
+  const todayStr = new Date().toISOString().split('T')[0];
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [formData, setFormData] = useState<CreateSettlementData>({
-    settlement_date: new Date().toISOString().split('T')[0],
+    settlement_date: todayStr,
     type: 'income',
     amount: 0,
     source_type: 'teacher',
@@ -129,8 +133,11 @@ export default function DailySettlementPage() {
   };
 
   useEffect(() => {
-    setFormData(prev => ({ ...prev, settlement_date: selectedDate }));
-  }, [selectedDate]);
+    // Hall managers are locked to today's date; others can switch
+    const effectiveDate = isHallManager ? todayStr : selectedDate;
+    setSelectedDate(effectiveDate);
+    setFormData(prev => ({ ...prev, settlement_date: effectiveDate }));
+  }, [selectedDate, isHallManager]);
 
   const incomeSettlements = settlements.filter(s => s.type === 'income');
   const expenseSettlements = settlements.filter(s => s.type === 'expense');
@@ -140,24 +147,28 @@ export default function DailySettlementPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">التقفيل اليومي</h1>
         <div className="flex gap-4 items-center">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto"
-          />
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة معاملة
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>إضافة معاملة جديدة</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+          {!isHallManager && (
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-auto"
+            />
+          )}
+          {!isHallManager && (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 ml-2" />
+                  إضافة معاملة
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>إضافة معاملة جديدة</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Shared form fields (same as quick form below) */}
                 <div>
                   <Label>نوع المعاملة *</Label>
                   <Tabs 
@@ -262,11 +273,126 @@ export default function DailySettlementPage() {
                     إلغاء
                   </Button>
                 </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
+
+      {/* Quick Add form for hall managers: always visible, one unified form for today's operations */
+      {isHallManager && (
+        <Card>
+          <CardHeader>
+            <CardTitle>إضافة معاملة اليوم</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="text-sm text-muted-foreground">تاريخ اليوم: {new Date(todayStr).toLocaleDateString('ar-EG')}</div>
+              <div>
+                <Label>نوع المعاملة *</Label>
+                <Tabs 
+                  value={formData.type} 
+                  onValueChange={(value: 'income' | 'expense') => 
+                    setFormData(prev => ({ ...prev, type: value }))
+                  }
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="income" className="text-green-600">إيرادات</TabsTrigger>
+                    <TabsTrigger value="expense" className="text-red-600">مصروفات</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              <div>
+                <Label htmlFor="amount2">المبلغ *</Label>
+                <Input
+                  id="amount2"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                  placeholder="أدخل المبلغ"
+                  required
+                />
+              </div>
+
+              {formData.type === 'income' ? (
+                <div>
+                  <Label>مصدر الإيراد *</Label>
+                  <div className="space-y-2">
+                    <Tabs 
+                      value={formData.source_type} 
+                      onValueChange={(value) => 
+                        setFormData(prev => ({ ...prev, source_type: value, source_name: '', source_id: undefined }))
+                      }
+                    >
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="teacher">معلم</TabsTrigger>
+                        <TabsTrigger value="other">أخرى</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    {formData.source_type === 'teacher' ? (
+                      <Select onValueChange={handleTeacherSelect}>
+                        <SelectTrigger className="bg-background border border-border">
+                          <SelectValue placeholder="اختر معلم" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-lg z-50">
+                          {teachers.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
+                              {teacher.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="اسم مصدر الإيراد"
+                        value={formData.source_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, source_name: e.target.value }))}
+                        required
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="category2">فئة المصروف *</Label>
+                  <Select onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
+                    <SelectTrigger className="bg-background border border-border">
+                      <SelectValue placeholder="اختر فئة المصروف" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
+                      {expenseCategories.map((category) => (
+                        <SelectItem key={category} value={category} className="hover:bg-accent">
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="notes2">ملاحظات</Label>
+                <Textarea
+                  id="notes2"
+                  value={formData.notes || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="ملاحظات إضافية (اختياري)"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" disabled={addSettlementMutation.isPending} className="flex-1">
+                  {addSettlementMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
