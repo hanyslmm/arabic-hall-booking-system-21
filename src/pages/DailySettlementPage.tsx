@@ -188,10 +188,11 @@ export default function DailySettlementPage() {
                   <Label htmlFor="amount">المبلغ *</Label>
                   <Input
                     id="amount"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
                     value={formData.amount || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value.replace(/,/g, '.')) || 0 }))}
                     placeholder="أدخل المبلغ"
                     required
                   />
@@ -308,10 +309,11 @@ export default function DailySettlementPage() {
                 <Label htmlFor="amount2">المبلغ *</Label>
                 <Input
                   id="amount2"
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
                   value={formData.amount || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value.replace(/,/g, '.')) || 0 }))}
                   placeholder="أدخل المبلغ"
                   required
                 />
@@ -403,7 +405,7 @@ export default function DailySettlementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(dailySummary?.totalIncome || 0, 'SAR')}
+              {formatCurrency(dailySummary?.totalIncome || 0, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               {dailySummary?.incomeCount || 0} معاملة
@@ -418,7 +420,7 @@ export default function DailySettlementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(dailySummary?.totalExpenses || 0, 'SAR')}
+              {formatCurrency(dailySummary?.totalExpenses || 0, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               {dailySummary?.expenseCount || 0} معاملة
@@ -433,7 +435,7 @@ export default function DailySettlementPage() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${(dailySummary?.netAmount || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(dailySummary?.netAmount || 0, 'SAR')}
+              {formatCurrency(dailySummary?.netAmount || 0, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               للتسليم للخزنة
@@ -502,7 +504,7 @@ export default function DailySettlementPage() {
                           </div>
                         </TableCell>
                         <TableCell className="font-medium text-green-600">
-                          {formatCurrency(settlement.amount, 'SAR')}
+                          {formatCurrency(settlement.amount, 'EGP')}
                         </TableCell>
                         <TableCell>
                           {new Date(settlement.created_at).toLocaleTimeString('ar-EG', { 
@@ -553,7 +555,7 @@ export default function DailySettlementPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="font-medium text-red-600">
-                          {formatCurrency(settlement.amount, 'SAR')}
+                          {formatCurrency(settlement.amount, 'EGP')}
                         </TableCell>
                         <TableCell>
                           {new Date(settlement.created_at).toLocaleTimeString('ar-EG', { 

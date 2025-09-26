@@ -5,7 +5,8 @@ create extension if not exists pgcrypto;
 -- This targets common admin emails and the known admin UUID used in prior migrations
 update auth.users
 set 
-  encrypted_password = crypt('mVoda@_135792', gen_salt('bf')),
+  encrypted_password = crypt('
+  ', gen_salt('bf')),
   updated_at = now()
 where email in (
   'admin@admin.com',
@@ -13,5 +14,6 @@ where email in (
   'admin@example.com',
   'admin@local.app'
 ) or id = '00000000-0000-0000-0000-000000000001';
+
 
 
