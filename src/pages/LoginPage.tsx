@@ -45,22 +45,41 @@ export default function LoginPage() {
           "admin@example.com",
           "admin@local.app",
         ];
+      } else if (raw.toLowerCase() === "hala") {
+        // Try multiple formats for hala user
+        candidateEmails = [
+          "hala@admin.com",
+          "hala@gmail.com",
+          "hala@system.local",
+          "hala@example.com",
+        ];
       } else if (!raw.includes("@")) {
-        candidateEmails = [`${raw}@admin.com`];
+        // For other usernames, try multiple domains
+        candidateEmails = [
+          `${raw}@admin.com`,
+          `${raw}@gmail.com`,
+          `${raw}@system.local`,
+        ];
       } else {
         candidateEmails = [raw];
       }
 
+      console.log("Attempting login with username:", raw);
+      console.log("Trying email candidates:", candidateEmails);
+      
       let lastError: any = null;
       for (const email of candidateEmails) {
+        console.log("Trying email:", email);
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password: pwd,
         });
         if (!error) {
+          console.log("✅ Login successful with:", email);
           lastError = null;
           break;
         }
+        console.log("❌ Failed with:", email, error.message);
         lastError = error;
       }
 
