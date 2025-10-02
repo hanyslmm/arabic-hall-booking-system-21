@@ -44,49 +44,72 @@ return data.map((profile: any) => ({
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
   try {
-    console.log('Creating user via Edge Function:', userData);
+    console.log('Creating user directly via Supabase Auth:', userData);
 
     // Determine an email to use for auth: provided email or username@admin.com
     const effectiveEmail = (userData.email && userData.email.trim().length > 0)
       ? userData.email
       : `${userData.username}@admin.com`;
 
-    // Use Supabase Edge Function to create the auth user + profile atomically
-    const { data, error } = await (supabase as any).functions.invoke('create-user', {
-      body: {
-        email: effectiveEmail,
-        password: userData.password,
-        full_name: userData.full_name ?? null,
-        phone: userData.phone ?? null,
-        user_role: userData.user_role,
+    // Step 1: Create auth user directly
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: effectiveEmail,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.full_name,
+          username: userData.username
+        }
       }
     });
 
-    if (error) {
-      console.error('Edge function create-user error:', error);
-      throw new Error(error.message || 'Failed to create user');
+    if (authError) {
+      console.error('Auth user creation error:', authError);
+      throw new Error(authError.message || 'Failed to create auth user');
     }
 
-    const profile = data?.profile ?? data?.data ?? data;
+    if (!authData.user) {
+      throw new Error('No user data returned from auth signup');
+    }
 
-    // Optionally persist username if column exists
-    try {
-      if (profile?.id && userData.username) {
-        await supabase.from('profiles').update({ username: userData.username }).eq('id', profile.id);
+    console.log('Auth user created successfully:', authData.user.id);
+
+    // Step 2: Create profile directly
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        email: effectiveEmail,
+        full_name: userData.full_name,
+        username: userData.username,
+        user_role: userData.user_role,
+        phone: userData.phone
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      // Try to clean up the auth user if profile creation fails
+      try {
+        await supabase.auth.admin.deleteUser(authData.user.id);
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup auth user:', cleanupError);
       }
-    } catch (e) {
-      console.warn('Optional username update failed (non-fatal):', e);
+      throw new Error(profileError.message || 'Failed to create user profile');
     }
+
+    console.log('Profile created successfully:', profileData);
 
     return {
-      id: profile.id,
-      email: profile.email,
-      full_name: profile.full_name,
-      phone: profile.phone,
-      user_role: profile.user_role,
-      created_at: profile.created_at ?? new Date().toISOString(),
-      username: userData.username ?? profile.username,
-      teacher_id: profile.teacher_id ?? null,
+      id: profileData.id,
+      email: profileData.email,
+      full_name: profileData.full_name,
+      phone: profileData.phone,
+      user_role: profileData.user_role,
+      created_at: profileData.created_at,
+      username: profileData.username,
+      teacher_id: profileData.teacher_id ?? null,
     } as UserProfile;
 
   } catch (error: any) {

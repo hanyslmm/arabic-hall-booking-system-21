@@ -40,35 +40,56 @@ export default function CreateUserPage() {
         }
       });
 
-      if (authError && !authError.message.includes('already registered')) {
-        throw authError;
-      }
+      if (authError) {
+        if (authError.message.includes('already registered')) {
+          // User exists, try to sign in to verify credentials
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: formData.password
+          });
+          
+          if (signInError) {
+            throw new Error('User already exists but password is incorrect');
+          }
+          
+          // User exists and password is correct, update profile
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: signInData.user.id,
+              email: email,
+              full_name: formData.fullName,
+              username: formData.username,
+              user_role: formData.role
+            })
+            .select()
+            .single();
 
-      let userId = authData?.user?.id;
-      
-      if (authError && authError.message.includes('already registered')) {
-        // Try to sign in to get user ID
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: formData.password
-        });
-        
-        if (signInError) {
-          throw new Error('User exists but password is incorrect');
+          if (profileError) {
+            throw new Error('Profile update error: ' + profileError.message);
+          }
+
+          setResult({
+            success: true,
+            email: email,
+            profile: profileData,
+            message: 'User already existed, profile updated successfully'
+          });
+          return;
+        } else {
+          throw authError;
         }
-        
-        userId = signInData.user.id;
       }
 
-      if (!userId) {
-        throw new Error('Could not create or find user');
+      if (!authData.user) {
+        throw new Error('No user data returned from signup');
       }
 
-      // Step 2: Create/update profile
+      // Step 2: Create profile for new user
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
+        .insert({
+          id: authData.user.id,
           email: email,
           full_name: formData.fullName,
           username: formData.username,
@@ -78,13 +99,20 @@ export default function CreateUserPage() {
         .single();
 
       if (profileError) {
-        throw new Error('Profile error: ' + profileError.message);
+        // Try to clean up the auth user if profile creation fails
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup auth user:', cleanupError);
+        }
+        throw new Error('Profile creation error: ' + profileError.message);
       }
 
       setResult({
         success: true,
         email: email,
-        profile: profileData
+        profile: profileData,
+        message: 'User created successfully'
       });
 
     } catch (err: any) {
