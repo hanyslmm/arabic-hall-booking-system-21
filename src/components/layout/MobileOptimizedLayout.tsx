@@ -3,6 +3,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ResponsiveLayout } from './ResponsiveLayout';
 import { AutoHideSidebar } from './AutoHideSidebar';
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus } from "lucide-react";
 
 interface MobileOptimizedLayoutProps {
@@ -12,19 +13,39 @@ interface MobileOptimizedLayoutProps {
 export function MobileOptimizedLayout({ children }: MobileOptimizedLayoutProps) {
   const isMobile = useIsMobile();
   const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
+  const featureAccess = useFeatureAccess();
   
   const userRole = profile?.role;
   const isOwnerOrAdmin = isAdmin || isOwner || canManageUsers;
   const isTeacher = userRole === 'user';
 
-  // Build navigation based on role - ensuring admin/owner can see everything
+  // Build navigation based on feature access control
   const navigation = [
     {
       title: "الإحصائيات",
       items: [
         { title: "لوحة التحكم", url: "/", icon: Home },
+        // Show Daily Settlement for hall managers and higher
+        ...(
+          featureAccess.canAccessDailySettlement
+            ? [{ title: "التقفيل اليومي", url: "/daily-settlement", icon: FileText }]
+            : []
+        ),
       ],
     },
+    // Student Management - restricted for phase 1 target roles
+    ...(
+      featureAccess.canAccessStudentManagement
+        ? [{
+            title: "إدارة الطلاب",
+            items: [
+              { title: "الطلاب", url: "/students", icon: Users },
+              { title: "تسجيل الطلاب", url: "/student-registrations", icon: UserPlus },
+            ],
+          }]
+        : []
+    ),
+    // Bookings Management - always available
     {
       title: isTeacher ? "المجموعات" : "إدارة المجموعات",
       items: [
@@ -40,30 +61,35 @@ export function MobileOptimizedLayout({ children }: MobileOptimizedLayoutProps) 
         ),
       ] as any,
     },
-    {
-      title: "إدارة الطلاب",
-      items: [
-        { title: "الطلاب", url: "/students", icon: Users },
-        { title: "تسجيل الطلاب", url: "/student-registrations", icon: UserPlus },
-      ],
-    },
+    // Resource Management - Hall Management always available, others restricted
     ...(
-      // Show resource management for admins, owners, and space managers (but not teachers)
-      (isOwnerOrAdmin || userRole === 'space_manager') && !isTeacher
+      featureAccess.canAccessHallManagement
         ? [{
             title: "إدارة الموارد",
             items: [
               { title: "القاعات", url: "/halls", icon: Building2 },
-              { title: "المعلمين", url: "/teachers", icon: GraduationCap },
-              { title: "المواد الدراسية", url: "/subjects", icon: BookOpen },
-              { title: "المراحل التعليمية", url: "/stages", icon: GraduationCap },
+              // Teacher Management - restricted for phase 1 target roles
+              ...(
+                featureAccess.canAccessTeacherManagement
+                  ? [{ title: "المعلمين", url: "/teachers", icon: GraduationCap }]
+                  : []
+              ),
+              // Subjects and Stages - restricted for phase 1 target roles
+              ...(
+                featureAccess.canAccessTeacherManagement
+                  ? [
+                      { title: "المواد الدراسية", url: "/subjects", icon: BookOpen },
+                      { title: "المراحل التعليمية", url: "/stages", icon: GraduationCap },
+                    ]
+                  : []
+              ),
             ],
           }]
         : []
     ),
+    // Financial Reports - restricted for phase 1 target roles
     ...(
-      // Show financial reports ONLY for admins
-      isAdmin && !isTeacher
+      featureAccess.canAccessFinancialReports
         ? [{
             title: "التقارير المالية",
             items: [
@@ -73,9 +99,9 @@ export function MobileOptimizedLayout({ children }: MobileOptimizedLayoutProps) 
           }]
         : []
     ),
+    // System Management - restricted for phase 1 target roles
     ...(
-      // Show system management for admins and owners only
-      isOwnerOrAdmin && !isTeacher
+      featureAccess.canAccessSystemManagement
         ? [{
             title: "إدارة النظام",
             items: [

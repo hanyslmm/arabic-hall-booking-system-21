@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus } from "lucide-react";
 
@@ -13,12 +14,13 @@ const LayoutAppliedContext = createContext<boolean>(false);
 export function UnifiedLayout({ children }: UnifiedLayoutProps) {
   const isNested = useContext(LayoutAppliedContext);
   const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
+  const featureAccess = useFeatureAccess();
   
   const userRole = profile?.role;
   const isOwnerOrAdmin = isAdmin || isOwner || canManageUsers;
   const isTeacher = userRole === 'user';
 
-  // Build navigation based on role - ensuring admin/owner can see everything
+  // Build navigation based on feature access control
   const navigation = [
     {
       title: "الإحصائيات",
@@ -26,12 +28,25 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
         { title: "لوحة التحكم", url: "/", icon: Home },
         // Show Daily Settlement for hall managers and higher (manager/owner/admin)
         ...(
-          (profile?.user_role === 'space_manager' || profile?.user_role === 'manager' || isOwnerOrAdmin)
+          featureAccess.canAccessDailySettlement
             ? [{ title: "التقفيل اليومي", url: "/daily-settlement", icon: FileText }]
             : []
         ),
       ],
     },
+    // Student Management - restricted for phase 1 target roles
+    ...(
+      featureAccess.canAccessStudentManagement
+        ? [{
+            title: "إدارة الطلاب",
+            items: [
+              { title: "الطلاب", url: "/students", icon: Users },
+              { title: "تسجيل الطلاب", url: "/student-registrations", icon: UserPlus },
+            ],
+          }]
+        : []
+    ),
+    // Bookings Management - always available
     {
       title: isTeacher ? "المجموعات" : "إدارة المجموعات",
       items: [
@@ -47,30 +62,35 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
         ),
       ] as any,
     },
-    {
-      title: "إدارة الطلاب",
-      items: [
-        { title: "الطلاب", url: "/students", icon: Users },
-        { title: "تسجيل الطلاب", url: "/student-registrations", icon: UserPlus },
-      ],
-    },
+    // Resource Management - Hall Management always available, others restricted
     ...(
-      // Show resource management for admins, owners, and space managers (but not teachers)
-      (isOwnerOrAdmin || userRole === 'space_manager') && !isTeacher
+      featureAccess.canAccessHallManagement
         ? [{
             title: "إدارة الموارد",
             items: [
               { title: "القاعات", url: "/halls", icon: Building2 },
-              { title: "المعلمين", url: "/teachers", icon: GraduationCap },
-              { title: "المواد الدراسية", url: "/subjects", icon: BookOpen },
-              { title: "المراحل التعليمية", url: "/stages", icon: GraduationCap },
+              // Teacher Management - restricted for phase 1 target roles
+              ...(
+                featureAccess.canAccessTeacherManagement
+                  ? [{ title: "المعلمين", url: "/teachers", icon: GraduationCap }]
+                  : []
+              ),
+              // Subjects and Stages - restricted for phase 1 target roles
+              ...(
+                featureAccess.canAccessTeacherManagement
+                  ? [
+                      { title: "المواد الدراسية", url: "/subjects", icon: BookOpen },
+                      { title: "المراحل التعليمية", url: "/stages", icon: GraduationCap },
+                    ]
+                  : []
+              ),
             ],
           }]
         : []
     ),
+    // Financial Reports - restricted for phase 1 target roles
     ...(
-      // Show financial reports for owner and general manager only
-      (isOwner || userRole === 'manager') && !isTeacher
+      featureAccess.canAccessFinancialReports
         ? [{
             title: "التقارير المالية",
             items: [
@@ -80,9 +100,9 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
           }]
         : []
     ),
+    // System Management - restricted for phase 1 target roles
     ...(
-      // Show system management for admins and owners only
-      isOwnerOrAdmin && !isTeacher
+      featureAccess.canAccessSystemManagement
         ? [{
             title: "إدارة النظام",
             items: [

@@ -54,6 +54,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
 import { StudentRouteGuard } from "./components/auth/StudentRouteGuard";
+import { FeatureRouteGuard } from "./components/auth/FeatureRouteGuard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -173,29 +174,153 @@ const App = () => {
                 <Route element={<ProtectedLayout />}>
                   <Route index element={<RootRoute />} />
                   <Route path="booking" element={<LazyBookingPage />} />
-                  <Route path="users" element={<LazyUsersPage />} />
-                  <Route path="teachers" element={<LazyTeachersPage />} />
+                  
+                  {/* Student Management - Restricted for Phase 1 */}
+                  <Route path="students" element={
+                    <FeatureRouteGuard 
+                      feature="student-management" 
+                      featureName="إدارة الطلاب"
+                      description="إدارة بيانات الطلاب والتسجيلات"
+                      estimatedTime="المرحلة الثانية"
+                    >
+                      <LazyStudentsPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="student-registrations" element={
+                    <FeatureRouteGuard 
+                      feature="student-management" 
+                      featureName="تسجيل الطلاب"
+                      description="تسجيل الطلاب الجدد في النظام"
+                      estimatedTime="المرحلة الثانية"
+                    >
+                      <LazyStudentRegistrationsPage />
+                    </FeatureRouteGuard>
+                  } />
+                  
+                  {/* Teacher Management - Restricted for Phase 1 */}
+                  <Route path="teachers" element={
+                    <FeatureRouteGuard 
+                      feature="teacher-management" 
+                      featureName="إدارة المعلمين"
+                      description="إدارة بيانات المعلمين والمواد الدراسية"
+                      estimatedTime="المرحلة الثانية"
+                    >
+                      <LazyTeachersPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="stages" element={
+                    <FeatureRouteGuard 
+                      feature="teacher-management" 
+                      featureName="المراحل التعليمية"
+                      description="إدارة المراحل التعليمية"
+                      estimatedTime="المرحلة الثانية"
+                    >
+                      <LazyStagesPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="subjects" element={
+                    <FeatureRouteGuard 
+                      feature="teacher-management" 
+                      featureName="المواد الدراسية"
+                      description="إدارة المواد الدراسية"
+                      estimatedTime="المرحلة الثانية"
+                    >
+                      <LazySubjectsPage />
+                    </FeatureRouteGuard>
+                  } />
+                  
+                  {/* Hall Management - Always Available for Target Roles */}
                   <Route path="halls" element={<LazyHallsPage />} />
-                  <Route path="stages" element={<LazyStagesPage />} />
-                  <Route path="subjects" element={<LazySubjectsPage />} />
+                  
+                  {/* Bookings - Always Available */}
                   <Route path="bookings" element={<LazyBookingsPage />} />
-                  <Route path="students" element={<LazyStudentsPage />} />
-                  <Route path="student-registrations" element={<LazyStudentRegistrationsPage />} />
+                  
+                  {/* Financial Reports - Restricted for Phase 1 */}
+                  <Route path="reports" element={
+                    <FeatureRouteGuard 
+                      feature="financial-reports" 
+                      featureName="التقارير المالية"
+                      description="التقارير المالية والإحصائيات"
+                      estimatedTime="المرحلة الثالثة"
+                    >
+                      <ReportsPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="expenses" element={
+                    <FeatureRouteGuard 
+                      feature="expense-management" 
+                      featureName="إدارة المصروفات"
+                      description="إدارة المصروفات والتكاليف"
+                      estimatedTime="المرحلة الثالثة"
+                    >
+                      <LazyExpensesPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="daily-expenses" element={
+                    <FeatureRouteGuard 
+                      feature="expense-management" 
+                      featureName="المصروفات اليومية"
+                      description="تسجيل وإدارة المصروفات اليومية"
+                      estimatedTime="المرحلة الثالثة"
+                    >
+                      <LazyDailyExpensesPage />
+                    </FeatureRouteGuard>
+                  } />
+                  
+                  {/* Daily Settlement - Available for Target Roles */}
+                  <Route path="daily-settlement" element={<LazyDailySettlementPage />} />
+                  
+                  {/* System Management - Restricted for Phase 1 */}
+                  <Route path="users" element={
+                    <FeatureRouteGuard 
+                      feature="user-management" 
+                      featureName="إدارة المستخدمين"
+                      description="إدارة حسابات المستخدمين والصلاحيات"
+                      estimatedTime="المرحلة الرابعة"
+                    >
+                      <LazyUsersPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="admin-privileges" element={
+                    <FeatureRouteGuard 
+                      feature="system-management" 
+                      featureName="صلاحيات المدراء"
+                      description="إدارة صلاحيات المدراء والمستخدمين"
+                      estimatedTime="المرحلة الرابعة"
+                    >
+                      <LazyAdminPrivilegesPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="settings" element={
+                    <FeatureRouteGuard 
+                      feature="settings" 
+                      featureName="إعدادات النظام"
+                      description="إعدادات النظام العامة"
+                      estimatedTime="المرحلة الرابعة"
+                    >
+                      <SettingsPage />
+                    </FeatureRouteGuard>
+                  } />
+                  <Route path="audit-logs" element={
+                    <FeatureRouteGuard 
+                      feature="audit-logs" 
+                      featureName="سجل التدقيق"
+                      description="سجل أنشطة المستخدمين والتدقيق"
+                      estimatedTime="المرحلة الرابعة"
+                    >
+                      <AuditLogPage />
+                    </FeatureRouteGuard>
+                  } />
+                  
+                  {/* Other routes - Always Available */}
           <Route path="monthly-reports" element={<LazyMonthlyReportsPage />} />
           <Route path="monthly-fee-manager" element={<LazyMonthlyFeeManager />} />
           <Route path="student-relocation" element={<LazyStudentRelocationManager />} />
           <Route path="attendance" element={<LazyAttendanceManagementPage />} />
                   <Route path="class-management/:bookingId" element={<LazyClassManagementPage />} />
-                  <Route path="admin-privileges" element={<LazyAdminPrivilegesPage />} />
-                  <Route path="expenses" element={<LazyExpensesPage />} />
-                  <Route path="daily-expenses" element={<LazyDailyExpensesPage />} />
-                  <Route path="daily-settlement" element={<LazyDailySettlementPage />} />
                   <Route path="actual-liquidity" element={<LazyActualLiquidityPage />} />
                   <Route path="student-dashboard" element={<LazyStudentDashboard />} />
                   <Route path="simple-student-dashboard" element={<SimpleStudentDashboard />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="reports" element={<ReportsPage />} />
-                  <Route path="audit-logs" element={<AuditLogPage />} />
                   <Route path="diagnostics" element={<DiagnosticsPage />} />
                   <Route path="style-showcase" element={<StyleShowcase />} />
 
