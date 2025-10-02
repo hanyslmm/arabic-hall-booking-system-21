@@ -74,29 +74,25 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
 
     console.log('Auth user created successfully:', authData.user.id);
 
-    // Step 2: Create profile directly
+    // Step 2: Create/update profile (use upsert to handle existing profiles)
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .insert({
+      .upsert({
         id: authData.user.id,
         email: effectiveEmail,
         full_name: userData.full_name,
         username: userData.username,
         user_role: userData.user_role,
         phone: userData.phone
+      }, {
+        onConflict: 'id'
       })
       .select()
       .single();
 
     if (profileError) {
-      console.error('Profile creation error:', profileError);
-      // Try to clean up the auth user if profile creation fails
-      try {
-        await supabase.auth.admin.deleteUser(authData.user.id);
-      } catch (cleanupError) {
-        console.warn('Failed to cleanup auth user:', cleanupError);
-      }
-      throw new Error(profileError.message || 'Failed to create user profile');
+      console.error('Profile creation/update error:', profileError);
+      throw new Error(profileError.message || 'Failed to create/update user profile');
     }
 
     console.log('Profile created successfully:', profileData);

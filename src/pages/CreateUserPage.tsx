@@ -85,27 +85,23 @@ export default function CreateUserPage() {
         throw new Error('No user data returned from signup');
       }
 
-      // Step 2: Create profile for new user
+      // Step 2: Create/update profile for user (use upsert to handle existing profiles)
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           id: authData.user.id,
           email: email,
           full_name: formData.fullName,
           username: formData.username,
           user_role: formData.role
+        }, {
+          onConflict: 'id'
         })
         .select()
         .single();
 
       if (profileError) {
-        // Try to clean up the auth user if profile creation fails
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (cleanupError) {
-          console.warn('Failed to cleanup auth user:', cleanupError);
-        }
-        throw new Error('Profile creation error: ' + profileError.message);
+        throw new Error('Profile creation/update error: ' + profileError.message);
       }
 
       setResult({
