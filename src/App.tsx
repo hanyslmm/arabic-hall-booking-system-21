@@ -55,8 +55,7 @@ import { AuditLogPage } from "./pages/AuditLogPage";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
 import { StudentRouteGuard } from "./components/auth/StudentRouteGuard";
 import { FeatureRouteGuard } from "./components/auth/FeatureRouteGuard";
-import UserDebugPage from "./pages/UserDebugPage";
-import CreateHalaUserPage from "./pages/CreateHalaUserPage";
+import CreateUserPage from "./pages/CreateUserPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -325,8 +324,7 @@ const App = () => {
                   <Route path="simple-student-dashboard" element={<SimpleStudentDashboard />} />
                   <Route path="diagnostics" element={<DiagnosticsPage />} />
                   <Route path="style-showcase" element={<StyleShowcase />} />
-                  <Route path="user-debug" element={<UserDebugPage />} />
-                  <Route path="create-hala" element={<CreateHalaUserPage />} />
+                  <Route path="create-user" element={<CreateUserPage />} />
 
                   {/* Catch-all inside protected layout */}
                   <Route path="*" element={<LazyNotFound />} />

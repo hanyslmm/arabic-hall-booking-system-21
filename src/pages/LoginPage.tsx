@@ -64,22 +64,16 @@ export default function LoginPage() {
         candidateEmails = [raw];
       }
 
-      console.log("Attempting login with username:", raw);
-      console.log("Trying email candidates:", candidateEmails);
-      
       let lastError: any = null;
       for (const email of candidateEmails) {
-        console.log("Trying email:", email);
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password: pwd,
         });
         if (!error) {
-          console.log("✅ Login successful with:", email);
           lastError = null;
           break;
         }
-        console.log("❌ Failed with:", email, error.message);
         lastError = error;
       }
 
