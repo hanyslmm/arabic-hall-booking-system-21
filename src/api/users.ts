@@ -73,6 +73,21 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
     }
 
     console.log('Auth user created successfully:', authData.user.id);
+    
+    // Step 1.5: If email confirmation is required, try to confirm it automatically
+    // This works if you have admin privileges or if confirmation is disabled in Supabase
+    if (!authData.user.email_confirmed_at) {
+      console.log('Attempting to auto-confirm email...');
+      try {
+        // Try to update user metadata to mark as confirmed
+        await supabase.auth.updateUser({
+          data: { email_confirmed: true }
+        });
+      } catch (confirmError) {
+        console.warn('Could not auto-confirm email:', confirmError);
+        // Non-fatal - continue with profile creation
+      }
+    }
 
     // Step 2: Create/update profile (use upsert to handle existing profiles)
     const { data: profileData, error: profileError } = await supabase

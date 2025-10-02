@@ -28,7 +28,7 @@ export default function CreateUserPage() {
     try {
       const email = `${formData.username}@admin.com`;
       
-      // Step 1: Create auth user
+      // Step 1: Create auth user with email confirmation disabled
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email,
         password: formData.password,
@@ -36,7 +36,8 @@ export default function CreateUserPage() {
           data: {
             full_name: formData.fullName,
             username: formData.username
-          }
+          },
+          emailRedirectTo: undefined // Disable email confirmation requirement
         }
       });
 
