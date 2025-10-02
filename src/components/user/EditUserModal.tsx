@@ -153,11 +153,28 @@ export const EditUserModal = ({ isOpen, onClose, user }: EditUserModalProps) => 
                     {user.full_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-1">
                   <h3 className="text-lg font-semibold">{user.full_name || user.email}</h3>
                   <p className="text-sm text-muted-foreground">
                     الدور الحالي: {ROLE_DISPLAY[user.user_role as keyof typeof ROLE_DISPLAY] || user.user_role}
                   </p>
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">🔐 معلومات تسجيل الدخول:</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-blue-700 dark:text-blue-300">اسم المستخدم:</span>
+                        <code className="text-xs font-mono bg-white dark:bg-gray-900 px-2 py-0.5 rounded border">
+                          {user.username || user.email?.split('@')[0] || 'غير محدد'}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-blue-700 dark:text-blue-300">البريد الإلكتروني:</span>
+                        <code className="text-xs font-mono bg-white dark:bg-gray-900 px-2 py-0.5 rounded border">
+                          {user.email || `${user.username}@admin.com`}
+                        </code>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardHeader>
