@@ -35,33 +35,44 @@ export default function LoginPage() {
       const raw = username.trim();
       const pwd = password.trim();
 
-      // Build a list of candidate emails to try for convenience
+      // Attempt to resolve username to email via RPC when no @ is provided
       let candidateEmails: string[] = [];
-      if (raw.toLowerCase() === "admin") {
-        // Prefer the canonical local admin first, then other known admin variants
-        candidateEmails = [
-          "admin@system.local",
-          "admin@admin.com",
-          "admin@example.com",
-          "admin@local.app",
-        ];
-      } else if (raw.toLowerCase() === "hala") {
-        // Try multiple formats for hala user
-        candidateEmails = [
-          "hala@admin.com",
-          "hala@gmail.com",
-          "hala@system.local",
-          "hala@example.com",
-        ];
-      } else if (!raw.includes("@")) {
-        // For other usernames, try multiple domains
-        candidateEmails = [
-          `${raw}@admin.com`,
-          `${raw}@gmail.com`,
-          `${raw}@system.local`,
-        ];
-      } else {
-        candidateEmails = [raw];
+      if (!raw.includes("@")) {
+        try {
+          const { data: rpcResult, error: rpcError } = await (supabase as any)
+            .rpc('username_to_email', { username: raw });
+          if (!rpcError && rpcResult && typeof rpcResult === 'string') {
+            candidateEmails = [rpcResult];
+          }
+        } catch (e) {
+          // ignore RPC failures; we'll still try fallbacks below
+        }
+      }
+
+      // If RPC didn't resolve, build convenience candidates
+      if (candidateEmails.length === 0) {
+        if (raw.toLowerCase() === "admin") {
+          candidateEmails = [
+            "admin@system.local",
+            "admin@admin.com",
+            "admin@example.com",
+            "admin@local.app",
+          ];
+        } else if (raw.toLowerCase() === "hala") {
+          candidateEmails = [
+            "hala@admin.com",
+            "hala@gmail.com",
+            "hala@system.local",
+            "hala@example.com",
+          ];
+        } else if (!raw.includes("@")) {
+          candidateEmails = [
+            `${raw}@admin.com`,
+            `${raw}@system.local`,
+          ];
+        } else {
+          candidateEmails = [raw];
+        }
       }
 
       let lastError: any = null;

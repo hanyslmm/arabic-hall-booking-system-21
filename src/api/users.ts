@@ -44,14 +44,50 @@ return data.map((profile: any) => ({
 
 export const createUser = async (userData: CreateUserData): Promise<UserProfile> => {
   try {
-    console.log('Creating user directly via Supabase Auth:', userData);
+    console.log('Creating user via Edge Function (create-user):', userData);
 
     // Determine an email to use for auth: provided email or username@admin.com
     const effectiveEmail = (userData.email && userData.email.trim().length > 0)
       ? userData.email
       : `${userData.username}@admin.com`;
 
-    // Step 1: Create auth user directly
+    // Prefer Edge Function path for confirmed email
+    try {
+      const { data, error } = await (supabase as any).functions.invoke('create-user', {
+        body: {
+          email: effectiveEmail,
+          password: userData.password,
+          full_name: userData.full_name,
+          phone: userData.phone,
+          user_role: userData.user_role,
+          username: userData.username,
+          teacher_id: userData.user_role === 'teacher' ? (userData.teacher_id ?? null) : null
+        }
+      });
+
+      if (!error && data?.profile) {
+        const profileData = data.profile;
+        console.log('User created successfully with confirmed email:', profileData);
+        return {
+          id: profileData.id,
+          email: profileData.email,
+          full_name: profileData.full_name,
+          phone: profileData.phone ?? null,
+          user_role: profileData.user_role,
+          created_at: profileData.created_at,
+          username: profileData.username ?? userData.username,
+          teacher_id: profileData.teacher_id ?? null,
+        } as UserProfile;
+      } else if (error) {
+        console.warn('Edge Function create-user failed, will fallback to client signup:', error);
+      } else {
+        console.warn('Edge Function returned no profile, will fallback to client signup.');
+      }
+    } catch (edgeError) {
+      console.warn('Edge Function invocation threw, will fallback to client signup:', edgeError);
+    }
+
+    // Fallback: client-side sign up + profile upsert
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: effectiveEmail,
       password: userData.password,
@@ -64,7 +100,7 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
     });
 
     if (authError) {
-      console.error('Auth user creation error:', authError);
+      console.error('Auth user creation error (fallback):', authError);
       throw new Error(authError.message || 'Failed to create auth user');
     }
 
@@ -72,24 +108,8 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
       throw new Error('No user data returned from auth signup');
     }
 
-    console.log('Auth user created successfully:', authData.user.id);
-    
-    // Step 1.5: If email confirmation is required, try to confirm it automatically
-    // This works if you have admin privileges or if confirmation is disabled in Supabase
-    if (!authData.user.email_confirmed_at) {
-      console.log('Attempting to auto-confirm email...');
-      try {
-        // Try to update user metadata to mark as confirmed
-        await supabase.auth.updateUser({
-          data: { email_confirmed: true }
-        });
-      } catch (confirmError) {
-        console.warn('Could not auto-confirm email:', confirmError);
-        // Non-fatal - continue with profile creation
-      }
-    }
+    console.log('Auth user created successfully (fallback):', authData.user.id);
 
-    // Step 2: Create/update profile (use upsert to handle existing profiles)
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .upsert({
@@ -98,7 +118,8 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
         full_name: userData.full_name,
         username: userData.username,
         user_role: userData.user_role,
-        phone: userData.phone
+        phone: userData.phone,
+        teacher_id: userData.user_role === 'teacher' ? userData.teacher_id ?? null : null
       }, {
         onConflict: 'id'
       })
@@ -106,17 +127,15 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
       .single();
 
     if (profileError) {
-      console.error('Profile creation/update error:', profileError);
+      console.error('Profile creation/update error (fallback):', profileError);
       throw new Error(profileError.message || 'Failed to create/update user profile');
     }
-
-    console.log('Profile created successfully:', profileData);
 
     return {
       id: profileData.id,
       email: profileData.email,
       full_name: profileData.full_name,
-      phone: profileData.phone,
+      phone: profileData.phone ?? null,
       user_role: profileData.user_role,
       created_at: profileData.created_at,
       username: profileData.username,

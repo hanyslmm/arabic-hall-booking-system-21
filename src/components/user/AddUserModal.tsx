@@ -83,10 +83,11 @@ const addUserMutation = useMutation({
         teacher_id: data.user_role === 'teacher' ? data.teacher_id : undefined,
       });
   },
-    onSuccess: () => {
+    onSuccess: (created) => {
+      const emailShown = created?.email || `${form.getValues('username')}@admin.com`;
       toast({
         title: "تم إضافة المستخدم بنجاح",
-        description: "تمت إضافة المستخدم للنظام بنجاح.",
+        description: `يمكن تسجيل الدخول باستخدام البريد: ${emailShown}`,
       });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       onClose();
@@ -247,6 +248,9 @@ const addUserMutation = useMutation({
                     {...form.register("email")} 
                     className="h-12 text-base md:h-11 md:text-sm touch-manipulation"
                   />
+                <p className="text-xs text-muted-foreground">
+                  في حال ترك البريد فارغًا، سيتم إنشاء بريد تلقائي بصيغة {`{username}@admin.com`} لاستخدامه في تسجيل الدخول.
+                </p>
                   {form.formState.errors.email && (
                     <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
                   )}

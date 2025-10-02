@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, password, full_name, phone, user_role } = await req.json()
+    const { email, password, full_name, phone, user_role, username, teacher_id } = await req.json()
 
     console.log('Creating user with data:', { email, full_name, phone, user_role })
 
@@ -57,7 +57,9 @@ serve(async (req) => {
           full_name,
           phone,
           user_role: user_role || 'space_manager',
-          role: 'user'
+          role: 'user',
+          username: username ?? null,
+          teacher_id: user_role === 'teacher' ? (teacher_id ?? null) : null
         }
       ])
       .select()
