@@ -107,6 +107,7 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
         phone: userData.phone,
         user_role: userData.user_role,
         teacher_id: (userData as any).teacher_id,
+        confirm_email: true,
       }
     });
 

@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { user_id, email, password, full_name, phone, user_role, username, teacher_id } = await req.json()
+    const { user_id, email, password, full_name, phone, user_role, username, teacher_id, confirm_email } = await req.json()
 
     if (!user_id) {
       return new Response(
@@ -32,6 +32,8 @@ serve(async (req) => {
     const authUpdateData: any = {}
     if (email) authUpdateData.email = email
     if (password) authUpdateData.password = password
+    // Always confirm email when admin updates user to avoid login blocks
+    if (email || password) authUpdateData.email_confirm = true
 
     if (Object.keys(authUpdateData).length > 0) {
       const { error: authError } = await supabaseClient.auth.admin.updateUserById(
@@ -41,6 +43,18 @@ serve(async (req) => {
 
       if (authError) {
         console.error('Auth update error:', authError)
+        return new Response(
+          JSON.stringify({ error: authError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else if (confirm_email) {
+      const { error: authError } = await supabaseClient.auth.admin.updateUserById(
+        user_id,
+        { email_confirm: true }
+      )
+      if (authError) {
+        console.error('Auth update error (confirm only):', authError)
         return new Response(
           JSON.stringify({ error: authError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

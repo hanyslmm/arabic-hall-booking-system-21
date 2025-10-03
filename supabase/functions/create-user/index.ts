@@ -47,10 +47,10 @@ serve(async (req) => {
 
     console.log('User created in auth:', authData.user?.id)
 
-    // Create the user profile
+    // Create or update the user profile (handle possible triggers creating profile already)
     const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
-      .insert([
+      .upsert([
         {
           id: authData.user?.id,
           email,
@@ -61,8 +61,9 @@ serve(async (req) => {
           username: username ?? null,
           teacher_id: user_role === 'teacher' ? (teacher_id ?? null) : null
         }
-      ])
+      ], { onConflict: 'id' })
       .select()
+      .single()
 
     if (profileError) {
       console.error('Profile error:', profileError)
@@ -84,7 +85,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         user: authData.user, 
-        profile: profileData[0] 
+        profile: profileData 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
