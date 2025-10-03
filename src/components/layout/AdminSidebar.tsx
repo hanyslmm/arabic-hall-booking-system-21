@@ -173,6 +173,12 @@ const defaultNavigation: NavigationGroup[] = [
     title: "إدارة النظام",
     items: [
       {
+        title: "طلبات الموافقة",
+        url: "/approvals",
+        icon: FileText,
+        description: "مراجعة طلبات التعديل والحذف",
+      },
+      {
         title: "المستخدمين",
         url: "/users",
         icon: Users,
@@ -405,9 +411,13 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {
                     return isAdmin || canManageData;
                   }
-                  // Show settlement pages for space managers and above (appears in both sections)
+                  // Show settlement pages for managers, space managers and above
                   if (item.url === '/daily-settlement') {
-                    return profile?.user_role === 'space_manager' || isAdmin || canManageUsers;
+                    return profile?.user_role === 'space_manager' || profile?.user_role === 'manager' || isAdmin || canManageUsers;
+                  }
+                  // Allow teachers page for managers, space managers and admin
+                  if (item.url === '/teachers') {
+                    return profile?.user_role === 'space_manager' || profile?.user_role === 'manager' || isAdmin;
                   }
                   // Show liquidity page for owners and managers only
                   if (item.url === '/actual-liquidity') {

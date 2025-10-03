@@ -26,7 +26,8 @@ export const useFeatureAccess = () => {
       
       // Restricted features - coming soon for target roles, full access for owner
       canAccessStudentManagement: isOwnerUser || !isPhase1Target,
-      canAccessTeacherManagement: isOwnerUser || !isPhase1Target,
+      // Allow managers and space managers to manage teachers now
+      canAccessTeacherManagement: isOwnerUser || isManager || isSpaceManager || !isPhase1Target,
       canAccessFinancialReports: isOwnerUser || !isPhase1Target,
       canAccessSystemManagement: isOwnerUser || !isPhase1Target,
       canAccessUserManagement: isOwnerUser || !isPhase1Target,
@@ -49,9 +50,14 @@ export const useFeatureAccess = () => {
       shouldShowComingSoon: (feature: string) => {
         if (isOwnerUser) return false; // Owner sees everything
         
+        // Teachers page is now available to managers and space managers
+        if (feature === 'teacher-management' && (isManager || isSpaceManager)) {
+          return false;
+        }
+
         const restrictedFeatures = [
           'student-management',
-          'teacher-management', 
+          // 'teacher-management' removed for manager/space_manager
           'financial-reports',
           'system-management',
           'user-management',

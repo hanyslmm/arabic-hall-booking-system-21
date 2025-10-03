@@ -16,8 +16,10 @@ import { AuditLogProvider } from "@/components/audit/AuditLogProvider";
 import { StyleShowcase } from "./components/StyleShowcase";
 import { ReceptionistDashboard } from "./components/receptionist/ReceptionistDashboard";
 import { AdminDashboard } from "./components/dashboard/AdminDashboard";
-import { ReactNode, Suspense, useEffect } from "react";
+import { ReactNode, Suspense, useEffect, lazy } from "react";
 import { Loader2 } from "lucide-react";
+// Local lazy-loaded pages not in lazyLoading util
+const LazyApprovalsPage = lazy(() => import("./pages/ApprovalsPage"));
 
 // Lazy imports for better performance
 import {
@@ -267,6 +269,11 @@ const App = () => {
                       <LazyDailyExpensesPage />
                     </FeatureRouteGuard>
                   } />
+                  <Route path="approvals" element={<FeatureRouteGuard feature="approvals" featureName="طلبات الموافقة" description="مراجعة طلبات التعديل والحذف">
+                    <Suspense fallback={<LoadingScreen />}>
+                      <LazyApprovalsPage />
+                    </Suspense>
+                  </FeatureRouteGuard>} />
                   
                   {/* Daily Settlement - Available for Target Roles */}
                   <Route path="daily-settlement" element={<LazyDailySettlementPage />} />

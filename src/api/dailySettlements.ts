@@ -102,13 +102,126 @@ export const dailySettlementsApi = {
     return data as DailySettlement;
   },
 
-  async delete(id: string): Promise<void> {
-    const { error } = await supabase
+  async delete(id: string): Promise<boolean> {
+    // Return deleted rows to verify something was actually removed
+    const { data, error } = await supabase
       .from('daily_settlements')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
 
     if (error) throw error;
+    return Array.isArray(data) && data.length > 0;
+  },
+
+  // Change request APIs
+  async requestEdit(settlementId: string, changes: Partial<CreateSettlementData> & { reason?: string }) {
+    const sb: any = supabase;
+    const userRes = await supabase.auth.getUser();
+    const userId = userRes.data.user?.id!;
+    let requesterName: string | null = null;
+    try {
+      const { data: prof } = await sb.from('profiles').select('full_name, username').eq('id', userId).single();
+      requesterName = prof?.full_name || prof?.username || null;
+    } catch {}
+
+    const { data, error } = await sb
+      .from('settlement_change_requests')
+      .insert([{ 
+        settlement_id: settlementId, 
+        requested_by: userId,
+        request_type: 'edit',
+        payload: { ...changes, requester_name: requesterName },
+        reason: changes.reason ?? null,
+        status: 'pending'
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async requestDelete(settlementId: string, reason?: string) {
+    const sb: any = supabase;
+    const userRes = await supabase.auth.getUser();
+    const userId = userRes.data.user?.id!;
+    let requesterName: string | null = null;
+    try {
+      const { data: prof } = await sb.from('profiles').select('full_name, username').eq('id', userId).single();
+      requesterName = prof?.full_name || prof?.username || null;
+    } catch {}
+
+    const { data, error } = await sb
+      .from('settlement_change_requests')
+      .insert([{ 
+        settlement_id: settlementId, 
+        requested_by: userId,
+        request_type: 'delete',
+        payload: { requester_name: requesterName },
+        reason: reason ?? null,
+        status: 'pending'
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async listRequestsForDate(date: string) {
+    const sb: any = supabase;
+    const { data, error } = await sb
+      .from('settlement_change_requests')
+      .select('*, daily_settlements!inner(settlement_date), profiles!requester (full_name, username)')
+      .eq('daily_settlements.settlement_date', date)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async listRequests({ date, userId, status }: { date?: string; userId?: string; status?: 'pending'|'approved'|'rejected'|'all' }) {
+    const sb: any = supabase;
+    let query = sb
+      .from('settlement_change_requests')
+      .select('*, daily_settlements!inner(settlement_date), requester:profiles!settlement_change_requests_requested_by_fkey (full_name, username)')
+      .order('created_at', { ascending: false });
+
+    if (date) {
+      query = query.eq('daily_settlements.settlement_date', date);
+    }
+    if (userId) {
+      query = query.eq('requested_by', userId);
+    }
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  async approveRequest(id: string) {
+    const sb: any = supabase;
+    const { data, error } = await sb
+      .from('settlement_change_requests')
+      .update({ status: 'approved', reviewed_by: (await supabase.auth.getUser()).data.user?.id!, reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async rejectRequest(id: string) {
+    const sb: any = supabase;
+    const { data, error } = await sb
+      .from('settlement_change_requests')
+      .update({ status: 'rejected', reviewed_by: (await supabase.auth.getUser()).data.user?.id!, reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async getDailySummary(date: string): Promise<{
