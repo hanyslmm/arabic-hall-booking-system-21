@@ -38,6 +38,7 @@ export default function DailySettlementPage() {
   const todayStr = new Date().toISOString().split('T')[0];
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [formInstanceKey, setFormInstanceKey] = useState(0);
   const [formData, setFormData] = useState<CreateSettlementData>({
     settlement_date: todayStr,
     type: 'income',
@@ -83,6 +84,8 @@ export default function DailySettlementPage() {
       queryClient.invalidateQueries({ queryKey: ['daily-summary'] });
       setIsOpen(false);
       resetForm();
+      // Force remount of the quick form to clear any internal component state
+      setFormInstanceKey((k) => k + 1);
       toast({
         title: "تم إضافة المعاملة",
         description: "تم حفظ المعاملة بنجاح"
@@ -103,6 +106,8 @@ export default function DailySettlementPage() {
       type: 'income',
       amount: 0,
       source_type: 'teacher',
+      category: undefined,
+      source_id: undefined,
       source_name: '',
       notes: ''
     });
@@ -110,14 +115,47 @@ export default function DailySettlementPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.amount || !formData.source_name) {
+    if (!formData.amount || formData.amount <= 0) {
       toast({
         title: "خطأ",
-        description: "يرجى ملء جميع الحقول المطلوبة",
+        description: "يرجى إدخال مبلغ صالح",
         variant: "destructive"
       });
       return;
     }
+
+    if (formData.type === 'income') {
+      if (formData.source_type === 'teacher' && !formData.source_id) {
+        toast({
+          title: "خطأ",
+          description: "اختر المعلم مصدر الإيراد",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (formData.source_type === 'other' && !formData.source_name?.trim()) {
+        toast({
+          title: "خطأ",
+          description: "اكتب اسم مصدر الإيراد",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      if (!formData.category) {
+        toast({
+          title: "خطأ",
+          description: "اختر فئة المصروف",
+          variant: "destructive"
+        });
+        return;
+      }
+      // Ensure source_name mirrors selected category for expenses
+      if (!formData.source_name) {
+        setFormData(prev => ({ ...prev, source_name: prev.category || '' }));
+      }
+    }
+    
     addSettlementMutation.mutate(formData);
   };
 
@@ -215,7 +253,7 @@ export default function DailySettlementPage() {
                       </Tabs>
                       
                       {formData.source_type === 'teacher' ? (
-                        <Select onValueChange={handleTeacherSelect}>
+                        <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
                           <SelectTrigger className="bg-background border border-border">
                             <SelectValue placeholder="اختر معلم" />
                           </SelectTrigger>
@@ -240,7 +278,7 @@ export default function DailySettlementPage() {
                 ) : (
                   <div>
                     <Label htmlFor="category">فئة المصروف *</Label>
-                    <Select onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
+                    <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
                       <SelectTrigger className="bg-background border border-border">
                         <SelectValue placeholder="اختر فئة المصروف" />
                       </SelectTrigger>
@@ -287,8 +325,8 @@ export default function DailySettlementPage() {
           <CardHeader>
             <CardTitle>إضافة معاملة اليوم</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent>
+            <form key={formInstanceKey} onSubmit={handleSubmit} className="space-y-4">
               <div className="text-sm text-muted-foreground">تاريخ اليوم: {new Date(todayStr).toLocaleDateString('ar-EG')}</div>
               <div>
                 <Label>نوع المعاملة *</Label>
@@ -335,7 +373,7 @@ export default function DailySettlementPage() {
                       </TabsList>
                     </Tabs>
                     {formData.source_type === 'teacher' ? (
-                      <Select onValueChange={handleTeacherSelect}>
+                      <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
                         <SelectTrigger className="bg-background border border-border">
                           <SelectValue placeholder="اختر معلم" />
                         </SelectTrigger>
@@ -359,8 +397,8 @@ export default function DailySettlementPage() {
                 </div>
               ) : (
                 <div>
-                  <Label htmlFor="category2">فئة المصروف *</Label>
-                  <Select onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
+                <Label htmlFor="category2">فئة المصروف *</Label>
+                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
                     <SelectTrigger className="bg-background border border-border">
                       <SelectValue placeholder="اختر فئة المصروف" />
                     </SelectTrigger>
