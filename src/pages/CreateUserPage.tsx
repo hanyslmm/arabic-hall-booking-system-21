@@ -62,7 +62,7 @@ export default function CreateUserPage() {
               full_name: formData.fullName,
               username: formData.username,
               user_role: formData.role
-            })
+            } as any)
             .select()
             .single();
 
@@ -95,7 +95,7 @@ export default function CreateUserPage() {
           full_name: formData.fullName,
           username: formData.username,
           user_role: formData.role
-        }, {
+        } as any, {
           onConflict: 'id'
         })
         .select()

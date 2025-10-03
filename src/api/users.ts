@@ -51,86 +51,31 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
       ? userData.email
       : `${userData.username}@admin.com`;
 
-    // Prefer Edge Function path for confirmed email
-    try {
-      const { data, error } = await (supabase as any).functions.invoke('create-user', {
-        body: {
-          email: effectiveEmail,
-          password: userData.password,
-          full_name: userData.full_name,
-          phone: userData.phone,
-          user_role: userData.user_role,
-          username: userData.username,
-          teacher_id: userData.user_role === 'teacher' ? (userData.teacher_id ?? null) : null
-        }
-      });
-
-      if (!error && data?.profile) {
-        const profileData = data.profile;
-        console.log('User created successfully with confirmed email:', profileData);
-        return {
-          id: profileData.id,
-          email: profileData.email,
-          full_name: profileData.full_name,
-          phone: profileData.phone ?? null,
-          user_role: profileData.user_role,
-          created_at: profileData.created_at,
-          username: profileData.username ?? userData.username,
-          teacher_id: profileData.teacher_id ?? null,
-        } as UserProfile;
-      } else if (error) {
-        console.warn('Edge Function create-user failed, will fallback to client signup:', error);
-      } else {
-        console.warn('Edge Function returned no profile, will fallback to client signup.');
-      }
-    } catch (edgeError) {
-      console.warn('Edge Function invocation threw, will fallback to client signup:', edgeError);
-    }
-
-    // Fallback: client-side sign up + profile upsert
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: effectiveEmail,
-      password: userData.password,
-      options: {
-        data: {
-          full_name: userData.full_name,
-          username: userData.username
-        }
+    // Always use Edge Function for proper email confirmation
+    const { data, error } = await (supabase as any).functions.invoke('create-user', {
+      body: {
+        email: effectiveEmail,
+        password: userData.password,
+        full_name: userData.full_name,
+        phone: userData.phone,
+        user_role: userData.user_role,
+        username: userData.username,
+        teacher_id: userData.user_role === 'teacher' ? (userData.teacher_id ?? null) : null
       }
     });
 
-    if (authError) {
-      console.error('Auth user creation error (fallback):', authError);
-      throw new Error(authError.message || 'Failed to create auth user');
+    if (error) {
+      console.error('Edge Function create-user failed:', error);
+      throw new Error(error.message || 'Failed to create user');
     }
 
-    if (!authData.user) {
-      throw new Error('No user data returned from auth signup');
+    if (!data?.profile) {
+      throw new Error('No profile data returned from edge function');
     }
 
-    console.log('Auth user created successfully (fallback):', authData.user.id);
-
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: authData.user.id,
-        email: effectiveEmail,
-        full_name: userData.full_name,
-        username: userData.username,
-        user_role: userData.user_role,
-        phone: userData.phone,
-        teacher_id: userData.user_role === 'teacher' ? userData.teacher_id ?? null : null
-      }, {
-        onConflict: 'id'
-      })
-      .select()
-      .single();
-
-    if (profileError) {
-      console.error('Profile creation/update error (fallback):', profileError);
-      throw new Error(profileError.message || 'Failed to create/update user profile');
-    }
-
+    const profileData = data.profile;
+    console.log('User created successfully with confirmed email:', profileData);
+    
     return {
       id: profileData.id,
       email: profileData.email,
@@ -138,7 +83,7 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
       phone: profileData.phone ?? null,
       user_role: profileData.user_role,
       created_at: profileData.created_at,
-      username: profileData.username,
+      username: profileData.username ?? userData.username,
       teacher_id: profileData.teacher_id ?? null,
     } as UserProfile;
 
@@ -150,30 +95,31 @@ export const createUser = async (userData: CreateUserData): Promise<UserProfile>
 
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<UserProfile> => {
   try {
-    console.log('Updating user directly in database:', { userId, userData });
+    console.log('Updating user via Edge Function (update-user):', { userId, userData });
 
-    const updateData: any = {
-      updated_at: new Date().toISOString()
-    };
+    // Use edge function to update user (handles auth password updates properly)
+    const { data, error } = await (supabase as any).functions.invoke('update-user', {
+      body: {
+        user_id: userId,
+        email: userData.email || undefined,
+        password: userData.password || undefined,
+        full_name: userData.full_name,
+        phone: userData.phone,
+        user_role: userData.user_role,
+        teacher_id: (userData as any).teacher_id,
+      }
+    });
 
-    if (userData.full_name !== undefined) updateData.full_name = userData.full_name;
-    if (userData.phone !== undefined) updateData.phone = userData.phone;
-    if (userData.email !== undefined) updateData.email = userData.email;
-    if (userData.user_role !== undefined) updateData.user_role = userData.user_role;
-    if ((userData as any).teacher_id !== undefined) updateData.teacher_id = (userData as any).teacher_id;
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (profileError) {
-      console.error('Profile update error:', profileError);
-      throw new Error(profileError.message || 'Failed to update user profile');
+    if (error) {
+      console.error('Edge Function update-user failed:', error);
+      throw new Error(error.message || 'Failed to update user');
     }
 
+    if (!data?.profile) {
+      throw new Error('No profile data returned from edge function');
+    }
+
+    const profile = data.profile;
     console.log('User updated successfully:', profile);
     
     return {
