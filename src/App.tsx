@@ -213,7 +213,7 @@ const App = () => {
                   } />
                   <Route path="stages" element={
                     <FeatureRouteGuard 
-                      feature="teacher-management" 
+                      feature="stages-management" 
                       featureName="المراحل التعليمية"
                       description="إدارة المراحل التعليمية"
                       estimatedTime="المرحلة الثانية"
@@ -223,7 +223,7 @@ const App = () => {
                   } />
                   <Route path="subjects" element={
                     <FeatureRouteGuard 
-                      feature="teacher-management" 
+                      feature="subjects-management" 
                       featureName="المواد الدراسية"
                       description="إدارة المواد الدراسية"
                       estimatedTime="المرحلة الثانية"

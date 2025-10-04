@@ -447,6 +447,53 @@ export type Database = {
         }
         Relationships: []
       }
+      settlement_change_requests: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json | null
+          reason: string | null
+          request_type: string
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          settlement_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          reason?: string | null
+          request_type: string
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          settlement_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          reason?: string | null
+          request_type?: string
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          settlement_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlement_change_requests_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "daily_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_accounts: {
         Row: {
           auth_user_id: string
