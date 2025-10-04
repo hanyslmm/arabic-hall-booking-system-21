@@ -3,16 +3,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Edit2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-
-interface Subject {
-  id: string;
-  name: string;
-  code?: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-}
+import { Subject } from "@/types";
 
 interface MobileSubjectCardProps {
   subject: Subject;

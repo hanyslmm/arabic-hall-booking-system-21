@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Users } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Card as UICard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddStageModal } from "@/components/stages/AddStageModal";
 import { formatShortArabicDate } from "@/utils/dateUtils";
@@ -37,6 +39,7 @@ const StagesPage = () => {
   const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const { data: stages, isLoading } = useQuery({
     queryKey: ['academic-stages'],
@@ -77,7 +80,7 @@ const StagesPage = () => {
     },
   });
 
-  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || isAdmin;
+  const canManage = profile?.user_role === 'owner' || profile?.user_role === 'manager' || profile?.user_role === 'space_manager' || isAdmin;
 
   return (
     <UnifiedLayout>
@@ -130,31 +133,16 @@ const StagesPage = () => {
                 )}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">اسم المرحلة</TableHead>
-                    <TableHead className="text-right">تاريخ الإضافة</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              isMobile ? (
+                <div className="space-y-3">
                   {stages?.map((stage) => (
-                    <TableRow key={stage.id}>
-                      <TableCell className="font-medium">
-                        {stage.name}
-                      </TableCell>
-                      <TableCell>
-                        {formatShortArabicDate(stage.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-green-600">
-                          نشط
-                        </Badge>
-                      </TableCell>
-                      {canManage && (
-                        <TableCell>
+                    <UICard key={stage.id} className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">{stage.name}</div>
+                          <div className="text-xs text-muted-foreground mt-1">أضيفت في {formatShortArabicDate(stage.created_at)}</div>
+                        </div>
+                        {canManage && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -163,12 +151,52 @@ const StagesPage = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </TableCell>
-                      )}
-                    </TableRow>
+                        )}
+                      </div>
+                    </UICard>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">اسم المرحلة</TableHead>
+                      <TableHead className="text-right">تاريخ الإضافة</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      {canManage && <TableHead className="text-right">الإجراءات</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stages?.map((stage) => (
+                      <TableRow key={stage.id}>
+                        <TableCell className="font-medium">
+                          {stage.name}
+                        </TableCell>
+                        <TableCell>
+                          {formatShortArabicDate(stage.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-green-600">
+                            نشط
+                          </Badge>
+                        </TableCell>
+                        {canManage && (
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteStage.mutate(stage.id)}
+                              disabled={deleteStage.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )
             )}
           </CardContent>
         </Card>
@@ -178,6 +206,18 @@ const StagesPage = () => {
             isOpen={showAddStage}
             onClose={() => setShowAddStage(false)}
           />
+        )}
+
+        {/* Mobile Floating Action Button */}
+        {canManage && isMobile && (
+          <Button
+            onClick={() => setShowAddStage(true)}
+            className="fixed bottom-20 right-4 h-12 w-12 rounded-full shadow-lg"
+            size="icon"
+            aria-label="إضافة مرحلة"
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
         )}
       </div>
     </UnifiedLayout>

@@ -678,6 +678,42 @@ export type Database = {
           },
         ]
       }
+      teacher_subjects: {
+        Row: {
+          id: string
+          teacher_id: string
+          subject_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          subject_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          subject_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subjects_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teachers: {
         Row: {
           created_at: string | null

@@ -51,17 +51,16 @@ export default function DailySettlementPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch teachers for income sources
+  // Fetch teachers for income sources (keep simple to avoid RLS/relationship pitfalls)
   const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers'],
+    queryKey: ['teachers-basic'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teachers')
         .select('id, name')
         .order('name');
-      
       if (error) throw error;
-      return data as Teacher[];
+      return (data || []) as Teacher[];
     }
   });
 

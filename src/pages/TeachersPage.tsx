@@ -25,10 +25,10 @@ interface Teacher {
   id: string;
   name: string;
   mobile_phone?: string | null;
-  subject_id?: string | null;
+  subject_ids?: string[] | null;
   created_at: string;
   // Relations - these would come from separate queries
-  subject?: { name: string } | null;
+  subjects?: { subjects?: { id: string; name: string } }[];
   default_class_fee?: number | null;
 }
 
@@ -97,15 +97,18 @@ const TeachersPage = () => {
       ),
     },
     {
-      key: 'subject',
-      header: 'المادة الدراسية',
-      mobileLabel: 'المادة',
-      render: (teacher) => (
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-muted-foreground sm:inline hidden" />
-           {teacher.subject?.name || "غير محدد"}
-        </div>
-      ),
+      key: 'subjects',
+      header: 'المواد الدراسية',
+      mobileLabel: 'المواد',
+      render: (teacher) => {
+        const names = (teacher.subjects || []).map((s) => s.subjects?.name).filter(Boolean);
+        return (
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-muted-foreground sm:inline hidden" />
+            {names.length > 0 ? names.join('، ') : 'غير محدد'}
+          </div>
+        );
+      },
     },
     {
       key: 'created_at',
@@ -210,8 +213,8 @@ const TeachersPage = () => {
         <h4 className="font-semibold text-sm">المعلومات الأكاديمية</h4>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">المادة الدراسية:</span>
-            <span>{teacher.subject?.name || "غير محدد"}</span>
+            <span className="text-muted-foreground">المواد الدراسية:</span>
+            <span>{(teacher.subjects || []).map(s=>s.subjects?.name).filter(Boolean).join('، ') || "غير محدد"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">المراحل الدراسية:</span>

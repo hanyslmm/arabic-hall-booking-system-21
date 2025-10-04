@@ -16,16 +16,9 @@ import { ar } from "date-fns/locale";
 import { MobileSubjectCard } from "@/components/subjects/MobileSubjectCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getSubjects, addSubject, updateSubject, deleteSubject } from "@/api/subjects";
+import { Subject as DBSubject } from "@/types";
 
-interface Subject {
-  id: string;
-  name: string;
-  code?: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-}
+type Subject = DBSubject;
 
 const SubjectsPage = () => {
   const { profile, user, isAdmin } = useAuth();
@@ -56,10 +49,14 @@ const SubjectsPage = () => {
         description: "تم إضافة المادة الدراسية بنجاح",
       });
     },
-    onError: () => {
+    onError: (err: any) => {
+      const message = typeof err?.message === 'string' ? err.message : 'حدث خطأ أثناء إضافة المادة الدراسية';
+      const friendly = message.includes('duplicate key') || message.includes('unique')
+        ? 'اسم المادة موجود بالفعل'
+        : message;
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء إضافة المادة الدراسية",
+        description: friendly,
         variant: "destructive",
       });
     },
@@ -260,6 +257,18 @@ const SubjectsPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Mobile Floating Action Button */}
+        {isMobile && (
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="fixed bottom-20 right-4 h-12 w-12 rounded-full shadow-lg"
+            size="icon"
+            aria-label="إضافة مادة"
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
+        )}
 
         {/* Edit Subject Modal */}
         {showEditModal && editingSubject && (

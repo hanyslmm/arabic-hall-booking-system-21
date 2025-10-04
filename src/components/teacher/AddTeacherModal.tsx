@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -18,7 +19,7 @@ const teacherSchema = z.object({
   name: z.string().min(1, "يرجى إدخال اسم المعلم"),
   teacher_code: z.string().min(1, "يرجى إدخال رمز المعلم"),
   mobile_phone: z.string().optional(),
-  subject_id: z.string().optional(),
+  subject_ids: z.array(z.string()).optional(),
   academic_stage_ids: z.array(z.string()).optional(),
 });
 
@@ -45,6 +46,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [selectedStages, setSelectedStages] = useState<string[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [isCheckingPhone, setIsCheckingPhone] = useState(false);
 
   const form = useForm<TeacherFormData>({
@@ -53,7 +55,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
       name: "",
       teacher_code: "",
       mobile_phone: "",
-      subject_id: "",
+      subject_ids: [],
       academic_stage_ids: [],
     },
   });
@@ -85,6 +87,7 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
   const createTeacherMutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
       const { addTeacher, addTeacherAcademicStages } = await import('@/api/teachers');
+      const { setTeacherSubjects } = await import('@/api/teachers');
       
       // Prepare teacher data with proper handling of empty strings
       const teacherData: any = {
@@ -97,12 +100,12 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
         teacherData.mobile_phone = data.mobile_phone.trim();
       }
       
-      // Only include subject_id if it has a value
-      if (data.subject_id && data.subject_id !== '') {
-        teacherData.subject_id = data.subject_id;
-      }
-
       const teacher = await addTeacher(teacherData);
+
+      // Save subjects via junction table
+      if (teacher && data.subject_ids && data.subject_ids.length > 0) {
+        await setTeacherSubjects(teacher.id, data.subject_ids);
+      }
 
       // If academic stages are selected and teacher was created successfully, save them
       if (data.academic_stage_ids && data.academic_stage_ids.length > 0 && teacher) {
@@ -121,10 +124,11 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
         name: "",
         teacher_code: "",
         mobile_phone: "",
-        subject_id: "",
+        subject_ids: [],
         academic_stage_ids: [],
       });
       setSelectedStages([]);
+      setSelectedSubjects([]);
       onClose();
     },
     onError: (error) => {
@@ -183,22 +187,36 @@ export const AddTeacherModal = ({ isOpen, onClose }: AddTeacherModalProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="subject_id">المادة الدراسية (اختياري)</Label>
-            <Select
-              onValueChange={(value) => form.setValue('subject_id', value)}
-              defaultValue={form.getValues('subject_id')}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر مادة دراسية" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id}>
+            <Label>المواد الدراسية (يمكن اختيار أكثر من مادة)</Label>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded p-2">
+              {subjects.map((subject) => {
+                const checked = selectedSubjects.includes(subject.id);
+                return (
+                  <label key={subject.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = new Set(selectedSubjects);
+                        if (e.target.checked) next.add(subject.id); else next.delete(subject.id);
+                        const arr = Array.from(next);
+                        setSelectedSubjects(arr);
+                        form.setValue('subject_ids', arr);
+                      }}
+                    />
                     {subject.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </label>
+                );
+              })}
+            </div>
+            {selectedSubjects.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {selectedSubjects.map((id) => {
+                  const s = subjects.find((x) => x.id === id);
+                  return <Badge key={id} variant="secondary">{s?.name}</Badge>;
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">

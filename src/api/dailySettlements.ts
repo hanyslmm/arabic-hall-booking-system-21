@@ -10,6 +10,7 @@ export interface DailySettlement {
   source_id?: string;
   source_name: string;
   category?: string;
+  subject_id?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -23,6 +24,7 @@ export interface CreateSettlementData {
   source_id?: string;
   source_name: string;
   category?: string;
+  subject_id?: string;
   notes?: string;
 }
 

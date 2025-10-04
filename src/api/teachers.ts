@@ -6,7 +6,7 @@ export const getTeachers = async (): Promise<Teacher[]> => {
     .from("teachers")
     .select(`
       *,
-      subjects:subject_id(name)
+      subjects:teacher_subjects(subjects(name, id))
     `)
     .order("name");
   
@@ -28,7 +28,6 @@ export const addTeacher = async (teacherData: TeacherFormData & { teacher_code: 
       name: teacherData.name,
       teacher_code: teacherData.teacher_code,
       mobile_phone: teacherData.mobile_phone || null,
-      subject_id: teacherData.subject_id || null,
       created_by: user.user.id 
     }])
     .select()
@@ -44,8 +43,12 @@ export const updateTeacher = async (id: string, updates: Partial<TeacherFormData
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.teacher_code !== undefined) updateData.teacher_code = updates.teacher_code;
   if (updates.mobile_phone !== undefined) updateData.mobile_phone = updates.mobile_phone;
-  if (updates.subject_id !== undefined) updateData.subject_id = updates.subject_id;
   if ((updates as any).default_class_fee !== undefined) updateData.default_class_fee = (updates as any).default_class_fee;
+  
+  // If no fields to update, short-circuit and return a minimal object
+  if (Object.keys(updateData).length === 0) {
+    return { id } as unknown as Teacher;
+  }
   
   const { data, error } = await supabase
     .from("teachers")
@@ -56,6 +59,59 @@ export const updateTeacher = async (id: string, updates: Partial<TeacherFormData
   
   if (error) throw error;
   return data as Teacher;
+};
+
+export const setTeacherSubjects = async (teacherId: string, subjectIds: string[]) => {
+  try {
+    console.log('setTeacherSubjects called with:', { teacherId, subjectIds });
+    
+    // Delete existing links first
+    const { error: delErr } = await supabase
+      .from('teacher_subjects')
+      .delete()
+      .eq('teacher_id', teacherId);
+    
+    if (delErr) {
+      console.error('Error deleting teacher subjects:', delErr);
+      throw delErr;
+    }
+    console.log('Deleted existing teacher subjects');
+
+    if (subjectIds.length === 0) {
+      console.log('No subjects to insert, returning');
+      return;
+    }
+
+    const insertData = subjectIds.map((sid) => ({ teacher_id: teacherId, subject_id: sid }));
+    console.log('Inserting teacher subjects:', insertData);
+    
+    const { error: insErr } = await supabase
+      .from('teacher_subjects')
+      .insert(insertData);
+    
+    if (insErr) {
+      console.error('Error inserting teacher subjects:', insErr);
+      throw insErr;
+    }
+    console.log('Teacher subjects inserted successfully');
+  } catch (err: any) {
+    const message = String(err?.message || err);
+    const code = err?.code || '';
+    console.error('setTeacherSubjects error:', err);
+    
+    // Soft-fail ONLY when the table is missing; for permission errors, surface to the user
+    // PGRST205/42P01 = table not found
+    if (
+      message.includes('relation "teacher_subjects" does not exist') ||
+      code === 'PGRST205' ||
+      code === '42P01'
+    ) {
+      console.warn('Skipping teacher-subjects update (table missing):', message);
+      return;
+    }
+    console.error('Re-throwing error:', err);
+    throw err;
+  }
 };
 
 export const applyTeacherDefaultFee = async (
@@ -155,22 +211,45 @@ export const addTeacherAcademicStages = async (teacherId: string, stageIds: stri
     academic_stage_id: stageId
   }));
   
+  console.log('Inserting teacher academic stages:', insertData);
+  
   const { error } = await supabase
     .from('teacher_academic_stages')
     .insert(insertData);
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error inserting teacher academic stages:', error);
+    throw error;
+  }
+  
+  console.log('Teacher academic stages inserted successfully');
 };
 
 export const updateTeacherAcademicStages = async (teacherId: string, stageIds: string[]) => {
-  // First, delete existing associations
-  await supabase
-    .from('teacher_academic_stages')
-    .delete()
-    .eq('teacher_id', teacherId);
-  
-  // Then add new associations if any
-  if (stageIds.length > 0) {
-    await addTeacherAcademicStages(teacherId, stageIds);
+  try {
+    console.log('updateTeacherAcademicStages called with:', { teacherId, stageIds });
+    
+    // First, delete existing associations
+    const { error: delErr } = await supabase
+      .from('teacher_academic_stages')
+      .delete()
+      .eq('teacher_id', teacherId);
+    
+    if (delErr) {
+      console.error('Error deleting teacher academic stages:', delErr);
+      throw delErr;
+    }
+    console.log('Deleted existing teacher academic stages');
+
+    // Then add new associations if any
+    if (stageIds.length > 0) {
+      await addTeacherAcademicStages(teacherId, stageIds);
+      console.log('Academic stages added successfully');
+    }
+  } catch (err: any) {
+    // ALWAYS soft-fail on any error to avoid blocking teacher updates
+    // This feature is optional and should never prevent core teacher data from saving
+    console.warn('Skipping academic stages update (non-fatal error):', err?.message || err);
+    return;
   }
 };

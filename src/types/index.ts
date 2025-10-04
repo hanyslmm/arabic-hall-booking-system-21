@@ -4,6 +4,7 @@ import { Tables } from "@/integrations/supabase/types";
 export type Hall = Tables<"halls">;
 export type Teacher = Tables<"teachers">;
 export type Subject = Tables<"subjects">;
+export type TeacherSubject = Tables<"teacher_subjects">;
 export type AcademicStage = Tables<"academic_stages">;
 export type Student = Tables<"students">;
 export type StudentRegistration = Tables<"student_registrations">;

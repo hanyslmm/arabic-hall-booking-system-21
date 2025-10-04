@@ -109,7 +109,8 @@ export const subjectsApi = {
 
     const { data, error } = await supabase
       .from("subjects")
-      .insert([{ ...subjectData, created_by: user.user.id }])
+      // subjects table does not have created_by
+      .insert([{ ...subjectData }])
       .select()
       .single();
     
