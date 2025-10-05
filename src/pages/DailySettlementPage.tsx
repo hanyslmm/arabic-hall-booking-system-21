@@ -23,6 +23,12 @@ import { useAuth } from "@/hooks/useAuth";
 interface Teacher {
   id: string;
   name: string;
+  subjects?: { id: string; name: string }[];
+}
+
+interface Subject {
+  id: string;
+  name: string;
 }
 
 // Categories loaded from settings; default fallback is embedded in settingsApi
@@ -51,16 +57,33 @@ export default function DailySettlementPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch teachers for income sources (keep simple to avoid RLS/relationship pitfalls)
+  // Fetch teachers with their subjects
   const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers-basic'],
+    queryKey: ['teachers-with-subjects'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: teachersData, error: teachersError } = await supabase
         .from('teachers')
         .select('id, name')
         .order('name');
-      if (error) throw error;
-      return (data || []) as Teacher[];
+      if (teachersError) throw teachersError;
+
+      // Fetch subjects for each teacher
+      const teachersWithSubjects = await Promise.all(
+        (teachersData || []).map(async (teacher) => {
+          const { data: subjectsData } = await supabase
+            .from('teacher_subjects')
+            .select('subject_id, subjects(id, name)')
+            .eq('teacher_id', teacher.id);
+
+          const subjects = (subjectsData || [])
+            .map((ts: any) => ts.subjects)
+            .filter(Boolean);
+
+          return { ...teacher, subjects };
+        })
+      );
+
+      return teachersWithSubjects as Teacher[];
     }
   });
 
@@ -222,6 +245,14 @@ export default function DailySettlementPage() {
         });
         return;
       }
+      if (formData.source_type === 'teacher' && teacherHasMultipleSubjects && !formData.subject_id) {
+        toast({
+          title: "خطأ",
+          description: "اختر المادة الدراسية",
+          variant: "destructive"
+        });
+        return;
+      }
       if (formData.source_type === 'other' && !formData.source_name?.trim()) {
         toast({
           title: "خطأ",
@@ -254,10 +285,14 @@ export default function DailySettlementPage() {
       setFormData(prev => ({
         ...prev,
         source_id: teacherId,
-        source_name: teacher.name
+        source_name: teacher.name,
+        subject_id: teacher.subjects?.length === 1 ? teacher.subjects[0].id : undefined
       }));
     }
   };
+
+  const selectedTeacher = formData.source_id ? teachers.find(t => t.id === formData.source_id) : null;
+  const teacherHasMultipleSubjects = (selectedTeacher?.subjects?.length || 0) > 1;
 
   useEffect(() => {
     // Hall managers are locked to today's date; others can switch
@@ -402,18 +437,41 @@ export default function DailySettlementPage() {
                       </Tabs>
                       
                       {formData.source_type === 'teacher' ? (
-                        <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
-                          <SelectTrigger className="bg-background border border-border">
-                            <SelectValue placeholder="اختر معلم" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border border-border shadow-lg z-50">
-                            {teachers.map((teacher) => (
-                              <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
-                                {teacher.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <>
+                          <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
+                            <SelectTrigger className="bg-background border border-border">
+                              <SelectValue placeholder="اختر معلم" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border border-border shadow-lg z-50">
+                              {teachers.map((teacher) => (
+                                <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
+                                  {teacher.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          {teacherHasMultipleSubjects && (
+                            <div className="mt-2">
+                              <Label>المادة الدراسية *</Label>
+                              <Select 
+                                value={formData.subject_id} 
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
+                              >
+                                <SelectTrigger className="bg-background border border-border">
+                                  <SelectValue placeholder="اختر المادة" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background border border-border shadow-lg z-50">
+                                  {selectedTeacher?.subjects?.map((subject) => (
+                                    <SelectItem key={subject.id} value={subject.id} className="hover:bg-accent">
+                                      {subject.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <Input
                           placeholder="اسم مصدر الإيراد"
@@ -522,18 +580,41 @@ export default function DailySettlementPage() {
                       </TabsList>
                     </Tabs>
                     {formData.source_type === 'teacher' ? (
-                      <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
-                        <SelectTrigger className="bg-background border border-border">
-                          <SelectValue placeholder="اختر معلم" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border border-border shadow-lg z-50">
-                          {teachers.map((teacher) => (
-                            <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
-                              {teacher.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
+                          <SelectTrigger className="bg-background border border-border">
+                            <SelectValue placeholder="اختر معلم" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border border-border shadow-lg z-50">
+                            {teachers.map((teacher) => (
+                              <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
+                                {teacher.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {teacherHasMultipleSubjects && (
+                          <div className="mt-2">
+                            <Label>المادة الدراسية *</Label>
+                            <Select 
+                              value={formData.subject_id} 
+                              onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
+                            >
+                              <SelectTrigger className="bg-background border border-border">
+                                <SelectValue placeholder="اختر المادة" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background border border-border shadow-lg z-50">
+                                {selectedTeacher?.subjects?.map((subject) => (
+                                  <SelectItem key={subject.id} value={subject.id} className="hover:bg-accent">
+                                    {subject.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <Input
                         placeholder="اسم مصدر الإيراد"

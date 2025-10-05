@@ -212,6 +212,7 @@ export type Database = {
           source_id: string | null
           source_name: string
           source_type: string
+          subject_id: string | null
           type: string
           updated_at: string
         }
@@ -226,6 +227,7 @@ export type Database = {
           source_id?: string | null
           source_name: string
           source_type: string
+          subject_id?: string | null
           type: string
           updated_at?: string
         }
@@ -240,10 +242,19 @@ export type Database = {
           source_id?: string | null
           source_name?: string
           source_type?: string
+          subject_id?: string | null
           type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "daily_settlements_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -680,36 +691,36 @@ export type Database = {
       }
       teacher_subjects: {
         Row: {
+          created_at: string
           id: string
-          teacher_id: string
           subject_id: string
-          created_at: string | null
+          teacher_id: string
         }
         Insert: {
+          created_at?: string
           id?: string
-          teacher_id: string
           subject_id: string
-          created_at?: string | null
+          teacher_id: string
         }
         Update: {
+          created_at?: string
           id?: string
-          teacher_id?: string
           subject_id?: string
-          created_at?: string | null
+          teacher_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "teacher_subjects_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "teacher_subjects_subject_id_fkey"
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_subjects_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
         ]
