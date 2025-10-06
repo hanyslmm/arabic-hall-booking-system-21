@@ -26,6 +26,7 @@ export interface CreateSettlementData {
   category?: string;
   subject_id?: string;
   notes?: string;
+  created_by?: string; // Optional: to allow managers/owners to set transaction owner
 }
 
 export const dailySettlementsApi = {
@@ -79,11 +80,13 @@ export const dailySettlementsApi = {
   },
 
   async create(settlementData: CreateSettlementData): Promise<DailySettlement> {
+    const currentUserId = (await supabase.auth.getUser()).data.user?.id!;
     const { data, error } = await supabase
       .from('daily_settlements')
       .insert([{
         ...settlementData,
-        created_by: (await supabase.auth.getUser()).data.user?.id!
+        // Use provided created_by if exists, otherwise use current user
+        created_by: settlementData.created_by || currentUserId
       }])
       .select()
       .single();

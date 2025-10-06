@@ -40,6 +40,7 @@ export default function DailySettlementPage() {
   const isManagerOrHigher = isHallManager || profile?.user_role === 'manager' || isAdmin || isOwner || profile?.role === 'admin';
   const isGeneralManager = profile?.user_role === 'manager' || profile?.role === 'manager';
   const canModerateDirectly = !!(isAdmin || isOwner || isGeneralManager);
+  const canAssignToOthers = !!(isAdmin || isOwner || isGeneralManager); // Managers and owners can assign to others
   const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
   const todayStr = new Date().toISOString().split('T')[0];
   const [isOpen, setIsOpen] = useState(false);
@@ -51,11 +52,27 @@ export default function DailySettlementPage() {
     amount: 0,
     source_type: 'teacher',
     source_name: '',
-    notes: ''
+    notes: '',
+    created_by: profile?.id // Default to current user
   });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch hall managers and managers for transaction owner selection
+  const { data: hallManagers = [] } = useQuery({
+    queryKey: ['hall-managers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, user_role')
+        .in('user_role', ['space_manager', 'manager', 'owner'])
+        .order('full_name');
+      if (error) throw error;
+      return data as Array<{ id: string; full_name: string | null; username: string | null; user_role: string }>;
+    },
+    enabled: canAssignToOthers
+  });
 
   // Fetch teachers with their subjects
   const { data: teachers = [] } = useQuery({
@@ -214,14 +231,15 @@ export default function DailySettlementPage() {
 
   const resetForm = () => {
     setFormData({
-      settlement_date: selectedDate,
+      settlement_date: todayStr,
       type: 'income',
       amount: 0,
       source_type: 'teacher',
       category: undefined,
       source_id: undefined,
       source_name: '',
-      notes: ''
+      notes: '',
+      created_by: profile?.id // Reset to current user
     });
   };
 
@@ -294,12 +312,10 @@ export default function DailySettlementPage() {
   const selectedTeacher = formData.source_id ? teachers.find(t => t.id === formData.source_id) : null;
   const teacherHasMultipleSubjects = (selectedTeacher?.subjects?.length || 0) > 1;
 
+  // Update form settlement_date when selectedDate changes
   useEffect(() => {
-    // Hall managers are locked to today's date; others can switch
-    const effectiveDate = isHallManager ? todayStr : selectedDate;
-    setSelectedDate(effectiveDate);
-    setFormData(prev => ({ ...prev, settlement_date: effectiveDate }));
-  }, [selectedDate, isHallManager]);
+    setFormData(prev => ({ ...prev, settlement_date: selectedDate }));
+  }, [selectedDate]);
 
   const incomeSettlements = settlements.filter(s => s.type === 'income');
   const expenseSettlements = settlements.filter(s => s.type === 'expense');
@@ -369,15 +385,16 @@ export default function DailySettlementPage() {
               </DialogContent>
             </Dialog>
           )}
-          {(!isHallManager || canModerateDirectly) && (
+          <div className="flex gap-2 items-center">
+            <Label className="text-sm font-medium">التاريخ:</Label>
             <Input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-auto"
             />
-          )}
-          {(!isHallManager || canModerateDirectly) && (
+          </div>
+          {isManagerOrHigher && (
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -390,35 +407,71 @@ export default function DailySettlementPage() {
                   <DialogTitle>إضافة معاملة جديدة</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Shared form fields (same as quick form below) */}
-                <div>
-                  <Label>نوع المعاملة *</Label>
-                  <Tabs 
-                    value={formData.type} 
-                    onValueChange={(value: 'income' | 'expense') => 
-                      setFormData(prev => ({ ...prev, type: value }))
-                    }
-                  >
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="income" className="text-green-600">إيرادات</TabsTrigger>
-                      <TabsTrigger value="expense" className="text-red-600">مصروفات</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
+                  {/* Transaction Date */}
+                  <div>
+                    <Label htmlFor="transaction-date">تاريخ المعاملة *</Label>
+                    <Input
+                      id="transaction-date"
+                      type="date"
+                      value={formData.settlement_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, settlement_date: e.target.value }))}
+                      max={todayStr}
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="amount">المبلغ *</Label>
-                  <Input
-                    id="amount"
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*[.,]?[0-9]*"
-                    value={formData.amount || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value.replace(/,/g, '.')) || 0 }))}
-                    placeholder="أدخل المبلغ"
-                    required
-                  />
-                </div>
+                  {/* Transaction Owner (for managers/owners only) */}
+                  {canAssignToOthers && (
+                    <div>
+                      <Label htmlFor="transaction-owner">صاحب المعاملة *</Label>
+                      <Select 
+                        value={formData.created_by} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, created_by: value }))}
+                      >
+                        <SelectTrigger id="transaction-owner">
+                          <SelectValue placeholder="اختر صاحب المعاملة" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          {hallManagers.map((manager) => (
+                            <SelectItem key={manager.id} value={manager.id}>
+                              {manager.full_name || manager.username || 'مستخدم'}
+                              {manager.id === profile?.id && ' (أنا)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Transaction Type */}
+                  <div>
+                    <Label>نوع المعاملة *</Label>
+                    <Tabs 
+                      value={formData.type} 
+                      onValueChange={(value: 'income' | 'expense') => 
+                        setFormData(prev => ({ ...prev, type: value }))
+                      }
+                    >
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="income" className="text-green-600">إيرادات</TabsTrigger>
+                        <TabsTrigger value="expense" className="text-red-600">مصروفات</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="amount">المبلغ *</Label>
+                    <Input
+                      id="amount"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      value={formData.amount || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value.replace(/,/g, '.')) || 0 }))}
+                      placeholder="أدخل المبلغ"
+                      required
+                    />
+                  </div>
 
                 {formData.type === 'income' ? (
                   <div>
