@@ -598,6 +598,26 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
+              {/* Mobile Logout Button - Always visible */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                  const { error } = await supabase.auth.signOut();
+                  if (!error) {
+                    try {
+                      window.location.replace('/login');
+                    } catch (e) {
+                      window.location.href = '/login';
+                    }
+                  }
+                }}
+                className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                title="تسجيل الخروج"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">تسجيل الخروج</span>
+              </Button>
             </div>
           </div>
         </header>

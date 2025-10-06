@@ -4,6 +4,7 @@ import { Plus, Calculator, TrendingUp, TrendingDown, DollarSign } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MobileInput } from "@/components/ui/mobile-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +20,8 @@ import { settingsApi } from "@/api/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/utils/currency";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Teacher {
   id: string;
@@ -36,6 +39,7 @@ interface Subject {
 
 export default function DailySettlementPage() {
   const { profile, isAdmin, isOwner } = useAuth();
+  const isMobile = useIsMobile();
   const isHallManager = profile?.user_role === 'space_manager';
   const isManagerOrHigher = isHallManager || profile?.user_role === 'manager' || isAdmin || isOwner || profile?.role === 'admin';
   const isGeneralManager = profile?.user_role === 'manager' || profile?.role === 'manager';
@@ -402,40 +406,151 @@ export default function DailySettlementPage() {
                   إضافة معاملة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>إضافة معاملة جديدة</DialogTitle>
+              <DialogContent className={`${isMobile ? 'max-h-[90vh] p-4' : 'sm:max-w-md'} overflow-hidden flex flex-col`}>
+                <DialogHeader className="flex-shrink-0">
+                  <DialogTitle className={isMobile ? 'text-lg' : ''}>إضافة معاملة جديدة</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Transaction Date */}
-                  <div>
-                    <Label htmlFor="transaction-date">تاريخ المعاملة *</Label>
-                    <Input
-                      id="transaction-date"
-                      type="date"
-                      value={formData.settlement_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, settlement_date: e.target.value }))}
-                      max={todayStr}
-                      required
-                    />
-                  </div>
-
-                  {/* Transaction Owner (for managers/owners only) */}
-                  {canAssignToOthers && (
+                <ScrollArea className="flex-1 -mx-4 px-4">
+                  <form onSubmit={handleSubmit} className={`space-y-4 ${isMobile ? 'pb-4' : ''}`}>
+                    {/* Transaction Date */}
                     <div>
-                      <Label htmlFor="transaction-owner">صاحب المعاملة *</Label>
-                      <Select 
-                        value={formData.created_by} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, created_by: value }))}
+                      <Label htmlFor="transaction-date" className={isMobile ? 'text-base' : ''}>تاريخ المعاملة *</Label>
+                      <MobileInput
+                        id="transaction-date"
+                        type="date"
+                        value={formData.settlement_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, settlement_date: e.target.value }))}
+                        max={todayStr}
+                        required
+                      />
+                    </div>
+
+                    {/* Transaction Owner (for managers/owners only) */}
+                    {canAssignToOthers && (
+                      <div>
+                        <Label htmlFor="transaction-owner" className={isMobile ? 'text-base' : ''}>صاحب المعاملة *</Label>
+                        <Select 
+                          value={formData.created_by} 
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, created_by: value }))}
+                        >
+                          <SelectTrigger id="transaction-owner" className={isMobile ? 'h-12 text-base' : ''}>
+                            <SelectValue placeholder="اختر صاحب المعاملة" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-[100]">
+                            {hallManagers.map((manager) => (
+                              <SelectItem key={manager.id} value={manager.id} className={isMobile ? 'text-base py-3' : ''}>
+                                {manager.full_name || manager.username || 'مستخدم'}
+                                {manager.id === profile?.id && ' (أنا)'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Transaction Type */}
+                    <div>
+                      <Label className={isMobile ? 'text-base' : ''}>نوع المعاملة *</Label>
+                      <Tabs 
+                        value={formData.type} 
+                        onValueChange={(value: 'income' | 'expense') => 
+                          setFormData(prev => ({ ...prev, type: value }))
+                        }
                       >
-                        <SelectTrigger id="transaction-owner">
-                          <SelectValue placeholder="اختر صاحب المعاملة" />
+                        <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12' : ''}`}>
+                          <TabsTrigger value="income" className={`text-green-600 ${isMobile ? 'text-base' : ''}`}>إيرادات</TabsTrigger>
+                          <TabsTrigger value="expense" className={`text-red-600 ${isMobile ? 'text-base' : ''}`}>مصروفات</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="amount" className={isMobile ? 'text-base' : ''}>المبلغ *</Label>
+                      <MobileInput
+                        id="amount"
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        value={formData.amount || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value.replace(/,/g, '.')) || 0 }))}
+                        placeholder="أدخل المبلغ"
+                        required
+                      />
+                    </div>
+
+                  {formData.type === 'income' ? (
+                    <div>
+                      <Label className={isMobile ? 'text-base' : ''}>مصدر الإيراد *</Label>
+                      <div className="space-y-2">
+                        <Tabs 
+                          value={formData.source_type} 
+                          onValueChange={(value) => 
+                            setFormData(prev => ({ ...prev, source_type: value, source_name: '', source_id: undefined }))
+                          }
+                        >
+                          <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12' : ''}`}>
+                            <TabsTrigger value="teacher" className={isMobile ? 'text-base' : ''}>معلم</TabsTrigger>
+                            <TabsTrigger value="other" className={isMobile ? 'text-base' : ''}>أخرى</TabsTrigger>
+                          </TabsList>
+                        </Tabs>
+                        
+                        {formData.source_type === 'teacher' ? (
+                          <>
+                            <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
+                              <SelectTrigger className={`bg-background border border-border ${isMobile ? 'h-12 text-base' : ''}`}>
+                                <SelectValue placeholder="اختر معلم" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background border border-border shadow-lg z-[100] max-h-[200px]">
+                                {teachers.map((teacher) => (
+                                  <SelectItem key={teacher.id} value={teacher.id} className={`hover:bg-accent ${isMobile ? 'text-base py-3' : ''}`}>
+                                    {teacher.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            
+                            {teacherHasMultipleSubjects && (
+                              <div className="mt-2">
+                                <Label className={isMobile ? 'text-base' : ''}>المادة الدراسية *</Label>
+                                <Select 
+                                  value={formData.subject_id} 
+                                  onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
+                                >
+                                  <SelectTrigger className={`bg-background border border-border ${isMobile ? 'h-12 text-base' : ''}`}>
+                                    <SelectValue placeholder="اختر المادة" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-background border border-border shadow-lg z-[100] max-h-[200px]">
+                                    {selectedTeacher?.subjects?.map((subject) => (
+                                      <SelectItem key={subject.id} value={subject.id} className={`hover:bg-accent ${isMobile ? 'text-base py-3' : ''}`}>
+                                        {subject.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <MobileInput
+                            placeholder="اسم مصدر الإيراد"
+                            value={formData.source_name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, source_name: e.target.value }))}
+                            required
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                  <div>
+                      <Label htmlFor="category" className={isMobile ? 'text-base' : ''}>فئة المصروف *</Label>
+                      <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
+                        <SelectTrigger className={`bg-background border border-border ${isMobile ? 'h-12 text-base' : ''}`}>
+                          <SelectValue placeholder="اختر فئة المصروف" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
-                          {hallManagers.map((manager) => (
-                            <SelectItem key={manager.id} value={manager.id}>
-                              {manager.full_name || manager.username || 'مستخدم'}
-                              {manager.id === profile?.id && ' (أنا)'}
+                        <SelectContent className="bg-background border border-border shadow-lg z-[100] max-h-[200px]">
+                          {expenseCategories.map((category: string) => (
+                            <SelectItem key={category} value={category} className={`hover:bg-accent ${isMobile ? 'text-base py-3' : ''}`}>
+                              {category}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -443,136 +558,28 @@ export default function DailySettlementPage() {
                     </div>
                   )}
 
-                  {/* Transaction Type */}
                   <div>
-                    <Label>نوع المعاملة *</Label>
-                    <Tabs 
-                      value={formData.type} 
-                      onValueChange={(value: 'income' | 'expense') => 
-                        setFormData(prev => ({ ...prev, type: value }))
-                      }
-                    >
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="income" className="text-green-600">إيرادات</TabsTrigger>
-                        <TabsTrigger value="expense" className="text-red-600">مصروفات</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="amount">المبلغ *</Label>
-                    <Input
-                      id="amount"
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]*[.,]?[0-9]*"
-                      value={formData.amount || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value.replace(/,/g, '.')) || 0 }))}
-                      placeholder="أدخل المبلغ"
-                      required
+                    <Label htmlFor="notes" className={isMobile ? 'text-base' : ''}>ملاحظات</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="ملاحظات إضافية (اختياري)"
+                      rows={3}
+                      className={isMobile ? 'text-base min-h-[80px]' : ''}
                     />
                   </div>
 
-                {formData.type === 'income' ? (
-                  <div>
-                    <Label>مصدر الإيراد *</Label>
-                    <div className="space-y-2">
-                      <Tabs 
-                        value={formData.source_type} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ ...prev, source_type: value, source_name: '', source_id: undefined }))
-                        }
-                      >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="teacher">معلم</TabsTrigger>
-                          <TabsTrigger value="other">أخرى</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                      
-                      {formData.source_type === 'teacher' ? (
-                        <>
-                          <Select value={formData.source_id} onValueChange={handleTeacherSelect}>
-                            <SelectTrigger className="bg-background border border-border">
-                              <SelectValue placeholder="اختر معلم" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border border-border shadow-lg z-50">
-                              {teachers.map((teacher) => (
-                                <SelectItem key={teacher.id} value={teacher.id} className="hover:bg-accent">
-                                  {teacher.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          {teacherHasMultipleSubjects && (
-                            <div className="mt-2">
-                              <Label>المادة الدراسية *</Label>
-                              <Select 
-                                value={formData.subject_id} 
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, subject_id: value }))}
-                              >
-                                <SelectTrigger className="bg-background border border-border">
-                                  <SelectValue placeholder="اختر المادة" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-background border border-border shadow-lg z-50">
-                                  {selectedTeacher?.subjects?.map((subject) => (
-                                    <SelectItem key={subject.id} value={subject.id} className="hover:bg-accent">
-                                      {subject.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <Input
-                          placeholder="اسم مصدر الإيراد"
-                          value={formData.source_name}
-                          onChange={(e) => setFormData(prev => ({ ...prev, source_name: e.target.value }))}
-                          required
-                        />
-                      )}
-                    </div>
+                  <div className="flex gap-3 pt-4">
+                    <Button type="submit" disabled={addSettlementMutation.isPending} className={`flex-1 ${isMobile ? 'h-12 text-base' : ''}`}>
+                      {addSettlementMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className={`flex-1 ${isMobile ? 'h-12 text-base' : ''}`}>
+                      إلغاء
+                    </Button>
                   </div>
-                ) : (
-                <div>
-                    <Label htmlFor="category">فئة المصروف *</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, source_name: value }))}>
-                      <SelectTrigger className="bg-background border border-border">
-                        <SelectValue placeholder="اختر فئة المصروف" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border shadow-lg z-50">
-                        {expenseCategories.map((category: string) => (
-                          <SelectItem key={category} value={category} className="hover:bg-accent">
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div>
-                  <Label htmlFor="notes">ملاحظات</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="ملاحظات إضافية (اختياري)"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button type="submit" disabled={addSettlementMutation.isPending} className="flex-1">
-                    {addSettlementMutation.isPending ? "جاري الحفظ..." : "حفظ"}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
-                    إلغاء
-                  </Button>
-                </div>
-                </form>
+                  </form>
+                </ScrollArea>
               </DialogContent>
             </Dialog>
           )}
