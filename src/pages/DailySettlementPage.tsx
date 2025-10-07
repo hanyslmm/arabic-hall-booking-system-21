@@ -324,7 +324,21 @@ export default function DailySettlementPage() {
   const incomeSettlements = settlements.filter(s => s.type === 'income');
   const expenseSettlements = settlements.filter(s => s.type === 'expense');
 
-  // Mutations to request edit/delete (pending approval)
+  // Direct update mutation for managers/admins/owners
+  const directUpdateMutation = useMutation({
+    mutationFn: async (args: { id: string; updates: Partial<CreateSettlementData> }) =>
+      dailySettlementsApi.update(args.id, args.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['daily-settlements'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-summary'] });
+      toast({ title: 'تم التعديل', description: 'تم تعديل المعاملة بنجاح' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'خطأ', description: error?.message || 'تعذر تعديل المعاملة', variant: 'destructive' });
+    }
+  });
+
+  // Mutations to request edit/delete (pending approval) for hall managers
   const requestEditMutation = useMutation({
     mutationFn: async (args: { id: string; updates: Partial<CreateSettlementData> }) =>
       dailySettlementsApi.requestEdit(args.id, args.updates),
@@ -857,7 +871,15 @@ export default function DailySettlementPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2 justify-end">
-                            <Button size="sm" variant="outline" onClick={() => requestEditMutation.mutate({ id: settlement.id, updates: { notes: settlement.notes } })} title={canModerateDirectly ? "تعديل" : "طلب تعديل"}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => (canModerateDirectly 
+                                ? directUpdateMutation.mutate({ id: settlement.id, updates: settlement }) 
+                                : requestEditMutation.mutate({ id: settlement.id, updates: { notes: settlement.notes } })
+                              )} 
+                              title={canModerateDirectly ? "تعديل" : "طلب تعديل"}
+                            >
                               <Pencil className="w-4 h-4" />
                             </Button>
                             <Button size="sm" variant="destructive" onClick={() => (canModerateDirectly ? setPendingDelete({ id: settlement.id, title: `${settlement.source_name} - ${formatCurrency(settlement.amount,'EGP')}` }) : handleRequestDelete(settlement.id))} title={canModerateDirectly ? "حذف" : "طلب حذف"}>
@@ -930,7 +952,15 @@ export default function DailySettlementPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2 justify-end">
-                            <Button size="sm" variant="outline" onClick={() => requestEditMutation.mutate({ id: settlement.id, updates: { notes: settlement.notes } })} title={canModerateDirectly ? "تعديل" : "طلب تعديل"}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => (canModerateDirectly 
+                                ? directUpdateMutation.mutate({ id: settlement.id, updates: settlement }) 
+                                : requestEditMutation.mutate({ id: settlement.id, updates: { notes: settlement.notes } })
+                              )} 
+                              title={canModerateDirectly ? "تعديل" : "طلب تعديل"}
+                            >
                               <Pencil className="w-4 h-4" />
                             </Button>
                             <Button size="sm" variant="destructive" onClick={() => (canModerateDirectly ? setPendingDelete({ id: settlement.id, title: `${settlement.source_name} - ${formatCurrency(settlement.amount,'EGP')}` }) : handleRequestDelete(settlement.id))} title={canModerateDirectly ? "حذف" : "طلب حذف"}>
