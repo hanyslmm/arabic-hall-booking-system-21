@@ -59,6 +59,10 @@ export default function DailySettlementPage() {
     notes: '',
     created_by: profile?.id // Default to current user
   });
+  // Edit modal state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [editFormData, setEditFormData] = useState<CreateSettlementData | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -331,6 +335,8 @@ export default function DailySettlementPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['daily-settlements'] });
       queryClient.invalidateQueries({ queryKey: ['daily-summary'] });
+      setIsEditOpen(false);
+      setEditTarget(null);
       toast({ title: 'تم التعديل', description: 'تم تعديل المعاملة بنجاح' });
     },
     onError: (error: any) => {
