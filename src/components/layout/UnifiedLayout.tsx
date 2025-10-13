@@ -2,7 +2,7 @@ import React, { createContext, useContext } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
-import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus } from "lucide-react";
+import { Home, Calendar, Users, Building2, GraduationCap, BookOpen, Settings, Shield, FileText, UserPlus, TrendingUp } from "lucide-react";
 
 interface UnifiedLayoutProps {
   children: React.ReactNode;
@@ -26,6 +26,10 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
       title: "الإحصائيات",
       items: [
         { title: "لوحة التحكم", url: "/", icon: Home },
+        // Advanced insights for manager/owner only (exclude hall managers)
+        ...((isOwner || profile?.role === 'manager' || profile?.role === 'admin')
+          ? [{ title: "رؤى الإدارة", url: "/financial-insights", icon: TrendingUp }]
+          : []),
         // Show Daily Settlement for hall managers and higher (manager/owner/admin)
         ...(
           featureAccess.canAccessDailySettlement

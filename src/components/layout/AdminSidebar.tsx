@@ -58,6 +58,12 @@ const defaultNavigation: NavigationGroup[] = [
         description: "نظرة عامة على النظام",
       },
       {
+        title: "رؤى الإدارة",
+        url: "/financial-insights",
+        icon: FileText,
+        description: "لوحة رؤى متقدمة للإدارة",
+      },
+      {
         title: "التقفيل اليومي",
         url: "/daily-settlement",
         icon: FileText,
@@ -407,6 +413,11 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
             <div className="space-y-1">
               {group.items
                 .filter((item) => {
+                  // Role gating per item
+                  // Hide Financial Insights from hall managers and below
+                  if (item.url === '/financial-insights') {
+                    return isOwner || isAdmin || profile?.role === 'manager';
+                  }
                   // Show expenses pages for admin and manager roles
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {
                     return isAdmin || canManageData;
