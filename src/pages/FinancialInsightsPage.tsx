@@ -24,7 +24,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 export default function FinancialInsightsPage() {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
-    date.setMonth(date.getMonth() - 1);
+    date.setDate(1); // Set to first day of current month
     return date.toISOString().split('T')[0];
   });
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
@@ -173,39 +173,39 @@ export default function FinancialInsightsPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">رؤى الإدارة المالية</h1>
-          <p className="text-muted-foreground mt-1">لوحة تحليلات متقدمة للأداء المالي</p>
+          <h1 className="text-2xl md:text-3xl font-bold">رؤى الإدارة المالية</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">لوحة تحليلات متقدمة للأداء المالي</p>
         </div>
-        <div className="flex gap-4 items-center">
-          <div className="flex gap-2">
-            <div>
-              <Label htmlFor="start-date">من</Label>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 sm:flex-none">
+              <Label htmlFor="start-date" className="text-sm">من</Label>
               <Input
                 id="start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-auto"
+                className="w-full sm:w-auto"
               />
             </div>
-            <div>
-              <Label htmlFor="end-date">إلى</Label>
+            <div className="flex-1 sm:flex-none">
+              <Label htmlFor="end-date" className="text-sm">إلى</Label>
               <Input
                 id="end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-auto"
+                className="w-full sm:w-auto"
               />
             </div>
           </div>
-          <div>
-            <Label htmlFor="manager-filter">مدير القاعة</Label>
+          <div className="flex-1 sm:flex-none">
+            <Label htmlFor="manager-filter" className="text-sm">مدير القاعة</Label>
             <Select value={selectedCreator} onValueChange={setSelectedCreator}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="اختر مدير القاعة" />
               </SelectTrigger>
               <SelectContent>
@@ -230,13 +230,13 @@ export default function FinancialInsightsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(summaryStats.totalIncome, 'SAR')}
+              {formatCurrency(summaryStats.totalIncome, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               {summaryStats.incomeCount} معاملة إيراد
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              متوسط يومي: {formatCurrency(summaryStats.avgDailyIncome, 'SAR')}
+              متوسط يومي: {formatCurrency(summaryStats.avgDailyIncome, 'EGP')}
             </p>
           </CardContent>
         </Card>
@@ -248,13 +248,13 @@ export default function FinancialInsightsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(summaryStats.totalExpenses, 'SAR')}
+              {formatCurrency(summaryStats.totalExpenses, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               {summaryStats.expenseCount} معاملة مصروف
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              متوسط يومي: {formatCurrency(summaryStats.avgDailyExpense, 'SAR')}
+              متوسط يومي: {formatCurrency(summaryStats.avgDailyExpense, 'EGP')}
             </p>
           </CardContent>
         </Card>
@@ -266,7 +266,7 @@ export default function FinancialInsightsPage() {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${summaryStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(summaryStats.netAmount, 'SAR')}
+              {formatCurrency(summaryStats.netAmount, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               هامش الربح: {summaryStats.profitMargin}%
@@ -292,12 +292,12 @@ export default function FinancialInsightsPage() {
 
       {/* Charts and Analytics */}
       <Tabs defaultValue="trend" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="trend">الاتجاه اليومي</TabsTrigger>
-          <TabsTrigger value="expenses">توزيع المصروفات</TabsTrigger>
-          <TabsTrigger value="teachers">أداء المعلمين</TabsTrigger>
-          <TabsTrigger value="managers">أداء المدراء</TabsTrigger>
-          <TabsTrigger value="details">التفاصيل</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
+          <TabsTrigger value="trend" className="text-xs sm:text-sm">الاتجاه اليومي</TabsTrigger>
+          <TabsTrigger value="expenses" className="text-xs sm:text-sm">توزيع المصروفات</TabsTrigger>
+          <TabsTrigger value="teachers" className="text-xs sm:text-sm">أداء المعلمين</TabsTrigger>
+          <TabsTrigger value="managers" className="text-xs sm:text-sm">أداء المدراء</TabsTrigger>
+          <TabsTrigger value="details" className="text-xs sm:text-sm col-span-2 sm:col-span-1">التفاصيل</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trend">
@@ -306,14 +306,14 @@ export default function FinancialInsightsPage() {
               <CardTitle>الاتجاه اليومي للإيرادات والمصروفات</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-96">
+              <div className="h-64 sm:h-80 md:h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dailyTrendData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip 
-                      formatter={(value: number) => formatCurrency(value, 'SAR')}
+                      formatter={(value: number) => formatCurrency(value, 'EGP')}
                       labelFormatter={(label) => `التاريخ: ${label}`}
                     />
                     <Legend />
@@ -334,7 +334,7 @@ export default function FinancialInsightsPage() {
                 <CardTitle>توزيع المصروفات حسب الفئة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -351,7 +351,7 @@ export default function FinancialInsightsPage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => formatCurrency(value, 'SAR')} />
+                      <Tooltip formatter={(value: number) => formatCurrency(value, 'EGP')} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -363,7 +363,7 @@ export default function FinancialInsightsPage() {
                 <CardTitle>تفاصيل المصروفات</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-80 overflow-y-auto">
+                <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto">
                   {expenseByCategory.map((category, index) => (
                     <div key={category.name} className="flex items-center justify-between p-3 bg-muted/50 rounded">
                       <div className="flex items-center gap-3">
@@ -375,7 +375,7 @@ export default function FinancialInsightsPage() {
                       </div>
                       <div className="text-left">
                         <div className="font-bold text-red-600">
-                          {formatCurrency(category.value, 'SAR')}
+                          {formatCurrency(category.value, 'EGP')}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {((category.value / summaryStats.totalExpenses) * 100).toFixed(1)}%
@@ -396,7 +396,7 @@ export default function FinancialInsightsPage() {
                 <CardTitle>توزيع مساهمات المعلمين</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
+                <div className="h-64 sm:h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -406,13 +406,13 @@ export default function FinancialInsightsPage() {
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, value }) => `${name}: ${formatCurrency(value, 'SAR')}`}
+                        label={({ name, value }) => `${name}: ${formatCurrency(value, 'EGP')}`}
                       >
                         {teacherPieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => formatCurrency(value, 'SAR')} />
+                      <Tooltip formatter={(value: number) => formatCurrency(value, 'EGP')} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -424,7 +424,7 @@ export default function FinancialInsightsPage() {
                 <CardTitle>ترتيب المعلمين حسب المساهمة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-80 overflow-y-auto">
+                <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto">
                   {teacherContributions.map((teacher, index) => (
                     <div key={teacher.teacher_id || teacher.teacher_name} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                       <div className="flex items-center gap-2">
@@ -433,7 +433,7 @@ export default function FinancialInsightsPage() {
                       </div>
                       <div className="text-left">
                         <div className="font-bold text-green-600">
-                          {formatCurrency(teacher.total_amount, 'SAR')}
+                          {formatCurrency(teacher.total_amount, 'EGP')}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {teacher.transaction_count} معاملة
@@ -469,19 +469,19 @@ export default function FinancialInsightsPage() {
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">الإيرادات:</span>
                         <span className="font-medium text-green-600">
-                          {formatCurrency(manager.income, 'SAR')}
+                          {formatCurrency(manager.income, 'EGP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">المصروفات:</span>
                         <span className="font-medium text-red-600">
-                          {formatCurrency(manager.expenses, 'SAR')}
+                          {formatCurrency(manager.expenses, 'EGP')}
                         </span>
                       </div>
                       <div className="flex justify-between border-t pt-2">
                         <span className="text-sm font-medium">الصافي:</span>
                         <span className={`font-bold ${manager.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {formatCurrency(manager.net, 'SAR')}
+                          {formatCurrency(manager.net, 'EGP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -509,43 +509,45 @@ export default function FinancialInsightsPage() {
                   لا توجد معاملات في الفترة المحددة
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>المصدر</TableHead>
-                      <TableHead>المبلغ</TableHead>
-                      <TableHead>المدير</TableHead>
-                      <TableHead>ملاحظات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {settlements.map((settlement) => {
-                      const manager = hallManagers.find(m => m.id === settlement.created_by);
-                      return (
-                        <TableRow key={settlement.id}>
-                          <TableCell>
-                            {new Date(settlement.settlement_date).toLocaleDateString('ar-EG')}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={settlement.type === 'income' ? 'default' : 'destructive'}>
-                              {settlement.type === 'income' ? 'إيراد' : 'مصروف'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{settlement.source_name}</TableCell>
-                          <TableCell className={`font-medium ${settlement.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(settlement.amount, 'SAR')}
-                          </TableCell>
-                          <TableCell>{manager?.full_name || 'غير محدد'}</TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {settlement.notes || "—"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">التاريخ</TableHead>
+                        <TableHead className="whitespace-nowrap">النوع</TableHead>
+                        <TableHead className="whitespace-nowrap">المصدر</TableHead>
+                        <TableHead className="whitespace-nowrap">المبلغ</TableHead>
+                        <TableHead className="whitespace-nowrap">المدير</TableHead>
+                        <TableHead className="whitespace-nowrap">ملاحظات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {settlements.map((settlement) => {
+                        const manager = hallManagers.find(m => m.id === settlement.created_by);
+                        return (
+                          <TableRow key={settlement.id}>
+                            <TableCell className="whitespace-nowrap">
+                              {new Date(settlement.settlement_date).toLocaleDateString('ar-EG')}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <Badge variant={settlement.type === 'income' ? 'default' : 'destructive'}>
+                                {settlement.type === 'income' ? 'إيراد' : 'مصروف'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">{settlement.source_name}</TableCell>
+                            <TableCell className={`font-medium whitespace-nowrap ${settlement.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(settlement.amount, 'EGP')}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">{manager?.full_name || 'غير محدد'}</TableCell>
+                            <TableCell className="max-w-xs truncate">
+                              {settlement.notes || "—"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

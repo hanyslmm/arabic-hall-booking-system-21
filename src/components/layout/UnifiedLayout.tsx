@@ -16,9 +16,10 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
   const { profile, isAdmin, isOwner, canManageUsers } = useAuth();
   const featureAccess = useFeatureAccess();
   
-  const userRole = profile?.role;
+  const userRole = profile?.user_role;
   const isOwnerOrAdmin = isAdmin || isOwner || canManageUsers;
-  const isTeacher = userRole === 'user';
+  const isTeacher = userRole === 'teacher';
+  const isManager = userRole === 'manager';
 
   // Build navigation based on feature access control
   const navigation = [
@@ -26,8 +27,8 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
       title: "الإحصائيات",
       items: [
         { title: "لوحة التحكم", url: "/", icon: Home },
-        // Advanced insights for manager/owner only (exclude hall managers)
-        ...((isOwner || profile?.role === 'manager' || profile?.role === 'admin')
+        // Advanced insights for manager/owner/admin only (exclude hall managers and teachers)
+        ...((isOwner || isManager || isAdmin || profile?.user_role === 'admin')
           ? [{ title: "رؤى الإدارة", url: "/financial-insights", icon: TrendingUp }]
           : []),
         // Show Daily Settlement for hall managers and higher (manager/owner/admin)
@@ -126,7 +127,7 @@ export function UnifiedLayout({ children }: UnifiedLayoutProps) {
   
   if (isOwner || userRole === 'owner') {
     appSubtitle = "لوحة التحكم الإدارية - مالك";
-  } else if (isAdmin || userRole === 'manager') {
+  } else if (isAdmin || isManager || userRole === 'admin') {
     appSubtitle = "لوحة التحكم الإدارية - مدير";
   } else if (userRole === 'teacher') {
     appSubtitle = "لوحة المعلم";
