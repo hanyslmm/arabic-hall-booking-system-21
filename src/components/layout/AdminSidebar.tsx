@@ -414,9 +414,9 @@ export function AdminSidebar({ children, navigation, appTitle, appSubtitle }: Ad
               {group.items
                 .filter((item) => {
                   // Role gating per item
-                  // Hide Financial Insights from hall managers and below
+                  // Financial Insights: allow owner/admin/manager only
                   if (item.url === '/financial-insights') {
-                    return isOwner || isAdmin || profile?.role === 'manager';
+                    return isOwner || isAdmin || profile?.user_role === 'manager';
                   }
                   // Show expenses pages for admin and manager roles
                   if (item.url === '/expenses' || item.url === '/daily-expenses') {

@@ -153,6 +153,17 @@ function ToastEventListener() {
   return null;
 }
 
+// Route guard to allow only owner/admin/manager to access specific pages
+function ManagerOwnerRoute({ children }: { children: ReactNode }) {
+  const { profile, isAdmin, isOwner } = useAuth();
+  const role = profile?.user_role;
+  const allowed = isOwner || isAdmin || role === 'manager';
+  if (!allowed) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
 const App = () => {
    // Check if Supabase is configured
    if (!isSupabaseConfigured) {
@@ -328,7 +339,7 @@ const App = () => {
           <Route path="attendance" element={<LazyAttendanceManagementPage />} />
                   <Route path="class-management/:bookingId" element={<LazyClassManagementPage />} />
                   <Route path="actual-liquidity" element={<LazyActualLiquidityPage />} />
-                  <Route path="financial-insights" element={<LazyFinancialInsightsPage />} />
+                  <Route path="financial-insights" element={<ManagerOwnerRoute><LazyFinancialInsightsPage /></ManagerOwnerRoute>} />
                   <Route path="student-dashboard" element={<LazyStudentDashboard />} />
                   <Route path="simple-student-dashboard" element={<SimpleStudentDashboard />} />
                   <Route path="diagnostics" element={<DiagnosticsPage />} />
