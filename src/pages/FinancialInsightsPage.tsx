@@ -173,11 +173,11 @@ export default function FinancialInsightsPage() {
   }));
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+    <div className="space-y-3 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">رؤى الإدارة المالية</h1>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm md:text-base">لوحة تحليلات متقدمة للأداء المالي</p>
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold">رؤى الإدارة المالية</h1>
+          <p className="text-muted-foreground mt-1 text-[11px] sm:text-sm md:text-base">لوحة تحليلات متقدمة للأداء المالي</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-end">
           <div className="flex flex-col sm:flex-row gap-2">
@@ -292,15 +292,17 @@ export default function FinancialInsightsPage() {
 
       {/* Charts and Analytics */}
       <Tabs defaultValue="trend" className="w-full">
-        {/* Make tabs horizontally scrollable on small screens to avoid wrapping/overlap */}
-        <div className="w-full overflow-x-auto no-scrollbar">
-          <TabsList className="inline-flex min-w-max gap-1 px-1">
+        {/* Sticky, horizontally scrollable tabs on mobile */}
+        <div className="w-full sticky top-14 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50 -mx-3 sm:mx-0 px-3">
+          <div className="w-full overflow-x-auto no-scrollbar">
+          <TabsList className="inline-flex min-w-max gap-1 py-1">
             <TabsTrigger value="trend" className="text-xs sm:text-sm whitespace-nowrap">الاتجاه اليومي</TabsTrigger>
             <TabsTrigger value="expenses" className="text-xs sm:text-sm whitespace-nowrap">توزيع المصروفات</TabsTrigger>
             <TabsTrigger value="teachers" className="text-xs sm:text-sm whitespace-nowrap">أداء المعلمين</TabsTrigger>
             <TabsTrigger value="managers" className="text-xs sm:text-sm whitespace-nowrap">أداء المدراء</TabsTrigger>
             <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap">التفاصيل</TabsTrigger>
           </TabsList>
+          </div>
         </div>
 
         <TabsContent value="trend">
