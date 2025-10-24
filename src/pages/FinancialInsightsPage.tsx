@@ -173,13 +173,13 @@ export default function FinancialInsightsPage() {
   }));
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">رؤى الإدارة المالية</h1>
-          <p className="text-muted-foreground mt-1 text-sm md:text-base">لوحة تحليلات متقدمة للأداء المالي</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">رؤى الإدارة المالية</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm md:text-base">لوحة تحليلات متقدمة للأداء المالي</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-end">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 sm:flex-none">
               <Label htmlFor="start-date" className="text-sm">من</Label>
@@ -188,7 +188,7 @@ export default function FinancialInsightsPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-11"
               />
             </div>
             <div className="flex-1 sm:flex-none">
@@ -198,14 +198,14 @@ export default function FinancialInsightsPage() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto h-11"
               />
             </div>
           </div>
           <div className="flex-1 sm:flex-none">
             <Label htmlFor="manager-filter" className="text-sm">مدير القاعة</Label>
             <Select value={selectedCreator} onValueChange={setSelectedCreator}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-48 h-11">
                 <SelectValue placeholder="اختر مدير القاعة" />
               </SelectTrigger>
               <SelectContent>
@@ -292,13 +292,16 @@ export default function FinancialInsightsPage() {
 
       {/* Charts and Analytics */}
       <Tabs defaultValue="trend" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
-          <TabsTrigger value="trend" className="text-xs sm:text-sm">الاتجاه اليومي</TabsTrigger>
-          <TabsTrigger value="expenses" className="text-xs sm:text-sm">توزيع المصروفات</TabsTrigger>
-          <TabsTrigger value="teachers" className="text-xs sm:text-sm">أداء المعلمين</TabsTrigger>
-          <TabsTrigger value="managers" className="text-xs sm:text-sm">أداء المدراء</TabsTrigger>
-          <TabsTrigger value="details" className="text-xs sm:text-sm col-span-2 sm:col-span-1">التفاصيل</TabsTrigger>
-        </TabsList>
+        {/* Make tabs horizontally scrollable on small screens to avoid wrapping/overlap */}
+        <div className="w-full overflow-x-auto no-scrollbar">
+          <TabsList className="inline-flex min-w-max gap-1 px-1">
+            <TabsTrigger value="trend" className="text-xs sm:text-sm whitespace-nowrap">الاتجاه اليومي</TabsTrigger>
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm whitespace-nowrap">توزيع المصروفات</TabsTrigger>
+            <TabsTrigger value="teachers" className="text-xs sm:text-sm whitespace-nowrap">أداء المعلمين</TabsTrigger>
+            <TabsTrigger value="managers" className="text-xs sm:text-sm whitespace-nowrap">أداء المدراء</TabsTrigger>
+            <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap">التفاصيل</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="trend">
           <Card>
@@ -306,7 +309,7 @@ export default function FinancialInsightsPage() {
               <CardTitle>الاتجاه اليومي للإيرادات والمصروفات</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 sm:h-80 md:h-96">
+              <div className="h-64 sm:h-72 md:h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dailyTrendData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -328,13 +331,13 @@ export default function FinancialInsightsPage() {
         </TabsContent>
 
         <TabsContent value="expenses">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>توزيع المصروفات حسب الفئة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 sm:h-80">
+                <div className="h-64 sm:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -390,13 +393,13 @@ export default function FinancialInsightsPage() {
         </TabsContent>
 
         <TabsContent value="teachers">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>توزيع مساهمات المعلمين</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 sm:h-80">
+                <div className="h-64 sm:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -456,36 +459,36 @@ export default function FinancialInsightsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {hallManagerData.map((manager) => (
                   <Card key={manager.name}>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
+                      <CardTitle className="text-sm sm:text-base flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
                         {manager.name}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-1.5">
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">الإيرادات:</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">الإيرادات:</span>
                         <span className="font-medium text-green-600">
                           {formatCurrency(manager.income, 'EGP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">المصروفات:</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">المصروفات:</span>
                         <span className="font-medium text-red-600">
                           {formatCurrency(manager.expenses, 'EGP')}
                         </span>
                       </div>
                       <div className="flex justify-between border-t pt-2">
-                        <span className="text-sm font-medium">الصافي:</span>
+                        <span className="text-xs sm:text-sm font-medium">الصافي:</span>
                         <span className={`font-bold ${manager.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {formatCurrency(manager.net, 'EGP')}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-xs text-muted-foreground">المعاملات:</span>
+                        <span className="text-[11px] sm:text-xs text-muted-foreground">المعاملات:</span>
                         <Badge variant="secondary">{manager.transactions}</Badge>
                       </div>
                     </CardContent>
@@ -509,7 +512,7 @@ export default function FinancialInsightsPage() {
                   لا توجد معاملات في الفترة المحددة
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto no-scrollbar">
                   <Table>
                     <TableHeader>
                       <TableRow>
