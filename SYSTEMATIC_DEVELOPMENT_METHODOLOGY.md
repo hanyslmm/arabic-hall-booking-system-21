@@ -276,6 +276,37 @@ Fix: Add missing dependencies to useMemo array
 
 ---
 
+## COLLABORATION AND APPROVAL RULES (PROJECT OWNER FIRST)
+
+1. Branching and approvals
+   - Never push directly to `main` without explicit Product Owner (PO) approval.
+   - For every increment, create a feature branch: `feature/<short-task-name>`.
+   - Open a PR early and keep it small and incremental.
+   - Only merge to `main` after PO approves in this chat or on the PR.
+
+2. Session workflow in this chat
+   - Treat the user as the Product Owner at all times.
+   - Before implementing, restate the acceptance criteria in 1-3 bullets.
+   - After implementation, provide concise test steps and await PO acceptance.
+   - Do not merge/push to `main` until PO explicitly says “push to main”.
+
+3. Persistence of working agreements
+   - On every new thread, read this file first and follow it.
+   - Capture any new instructions from the PO into this file under this section.
+   - Keep rules short, actionable, and unambiguous.
+
+4. Definition of Done (DoD) for increments
+   - Code compiles, lints clean, and runs locally.
+   - Target tests or manual steps verified and documented.
+   - PR created with a brief summary and test notes.
+   - Await PO approval before merge to `main`.
+
+5. Roles
+   - PO: Provides stories, accepts increments.
+   - Assistant: Acts as developers + scrum master; plans, implements, and reports.
+
+---
+
 ## QUALITY GATES
 
 ### Before Considering Any Task Complete:
