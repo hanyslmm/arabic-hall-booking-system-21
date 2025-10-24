@@ -30,18 +30,18 @@ export default function FinancialInsightsPage() {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedCreator, setSelectedCreator] = useState<string>('all');
 
-  // Fetch hall managers
+  // Fetch user profiles that can create settlements (owner, manager, space_manager)
   const { data: hallManagers = [] } = useQuery({
     queryKey: ['hall-managers'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
-        .eq('user_role', 'space_manager')
+        .select('id, full_name, email, user_role')
+        .in('user_role', ['owner', 'manager', 'space_manager'])
         .order('full_name');
       
       if (error) throw error;
-      return data as HallManager[];
+      return data as (HallManager & { user_role: string })[];
     }
   });
 
@@ -127,7 +127,7 @@ export default function FinancialInsightsPage() {
       .sort((a, b) => b.value - a.value);
   }, [settlements]);
 
-  // Prepare hall manager performance data
+  // Prepare manager performance data (includes owner, manager, hall manager)
   const hallManagerData = useMemo(() => {
     const managerTotals = new Map<string, { 
       name: string; 
