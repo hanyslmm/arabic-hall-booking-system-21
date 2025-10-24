@@ -222,20 +222,20 @@ export default function FinancialInsightsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">إجمالي الإيرادات</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">
               {formatCurrency(summaryStats.totalIncome, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               {summaryStats.incomeCount} معاملة إيراد
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
               متوسط يومي: {formatCurrency(summaryStats.avgDailyIncome, 'EGP')}
             </p>
           </CardContent>
@@ -243,17 +243,17 @@ export default function FinancialInsightsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المصروفات</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">إجمالي المصروفات</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-xl sm:text-2xl font-bold text-red-600">
               {formatCurrency(summaryStats.totalExpenses, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
               {summaryStats.expenseCount} معاملة مصروف
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
               متوسط يومي: {formatCurrency(summaryStats.avgDailyExpense, 'EGP')}
             </p>
           </CardContent>
@@ -261,11 +261,11 @@ export default function FinancialInsightsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">صافي الربح</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">صافي الربح</CardTitle>
             <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${summaryStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-xl sm:text-2xl font-bold ${summaryStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatCurrency(summaryStats.netAmount, 'EGP')}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -276,11 +276,11 @@ export default function FinancialInsightsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المعاملات</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">إجمالي المعاملات</CardTitle>
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">
               {summaryStats.transactionCount}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -293,13 +293,13 @@ export default function FinancialInsightsPage() {
       {/* Charts and Analytics */}
       <Tabs defaultValue="trend" className="w-full">
         {/* Make tabs horizontally scrollable on small screens to avoid wrapping/overlap */}
-        <div className="w-full overflow-x-auto no-scrollbar">
-          <TabsList className="inline-flex min-w-max gap-1 px-1">
-            <TabsTrigger value="trend" className="text-xs sm:text-sm whitespace-nowrap">الاتجاه اليومي</TabsTrigger>
-            <TabsTrigger value="expenses" className="text-xs sm:text-sm whitespace-nowrap">توزيع المصروفات</TabsTrigger>
-            <TabsTrigger value="teachers" className="text-xs sm:text-sm whitespace-nowrap">أداء المعلمين</TabsTrigger>
-            <TabsTrigger value="managers" className="text-xs sm:text-sm whitespace-nowrap">أداء المدراء</TabsTrigger>
-            <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap">التفاصيل</TabsTrigger>
+        <div className="w-full overflow-x-auto no-scrollbar -mx-1 px-1 mb-1">
+          <TabsList className="inline-flex min-w-max gap-1 px-1 py-1.5">
+            <TabsTrigger value="trend" className="text-xs sm:text-sm whitespace-nowrap px-3 py-2">الاتجاه اليومي</TabsTrigger>
+            <TabsTrigger value="expenses" className="text-xs sm:text-sm whitespace-nowrap px-3 py-2">توزيع المصروفات</TabsTrigger>
+            <TabsTrigger value="teachers" className="text-xs sm:text-sm whitespace-nowrap px-3 py-2">أداء المعلمين</TabsTrigger>
+            <TabsTrigger value="managers" className="text-xs sm:text-sm whitespace-nowrap px-3 py-2">أداء المدراء</TabsTrigger>
+            <TabsTrigger value="details" className="text-xs sm:text-sm whitespace-nowrap px-3 py-2">التفاصيل</TabsTrigger>
           </TabsList>
         </div>
 
