@@ -333,6 +333,7 @@ Fix: Add missing dependencies to useMemo array
    - For every increment, create a feature branch: `feature/<short-task-name>`.
    - Open a PR early and keep it small and incremental.
    - Only merge to `main` after PO approves in this chat or on the PR.
+   - Clarification: When the PO says “push”, it means “merge to main and push”.
 
 2. Session workflow in this chat
    - Treat the user as the Product Owner at all times.
